@@ -1,0 +1,257 @@
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { GridCell, GridPosition } from '../types/game.types';
+
+interface GridStore {
+  gridSize: { width: number; height: number; depth: number };
+  cells: Map<string, GridCell>;
+  
+  // Grid operations
+  initializeGrid: (width: number, height: number, depth: number) => void;
+  getCell: (x: number, y: number, z: number) => GridCell | undefined;
+  setCell: (cell: GridCell) => void;
+  
+  // Placement validation
+  canPlaceAt: (position: GridPosition, width: number, depth: number) => boolean;
+  placeObject: (position: GridPosition, width: number, depth: number, type: GridCell['type'], id?: string) => boolean;
+  removeObject: (position: GridPosition, width: number, depth: number) => void;
+  
+  // Pathfinding helpers
+  getNeighbors: (position: GridPosition) => GridCell[];
+  isWalkable: (x: number, y: number, z: number) => boolean;
+  findPath: (start: GridPosition, end: GridPosition) => GridPosition[] | null;
+  
+  // Utilities
+  getCellKey: (x: number, y: number, z: number) => string;
+  parseCellKey: (key: string) => GridPosition;
+  reset: () => void;
+}
+
+export const useGridStore = create<GridStore>()(
+  devtools((set, get) => ({
+    gridSize: { width: 50, height: 1, depth: 50 },
+    cells: new Map(),
+    
+    initializeGrid: (width, height, depth) => {
+      const cells = new Map<string, GridCell>();
+      
+      for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+          for (let z = 0; z < depth; z++) {
+            const key = `${x},${y},${z}`;
+            cells.set(key, {
+              x,
+              y,
+              z,
+              occupied: false,
+              type: 'empty',
+            });
+          }
+        }
+      }
+      
+      set({
+        gridSize: { width, height, depth },
+        cells,
+      });
+    },
+    
+    getCell: (x, y, z) => {
+      return get().cells.get(`${x},${y},${z}`);
+    },
+    
+    setCell: (cell) => set((state) => {
+      const cells = new Map(state.cells);
+      cells.set(`${cell.x},${cell.y},${cell.z}`, cell);
+      return { cells };
+    }),
+    
+    canPlaceAt: (position, width, depth) => {
+      const state = get();
+      
+      for (let x = position.x; x < position.x + width; x++) {
+        for (let z = position.z; z < position.z + depth; z++) {
+          const cell = state.getCell(x, position.y, z);
+          if (!cell || cell.occupied) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    },
+    
+    placeObject: (position, width, depth, type, id) => {
+      const state = get();
+      
+      if (!state.canPlaceAt(position, width, depth)) {
+        return false;
+      }
+      
+      const cells = new Map(state.cells);
+      
+      for (let x = position.x; x < position.x + width; x++) {
+        for (let z = position.z; z < position.z + depth; z++) {
+          const key = `${x},${position.y},${z}`;
+          const cell = cells.get(key);
+          if (cell) {
+            cells.set(key, {
+              ...cell,
+              occupied: true,
+              type,
+              tankId: id,
+            });
+          }
+        }
+      }
+      
+      set({ cells });
+      return true;
+    },
+    
+    removeObject: (position, width, depth) => set((state) => {
+      const cells = new Map(state.cells);
+      
+      for (let x = position.x; x < position.x + width; x++) {
+        for (let z = position.z; z < position.z + depth; z++) {
+          const key = `${x},${position.y},${z}`;
+          const cell = cells.get(key);
+          if (cell) {
+            cells.set(key, {
+              ...cell,
+              occupied: false,
+              type: 'empty',
+              tankId: undefined,
+            });
+          }
+        }
+      }
+      
+      return { cells };
+    }),
+    
+    getNeighbors: (position) => {
+      const state = get();
+      const neighbors: GridCell[] = [];
+      
+      const directions = [
+        { x: 0, z: 1 },  // North
+        { x: 1, z: 0 },  // East
+        { x: 0, z: -1 }, // South
+        { x: -1, z: 0 }, // West
+      ];
+      
+      for (const dir of directions) {
+        const cell = state.getCell(
+          position.x + dir.x,
+          position.y,
+          position.z + dir.z
+        );
+        if (cell) {
+          neighbors.push(cell);
+        }
+      }
+      
+      return neighbors;
+    },
+    
+    isWalkable: (x, y, z) => {
+      const cell = get().getCell(x, y, z);
+      return cell ? cell.type === 'path' || cell.type === 'empty' : false;
+    },
+    
+    findPath: (start, end) => {
+      // Simple A* pathfinding implementation
+      const state = get();
+      const openSet = new Set<string>();
+      const closedSet = new Set<string>();
+      const cameFrom = new Map<string, string>();
+      const gScore = new Map<string, number>();
+      const fScore = new Map<string, number>();
+      
+      const startKey = state.getCellKey(start.x, start.y, start.z);
+      const endKey = state.getCellKey(end.x, end.y, end.z);
+      
+      openSet.add(startKey);
+      gScore.set(startKey, 0);
+      fScore.set(startKey, heuristic(start, end));
+      
+      while (openSet.size > 0) {
+        let current = '';
+        let lowestF = Infinity;
+        
+        for (const key of openSet) {
+          const f = fScore.get(key) || Infinity;
+          if (f < lowestF) {
+            lowestF = f;
+            current = key;
+          }
+        }
+        
+        if (current === endKey) {
+          return reconstructPath(cameFrom, current, state);
+        }
+        
+        openSet.delete(current);
+        closedSet.add(current);
+        
+        const currentPos = state.parseCellKey(current);
+        const neighbors = state.getNeighbors(currentPos);
+        
+        for (const neighbor of neighbors) {
+          const neighborKey = state.getCellKey(neighbor.x, neighbor.y, neighbor.z);
+          
+          if (closedSet.has(neighborKey) || !state.isWalkable(neighbor.x, neighbor.y, neighbor.z)) {
+            continue;
+          }
+          
+          const tentativeG = (gScore.get(current) || 0) + 1;
+          
+          if (!openSet.has(neighborKey)) {
+            openSet.add(neighborKey);
+          } else if (tentativeG >= (gScore.get(neighborKey) || Infinity)) {
+            continue;
+          }
+          
+          cameFrom.set(neighborKey, current);
+          gScore.set(neighborKey, tentativeG);
+          fScore.set(neighborKey, tentativeG + heuristic(neighbor, end));
+        }
+      }
+      
+      return null;
+    },
+    
+    getCellKey: (x, y, z) => `${x},${y},${z}`,
+    
+    parseCellKey: (key) => {
+      const [x, y, z] = key.split(',').map(Number);
+      return { x, y, z };
+    },
+    
+    reset: () => set({
+      cells: new Map(),
+    }),
+  }))
+);
+
+function heuristic(a: GridPosition, b: GridPosition): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
+}
+
+function reconstructPath(
+  cameFrom: Map<string, string>,
+  current: string,
+  state: ReturnType<typeof useGridStore.getState>
+): GridPosition[] {
+  const path: GridPosition[] = [];
+  let currentKey = current;
+  
+  while (cameFrom.has(currentKey)) {
+    path.unshift(state.parseCellKey(currentKey));
+    currentKey = cameFrom.get(currentKey)!;
+  }
+  
+  path.unshift(state.parseCellKey(currentKey));
+  return path;
+}

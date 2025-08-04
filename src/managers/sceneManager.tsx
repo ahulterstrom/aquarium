@@ -5,6 +5,7 @@ import { useSceneMachine } from "@/contexts/scene/useScene";
 import { MainMenuScene } from "@/scenes/mainMenuScene";
 import { CharacterSelectScene } from "@/scenes/characterSelectScene";
 import { MapScene } from "@/scenes/mapScene";
+import { SandboxScene } from "@/scenes/sandboxScene";
 
 const sceneMap: Record<string, React.FC> = {
   mainMenu: MainMenuScene,
@@ -12,6 +13,7 @@ const sceneMap: Record<string, React.FC> = {
   map: MapScene,
   battle: MainMenuScene,
   battleResults: MainMenuScene,
+  sandbox: SandboxScene,
 };
 
 export const SceneManager: React.FC = () => {

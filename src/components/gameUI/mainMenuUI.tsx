@@ -11,6 +11,12 @@ export const MainMenuUI = () => {
     });
   };
 
+  const handleStartSandbox = () => {
+    sceneMachineRef.send({
+      type: "GO_TO_SANDBOX",
+    });
+  };
+
   return (
     <div className="pointer-events-auto flex size-full flex-col items-center gap-16 py-16">
       <div className="flex h-2/3 flex-1 items-center justify-center">
@@ -27,6 +33,12 @@ export const MainMenuUI = () => {
           onClick={handleStartGame}
         >
           Start Game
+        </button>
+        <button
+          className="min-w-32 rounded-md border border-purple-500/30 bg-black/50 px-8 py-4 text-lg font-bold whitespace-nowrap text-purple-400 backdrop-blur-sm transition-all hover:bg-purple-500/10 hover:text-purple-300"
+          onClick={handleStartSandbox}
+        >
+          Sandbox
         </button>
         <button
           className="min-w-32 rounded-md border border-purple-500/30 bg-black/50 px-8 py-4 text-lg font-bold whitespace-nowrap text-purple-400 backdrop-blur-sm transition-all hover:bg-purple-500/10 hover:text-purple-300"

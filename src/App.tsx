@@ -15,11 +15,15 @@ import { MenuProvider } from "@/contexts/menu/menuContextProvider";
 import { SceneManager } from "@/managers/sceneManager";
 import { SceneProvider } from "@/contexts/scene/sceneContextProvider";
 import { UIManager } from "@/managers/uiManager";
+import { useGridStore } from "@/stores/gridStore";
+import { useUIStore } from "@/stores/uiStore";
 
 function App() {
   const isDebugging = useGame.use.isDebugging();
   const score = useGame.use.score();
   const increaseScore = useGame.use.increaseScore();
+  const { placementMode, selectedTankId, selectTank, setPlacementMode } =
+    useUIStore();
 
   return (
     <>
@@ -28,7 +32,15 @@ function App() {
           <MenuProvider>
             <UIManager />
             <MenuManager />
-            <Canvas shadows>
+            <Canvas
+              shadows
+              onPointerMissed={() => {
+                console.log("Canvas pointer missed");
+                if (placementMode !== "tank") {
+                  selectTank(null);
+                }
+              }}
+            >
               <color attach="background" args={["skyblue"]} />
               <Suspense fallback={null}>
                 <DebugControls />

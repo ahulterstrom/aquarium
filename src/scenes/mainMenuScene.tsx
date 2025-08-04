@@ -1,8 +1,9 @@
-import { OrthographicCamera, useTexture } from "@react-three/drei";
+import { OrthographicCamera, useTexture, Html } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import { Flex, Box } from "@react-three/flex";
+import { useSceneMachine } from "@/contexts/scene/useScene";
 
 const vertexShader = `
   varying vec2 vUv;
@@ -120,10 +121,33 @@ function ShaderPlane() {
 }
 
 export const MainMenuScene = () => {
+  const sceneActor = useSceneMachine();
+  
   return (
     <>
       <OrthographicCamera makeDefault position={[0, 0, 10]} zoom={1} />
       <ShaderPlane />
+      
+      {/* Menu UI */}
+      <Html position={[0, 0, 0]} transform center>
+        <div className="flex flex-col items-center space-y-4">
+          <h1 className="text-4xl font-bold text-white mb-8">Aquarium Tycoon</h1>
+          <div className="space-y-3">
+            <button
+              onClick={() => sceneActor.send({ type: "GO_TO_SANDBOX" })}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors min-w-[200px]"
+            >
+              Sandbox Mode
+            </button>
+            <button
+              onClick={() => sceneActor.send({ type: "GO_TO_CHARACTER_SELECTION" })}
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors min-w-[200px]"
+            >
+              Career Mode
+            </button>
+          </div>
+        </div>
+      </Html>
     </>
   );
 };

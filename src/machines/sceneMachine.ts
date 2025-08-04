@@ -7,6 +7,7 @@ export const sceneMachine = setup({
     context: {} as SceneMachineContext,
     events: {} as
       | { type: "GO_TO_CHARACTER_SELECTION" }
+      | { type: "GO_TO_SANDBOX" }
       | { type: "BACK" }
       | { type: "GO_TO_MAP" }
       | { type: "GO_TO_BATTLE" }
@@ -21,6 +22,12 @@ export const sceneMachine = setup({
     mainMenu: {
       on: {
         GO_TO_CHARACTER_SELECTION: "characterSelection",
+        GO_TO_SANDBOX: "sandbox",
+      },
+    },
+    sandbox: {
+      on: {
+        BACK: "mainMenu",
       },
     },
     characterSelection: {

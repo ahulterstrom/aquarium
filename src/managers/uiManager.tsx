@@ -10,6 +10,7 @@ import { SnapshotFrom } from "xstate";
 import { MainMenuUI } from "@/components/gameUI/mainMenuUI";
 import { CharacterSelectUI } from "@/components/gameUI/characterSelectUI";
 import { MapUI } from "@/components/gameUI/mapUI";
+import { SandboxUI } from "@/components/gameUI/sandboxUI";
 
 const uis: Record<SnapshotFrom<typeof sceneMachine>["value"], ReactNode> = {
   mainMenu: <MainMenuUI />,
@@ -17,6 +18,7 @@ const uis: Record<SnapshotFrom<typeof sceneMachine>["value"], ReactNode> = {
   map: <MapUI />,
   battle: <div>Battle</div>,
   battleResults: <div>Battle Results</div>,
+  sandbox: <SandboxUI />,
 };
 
 export const UIManager = () => {
