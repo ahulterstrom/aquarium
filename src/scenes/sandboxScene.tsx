@@ -349,7 +349,7 @@ export const SandboxScene = () => {
     placeObject,
     getEdgeForPosition,
   } = useGridStore();
-  const { placementMode, selectedTankId, selectTank, setPlacementMode } =
+  const { placementMode, selectedTankId, selectTank, selectVisitor, selectEntrance, clearSelection, setPlacementMode } =
     useUIStore();
 
   useEffect(() => {
@@ -399,8 +399,8 @@ export const SandboxScene = () => {
         console.log("Entrance can only be placed on the edge of the map");
       }
     } else {
-      // Clear tank selection when clicking on empty space
-      selectTank(null);
+      // Clear all selections when clicking on empty space
+      clearSelection();
     }
   };
 
@@ -409,17 +409,11 @@ export const SandboxScene = () => {
   };
 
   const handleEntranceClick = (entrance: Entrance) => {
-    // For now, just log the entrance click
-    console.log("Entrance clicked:", entrance.id);
+    selectEntrance(entrance.id);
   };
 
   const handleVisitorClick = (visitor: Visitor) => {
-    console.log(`Visitor ${visitor.id} clicked:`, {
-      state: visitor.state,
-      satisfaction: `${visitor.satisfaction}/${visitor.maxSatisfaction}`,
-      interests: visitor.interests,
-      tanksVisited: visitor.tanksVisited.length,
-    });
+    selectVisitor(visitor.id);
   };
 
   const renderGrid = () => {
@@ -496,7 +490,7 @@ export const SandboxScene = () => {
         onClick={(e) => {
           e.stopPropagation();
           if (placementMode !== "tank" && placementMode !== "entrance") {
-            selectTank(null);
+            clearSelection();
           }
         }}
       >

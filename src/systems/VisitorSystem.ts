@@ -1,5 +1,14 @@
-import * as THREE from 'three';
-import { Visitor, VisitorState, Tank, Entrance, GridPosition, VisitorInterests, VisitorPreferences } from '../types/game.types';
+import * as THREE from "three";
+import {
+  Visitor,
+  VisitorState,
+  Tank,
+  Entrance,
+  GridPosition,
+  VisitorInterests,
+  VisitorPreferences,
+} from "../types/game.types";
+import { generateVisitorName } from "../utils/nameGenerator";
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;
@@ -27,8 +36,11 @@ export class VisitorSystem {
       throw new Error(`Entrance ${entryEntranceId} not found`);
     }
 
-    const visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    // Generate random gender
+    const gender: "male" | "female" = Math.random() < 0.5 ? "male" : "female";
+
     // Generate random interests
     const interests: VisitorInterests = {
       fishTypes: this.generateRandomFishInterests(),
@@ -45,32 +57,34 @@ export class VisitorSystem {
 
     const visitor: Visitor = {
       id: visitorId,
+      name: generateVisitorName(gender),
+      gender,
       position: new THREE.Vector3(
         entrance.position.x * 2,
         0.5,
-        entrance.position.z * 2
+        entrance.position.z * 2,
       ),
       velocity: new THREE.Vector3(0, 0, 0),
-      
-      state: 'entering',
+
+      state: "entering",
       targetPosition: null,
       targetTankId: null,
       currentPath: null,
-      
+
       interests,
       satisfaction: 0,
       maxSatisfaction: preferences.satisfactionThreshold,
-      
+
       preferences,
       stateTimer: 0,
       totalVisitTime: 0,
-      
+
       // Future features (initialized)
       money: 10 + Math.random() * 20, // $10-30 spending money
       happiness: 50 + Math.random() * 30, // Start moderately happy
       patience: 30000 + Math.random() * 60000, // 30-90 seconds patience
       moneySpent: 0,
-      
+
       tanksVisited: [],
       entryEntranceId,
     };
@@ -81,7 +95,7 @@ export class VisitorSystem {
 
   // Main update loop - call this every frame
   update(deltaTime: number) {
-    for (const visitor of this.visitors.values()) {
+    for (const visitor of Array.from(this.visitors.values())) {
       this.updateVisitor(visitor, deltaTime);
     }
   }
@@ -91,22 +105,24 @@ export class VisitorSystem {
     visitor.totalVisitTime += deltaTime;
 
     // Update position based on velocity
-    visitor.position.add(visitor.velocity.clone().multiplyScalar(deltaTime / 1000));
+    visitor.position.add(
+      visitor.velocity.clone().multiplyScalar(deltaTime / 1000),
+    );
 
     switch (visitor.state) {
-      case 'entering':
+      case "entering":
         this.handleEnteringState(visitor, deltaTime);
         break;
-      case 'exploring':
+      case "exploring":
         this.handleExploringState(visitor, deltaTime);
         break;
-      case 'viewing':
+      case "viewing":
         this.handleViewingState(visitor, deltaTime);
         break;
-      case 'satisfied':
+      case "satisfied":
         this.handleSatisfiedState(visitor, deltaTime);
         break;
-      case 'leaving':
+      case "leaving":
         this.handleLeavingState(visitor, deltaTime);
         break;
     }
@@ -117,9 +133,9 @@ export class VisitorSystem {
     if (!visitor.targetPosition) {
       // Find a central position to move to
       visitor.targetPosition = new THREE.Vector3(
-        (this.gridSize.width - 1) * 2 / 2,
+        ((this.gridSize.width - 1) * 2) / 2,
         0.5,
-        (this.gridSize.depth - 1) * 2 / 2
+        ((this.gridSize.depth - 1) * 2) / 2,
       );
     }
 
@@ -127,7 +143,7 @@ export class VisitorSystem {
 
     // Check if close to target or enough time has passed
     if (this.isAtTarget(visitor) || visitor.stateTimer > 3000) {
-      this.transitionToState(visitor, 'exploring');
+      this.transitionToState(visitor, "exploring");
     }
   }
 
@@ -135,16 +151,16 @@ export class VisitorSystem {
     // Look for interesting tanks or wander randomly
     if (!visitor.targetPosition) {
       const interestingTank = this.findInterestingTank(visitor);
-      
+
       if (interestingTank) {
         // Go view this tank
         visitor.targetTankId = interestingTank.id;
         visitor.targetPosition = new THREE.Vector3(
           interestingTank.position.x * 2,
           0.5,
-          interestingTank.position.z * 2 + 1.5 // Stand in front of tank
+          interestingTank.position.z * 2 + 1.5, // Stand in front of tank
         );
-        this.transitionToState(visitor, 'viewing');
+        this.transitionToState(visitor, "viewing");
       } else {
         // Wander randomly
         visitor.targetPosition = this.getRandomWalkablePosition();
@@ -154,8 +170,11 @@ export class VisitorSystem {
     this.moveTowardsTarget(visitor, deltaTime);
 
     // If we've been exploring too long or reached satisfaction, time to leave
-    if (visitor.satisfaction >= visitor.maxSatisfaction || visitor.stateTimer > 15000) {
-      this.transitionToState(visitor, 'satisfied');
+    if (
+      visitor.satisfaction >= visitor.maxSatisfaction ||
+      visitor.stateTimer > 15000
+    ) {
+      this.transitionToState(visitor, "satisfied");
     }
   }
 
@@ -163,11 +182,20 @@ export class VisitorSystem {
     // Stop moving and look at the tank
     visitor.velocity.set(0, 0, 0);
 
-    const tank = visitor.targetTankId ? this.tanks.get(visitor.targetTankId) : null;
+    const tank = visitor.targetTankId
+      ? this.tanks.get(visitor.targetTankId)
+      : null;
     if (tank) {
       // Calculate satisfaction gain from this tank
-      const satisfactionGain = this.calculateSatisfactionGain(visitor, tank, deltaTime);
-      visitor.satisfaction = Math.min(visitor.satisfaction + satisfactionGain, visitor.maxSatisfaction);
+      const satisfactionGain = this.calculateSatisfactionGain(
+        visitor,
+        tank,
+        deltaTime,
+      );
+      visitor.satisfaction = Math.min(
+        visitor.satisfaction + satisfactionGain,
+        visitor.maxSatisfaction,
+      );
 
       // Add to visited tanks
       if (!visitor.tanksVisited.includes(tank.id)) {
@@ -177,13 +205,14 @@ export class VisitorSystem {
 
     // After viewing for a while, go back to exploring or leave if satisfied
     const viewingTime = visitor.preferences.viewingTime;
-    const minViewTime = viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
-    
+    const minViewTime =
+      viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
+
     if (visitor.stateTimer > minViewTime) {
       if (visitor.satisfaction >= visitor.maxSatisfaction) {
-        this.transitionToState(visitor, 'satisfied');
+        this.transitionToState(visitor, "satisfied");
       } else {
-        this.transitionToState(visitor, 'exploring');
+        this.transitionToState(visitor, "exploring");
       }
     }
   }
@@ -196,13 +225,13 @@ export class VisitorSystem {
         visitor.targetPosition = new THREE.Vector3(
           nearestEntrance.position.x * 2,
           0.5,
-          nearestEntrance.position.z * 2
+          nearestEntrance.position.z * 2,
         );
       }
     }
 
     this.moveTowardsTarget(visitor, deltaTime);
-    this.transitionToState(visitor, 'leaving');
+    this.transitionToState(visitor, "leaving");
   }
 
   private handleLeavingState(visitor: Visitor, deltaTime: number) {
@@ -222,7 +251,9 @@ export class VisitorSystem {
 
     if (distance > 0.1) {
       direction.normalize();
-      visitor.velocity = direction.multiplyScalar(visitor.preferences.walkingSpeed);
+      visitor.velocity = direction.multiplyScalar(
+        visitor.preferences.walkingSpeed,
+      );
     } else {
       visitor.velocity.set(0, 0, 0);
     }
@@ -244,13 +275,13 @@ export class VisitorSystem {
     let bestTank: Tank | null = null;
     let bestInterestScore = 0;
 
-    for (const tank of this.tanks.values()) {
+    for (const tank of Array.from(this.tanks.values())) {
       // Skip tanks already visited
       if (visitor.tanksVisited.includes(tank.id)) continue;
 
       // Calculate interest score
       let interestScore = 0;
-      
+
       // Size preference
       if (visitor.interests.tankSizes.includes(tank.size)) {
         interestScore += 30;
@@ -271,7 +302,11 @@ export class VisitorSystem {
     return bestInterestScore > 25 ? bestTank : null; // Minimum interest threshold
   }
 
-  private calculateSatisfactionGain(visitor: Visitor, tank: Tank, deltaTime: number): number {
+  private calculateSatisfactionGain(
+    visitor: Visitor,
+    tank: Tank,
+    deltaTime: number,
+  ): number {
     let satisfactionRate = 5; // Base satisfaction per second
 
     // Bonus for tank size preference
@@ -283,7 +318,7 @@ export class VisitorSystem {
     satisfactionRate *= tank.waterQuality;
 
     // Bonus for fish count (more interesting)
-    satisfactionRate *= (1 + tank.fishIds.length * 0.1);
+    satisfactionRate *= 1 + tank.fishIds.length * 0.1;
 
     return satisfactionRate * (deltaTime / 1000);
   }
@@ -292,10 +327,14 @@ export class VisitorSystem {
     let nearestEntrance: Entrance | null = null;
     let nearestDistance = Infinity;
 
-    for (const entrance of this.entrances.values()) {
-      const entrancePos = new THREE.Vector3(entrance.position.x * 2, 0.5, entrance.position.z * 2);
+    for (const entrance of Array.from(this.entrances.values())) {
+      const entrancePos = new THREE.Vector3(
+        entrance.position.x * 2,
+        0.5,
+        entrance.position.z * 2,
+      );
       const distance = visitor.position.distanceTo(entrancePos);
-      
+
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestEntrance = entrance;
@@ -307,23 +346,23 @@ export class VisitorSystem {
 
   private getRandomWalkablePosition(): THREE.Vector3 {
     // Generate random position avoiding tanks
-    let attempts = 10;
+    const attempts = 10;
     while (attempts > 0) {
       const x = Math.random() * (this.gridSize.width - 1) * 2;
       const z = Math.random() * (this.gridSize.depth - 1) * 2;
-      
+
       // Simple check - avoid tank positions (would need proper collision detection)
       const position = new THREE.Vector3(x, 0.5, z);
       return position; // For now, return any position
     }
-    
+
     return new THREE.Vector3(2, 0.5, 2); // Fallback to center
   }
 
   private generateRandomFishInterests(): string[] {
-    const allSpecies = ['goldfish', 'neon_tetra', 'angelfish', 'clownfish'];
+    const allSpecies = ["goldfish", "neon_tetra", "angelfish", "clownfish"];
     const interestCount = 1 + Math.floor(Math.random() * 3); // 1-3 interests
-    
+
     const interests: string[] = [];
     for (let i = 0; i < interestCount; i++) {
       const species = allSpecies[Math.floor(Math.random() * allSpecies.length)];
@@ -331,22 +370,26 @@ export class VisitorSystem {
         interests.push(species);
       }
     }
-    
+
     return interests;
   }
 
-  private generateRandomSizePreferences(): ('small' | 'medium' | 'large')[] {
-    const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
+  private generateRandomSizePreferences(): ("small" | "medium" | "large")[] {
+    const sizes: ("small" | "medium" | "large")[] = [
+      "small",
+      "medium",
+      "large",
+    ];
     const preferenceCount = 1 + Math.floor(Math.random() * 2); // 1-2 size preferences
-    
-    const result: ('small' | 'medium' | 'large')[] = [];
+
+    const result: ("small" | "medium" | "large")[] = [];
     for (let i = 0; i < preferenceCount; i++) {
       const size = sizes[Math.floor(Math.random() * sizes.length)];
       if (!result.includes(size)) {
         result.push(size);
       }
     }
-    
+
     return result;
   }
 

@@ -65,6 +65,8 @@ export interface VisitorPreferences {
 
 export interface Visitor {
   id: string;
+  name: string;
+  gender: 'male' | 'female';
   position: Vector3;
   velocity: Vector3;
   

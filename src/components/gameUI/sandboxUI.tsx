@@ -19,17 +19,23 @@ import {
 } from "@/components/ui/tooltip";
 import {
   AlertTriangle,
+  Clock,
   DollarSign,
   DoorOpen,
   Droplets,
+  Eye,
   Fish,
+  Heart,
   MapPin,
   Pause,
   Play,
   Plus,
   ShoppingCart,
+  Smile,
+  Star,
   Thermometer,
   Trash2,
+  Users,
   Wrench,
   X,
 } from "lucide-react";
@@ -48,7 +54,13 @@ import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
-import { FishSpecies, Fish as FishType } from "../../types/game.types";
+import {
+  FishSpecies,
+  Fish as FishType,
+  Visitor,
+  Entrance,
+} from "../../types/game.types";
+import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -99,13 +111,12 @@ const FISH_SPECIES: FishSpecies[] = [
 ];
 
 export const SandboxUI = () => {
-  const [showFishShop, setShowFishShop] = useState(false);
-  const [showSellConfirmation, setShowSellConfirmation] = useState(false);
   const [contextMessage, setContextMessage] = useState("");
 
   const {
     tanks,
     entrances,
+    visitors,
     money,
     spendMoney,
     addFish,
@@ -119,11 +130,29 @@ export const SandboxUI = () => {
     day,
   } = useGameStore();
   const { removeObject } = useGridStore();
-  const { placementMode, setPlacementMode, selectedTankId, selectTank } =
-    useUIStore();
+  const {
+    showFishShop,
+    setShowFishShop,
+    showSellConfirmation,
+    setShowSellConfirmation,
+    placementMode,
+    setPlacementMode,
+    selectedTankId,
+    selectedVisitorId,
+    selectedEntranceId,
+    selectedEntityType,
+    selectTank,
+    clearSelection,
+  } = useUIStore();
 
-  // Get the selected tank from the store
+  // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
+  const selectedVisitor = selectedVisitorId
+    ? visitors.get(selectedVisitorId)
+    : null;
+  const selectedEntrance = selectedEntranceId
+    ? entrances.get(selectedEntranceId)
+    : null;
 
   // This is so we can still have the tank info during the exit transition
   const displaySelectedTank = useMemo(() => {
@@ -208,7 +237,7 @@ export const SandboxUI = () => {
     }
 
     // Create new fish
-    const fishId = `fish_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const fishId = `fish_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const newFish: FishType = {
       id: fishId,
       species: species,
@@ -421,150 +450,8 @@ export const SandboxUI = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Tank Info Panel - Right Side */}
-        {
-          <Sheet open={!!selectedTank}>
-            <SheetContent
-              withOverlay={false}
-              withCloseButton={false}
-              side="right"
-              className="pointer-events-auto w-80 bg-white/50 p-2 shadow-lg backdrop-blur-sm"
-            >
-              <SheetHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <SheetTitle className="flex items-center gap-2 text-lg">
-                    <Droplets className="h-5 w-5 text-blue-600" />
-                    Tank Info
-                  </SheetTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => selectTank(null)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </SheetHeader>
-              <div className="space-y-4">
-                {/* Tank Size & Capacity */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Tank Size
-                    </label>
-                    <p className="text-lg font-semibold capitalize">
-                      {displaySelectedTank.size}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Capacity
-                    </label>
-                    <p className="text-lg font-semibold">
-                      {displaySelectedTank.capacity} fish
-                    </p>
-                  </div>
-                </div>
-
-                {/* Water Quality */}
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-600">
-                      Water Quality
-                    </label>
-                    <span className="text-sm font-semibold">
-                      {Math.round(displaySelectedTank.waterQuality * 100)}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={displaySelectedTank.waterQuality * 100}
-                    className="h-2"
-                  />
-                </div>
-
-                {/* Temperature */}
-                <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-2">
-                  <Thermometer className="h-4 w-4 text-blue-600" />
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Temperature
-                    </label>
-                    <p className="text-lg font-semibold">
-                      {displaySelectedTank.temperature}°C
-                    </p>
-                  </div>
-                </div>
-
-                {/* Maintenance Level */}
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                      <Wrench className="h-4 w-4" />
-                      Maintenance Level
-                    </label>
-                    <span className="text-sm font-semibold">
-                      {Math.round(displaySelectedTank.maintenanceLevel * 100)}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={displaySelectedTank.maintenanceLevel * 100}
-                    className="h-2"
-                  />
-                </div>
-
-                {/* Fish Count */}
-                <div className="flex items-center justify-between rounded-lg bg-green-50 p-2">
-                  <span className="text-sm font-medium text-green-700">
-                    Fish Count:
-                  </span>
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-100 text-green-800"
-                  >
-                    {displaySelectedTank.fishIds.length} /{" "}
-                    {displaySelectedTank.capacity}
-                  </Badge>
-                </div>
-
-                {/* Tank Position */}
-                <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
-                  <MapPin className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm font-medium text-gray-600">
-                    Position: Grid ({displaySelectedTank.position.x},{" "}
-                    {displaySelectedTank.position.z})
-                  </span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => setShowFishShop(true)}
-                    className="w-full"
-                    disabled={
-                      displaySelectedTank.fishIds.length >=
-                      displaySelectedTank.capacity
-                    }
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    {displaySelectedTank.fishIds.length >=
-                    displaySelectedTank.capacity
-                      ? "Tank Full"
-                      : "Buy Fish"}
-                  </Button>
-
-                  <Button
-                    onClick={() => setShowSellConfirmation(true)}
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Sell Tank (${tanks.size === 1 ? "6" : "3"})
-                  </Button>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        }
+        {/* Entity Info Panel - Right Side */}
+        <EntityInfoPanel />
 
         {/* Fish Shop Modal */}
         <Dialog open={showFishShop} onOpenChange={setShowFishShop}>

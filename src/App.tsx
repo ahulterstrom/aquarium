@@ -56,7 +56,7 @@ function App() {
               </Suspense>
             </Canvas>
             <Loader />
-            <Leva hidden={!isDebugging} collapsed flat />
+            {/* <Leva hidden={!isDebugging} collapsed flat /> */}
           </MenuProvider>
         </SceneProvider>
       </SoundProvider>
