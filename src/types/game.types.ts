@@ -18,6 +18,13 @@ export interface Tank {
   maintenanceLevel: number;
 }
 
+export interface Entrance {
+  id: string;
+  position: GridPosition;
+  isMainEntrance: boolean;
+  edge: 'north' | 'south' | 'east' | 'west';
+}
+
 export interface Fish {
   id: string;
   species: FishSpecies;
@@ -42,14 +49,50 @@ export interface FishSpecies {
   feedingInterval: number;
 }
 
+export type VisitorState = 'entering' | 'exploring' | 'viewing' | 'satisfied' | 'leaving';
+
+export interface VisitorInterests {
+  fishTypes: string[];        // Preferred fish species
+  tankSizes: ('small' | 'medium' | 'large')[];
+  decorationTypes: string[];  // Future: coral, plants, etc.
+}
+
+export interface VisitorPreferences {
+  viewingTime: { min: number; max: number };  // How long they look at tanks
+  walkingSpeed: number;
+  satisfactionThreshold: number;
+}
+
 export interface Visitor {
   id: string;
   position: Vector3;
+  velocity: Vector3;
+  
+  // State management
+  state: VisitorState;
+  targetPosition: Vector3 | null;
   targetTankId: string | null;
+  currentPath: GridPosition[] | null;
+  
+  // Interest & satisfaction system
+  interests: VisitorInterests;
+  satisfaction: number;
+  maxSatisfaction: number;
+  
+  // Timing & behavior
+  preferences: VisitorPreferences;
+  stateTimer: number;  // Time in current state
+  totalVisitTime: number;
+  
+  // Future extensibility (ready to use)
+  money: number;
   happiness: number;
   patience: number;
   moneySpent: number;
-  favoriteSpecies: string[];
+  
+  // Analytics & future features
+  tanksVisited: string[];
+  entryEntranceId: string;
 }
 
 export interface TankDecoration {
@@ -74,7 +117,8 @@ export interface GridCell {
   z: number;
   occupied: boolean;
   tankId?: string;
-  type: 'empty' | 'tank' | 'path' | 'decoration' | 'facility';
+  entranceId?: string;
+  type: 'empty' | 'tank' | 'path' | 'decoration' | 'facility' | 'entrance';
 }
 
 export interface Revenue {

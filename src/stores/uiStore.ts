@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 type UIModal = 'none' | 'tankDetails' | 'shop' | 'stats' | 'settings' | 'tutorial';
-type PlacementMode = 'none' | 'tank' | 'decoration' | 'path';
+type PlacementMode = 'none' | 'tank' | 'decoration' | 'path' | 'entrance';
 
 interface UIStore {
   // Selection

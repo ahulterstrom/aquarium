@@ -13,6 +13,7 @@ interface GridStore {
   
   // Placement validation
   canPlaceAt: (position: GridPosition, width: number, depth: number) => boolean;
+  canPlaceEntranceAt: (position: GridPosition) => boolean;
   placeObject: (position: GridPosition, width: number, depth: number, type: GridCell['type'], id?: string) => boolean;
   removeObject: (position: GridPosition, width: number, depth: number) => void;
   
@@ -24,6 +25,7 @@ interface GridStore {
   // Utilities
   getCellKey: (x: number, y: number, z: number) => string;
   parseCellKey: (key: string) => GridPosition;
+  getEdgeForPosition: (position: GridPosition) => 'north' | 'south' | 'east' | 'west' | null;
   reset: () => void;
 }
 
@@ -80,6 +82,24 @@ export const useGridStore = create<GridStore>()(
       
       return true;
     },
+
+    canPlaceEntranceAt: (position) => {
+      const state = get();
+      
+      // First check if the position is valid and not occupied
+      if (!state.canPlaceAt(position, 1, 1)) {
+        return false;
+      }
+      
+      // Check if position is on the exterior (perimeter) of the grid
+      const { width, depth } = state.gridSize;
+      const { x, z } = position;
+      
+      // Position must be on the edge of the grid
+      const isOnPerimeter = x === 0 || x === width - 1 || z === 0 || z === depth - 1;
+      
+      return isOnPerimeter;
+    },
     
     placeObject: (position, width, depth, type, id) => {
       const state = get();
@@ -99,7 +119,8 @@ export const useGridStore = create<GridStore>()(
               ...cell,
               occupied: true,
               type,
-              tankId: id,
+              tankId: type === 'tank' ? id : undefined,
+              entranceId: type === 'entrance' ? id : undefined,
             });
           }
         }
@@ -122,6 +143,7 @@ export const useGridStore = create<GridStore>()(
               occupied: false,
               type: 'empty',
               tankId: undefined,
+              entranceId: undefined,
             });
           }
         }
@@ -227,6 +249,19 @@ export const useGridStore = create<GridStore>()(
     parseCellKey: (key) => {
       const [x, y, z] = key.split(',').map(Number);
       return { x, y, z };
+    },
+
+    getEdgeForPosition: (position) => {
+      const { width, depth } = get().gridSize;
+      const { x, z } = position;
+      
+      // Determine which edge this position is on
+      if (z === 0) return 'north';           // Top edge
+      if (z === depth - 1) return 'south';   // Bottom edge  
+      if (x === 0) return 'west';            // Left edge
+      if (x === width - 1) return 'east';    // Right edge
+      
+      return null; // Not on an edge
     },
     
     reset: () => set({

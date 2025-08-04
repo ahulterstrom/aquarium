@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { processTick } from "./tickSystem";
-import { spawnVisitors } from "./visitorSystem";
+import { spawnVisitors, updateVisitors } from "./visitorSystem";
 import { updateWaterQuality } from "./waterSystem";
 import { TICK_RATES } from "@/lib/constants";
 
@@ -25,6 +25,9 @@ export function GameSystems() {
 
     // Update total game time
     updateGameTime(dt);
+
+    // Update visitors every frame
+    updateVisitors(dt);
 
     // Fast tick (1s) - Money and UI updates
     accumulator.current.tick += dt;

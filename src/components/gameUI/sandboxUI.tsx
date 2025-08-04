@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo, forwardRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -20,42 +18,37 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Fish,
-  DollarSign,
-  Plus,
-  X,
-  Thermometer,
-  Droplets,
-  Wrench,
-  MapPin,
-  ShoppingCart,
-  Home,
   AlertTriangle,
-  Trash2,
+  DollarSign,
+  DoorOpen,
+  Droplets,
+  Fish,
+  MapPin,
   Pause,
   Play,
-  FastForward,
+  Plus,
+  ShoppingCart,
+  Thermometer,
+  Trash2,
+  Wrench,
+  X,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 // Import game stores and types
+import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
-import { useSceneMachine } from "../../contexts/scene/useScene";
-import {
-  Tank as TankType,
-  FishSpecies,
-  Fish as FishType,
-} from "../../types/game.types";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
+import { FishSpecies, Fish as FishType } from "../../types/game.types";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -112,11 +105,13 @@ export const SandboxUI = () => {
 
   const {
     tanks,
+    entrances,
     money,
     spendMoney,
     addFish,
     updateTank,
     removeTank,
+    addEntrance,
     gameSpeed,
     setGameSpeed,
     isPaused,
@@ -147,8 +142,6 @@ export const SandboxUI = () => {
     );
   }, [selectedTank]);
 
-  const TANK_COST = 6;
-
   const handlePlaceTank = () => {
     if (money < TANK_COST) {
       setContextMessage("Not enough money to place a tank.");
@@ -162,6 +155,22 @@ export const SandboxUI = () => {
     } else {
       setPlacementMode("tank");
       setContextMessage("");
+    }
+  };
+
+  const handlePlaceEntrance = () => {
+    if (money < ENTRANCE_COST) {
+      setContextMessage("Not enough money to place an entrance.");
+      setTimeout(() => setContextMessage(""), 3000);
+      return;
+    }
+
+    if (placementMode === "entrance") {
+      setPlacementMode("none");
+      setContextMessage("");
+    } else {
+      setPlacementMode("entrance");
+      setContextMessage("Place entrance on the edge of the map");
     }
   };
 
@@ -344,6 +353,22 @@ export const SandboxUI = () => {
                 </Tooltip>
               </TooltipProvider>
 
+              {/* Place Entrance Button */}
+              {entrances.size === 0 && (
+                <Button
+                  onClick={handlePlaceEntrance}
+                  className={`w-full ${placementMode === "entrance" ? "bg-purple-500 hover:bg-purple-600" : ""}`}
+                  disabled={
+                    money < ENTRANCE_COST && placementMode !== "entrance"
+                  }
+                >
+                  <DoorOpen className="mr-2 h-4 w-4" />
+                  {placementMode === "entrance"
+                    ? "Cancel Placement"
+                    : `Place Entrance ($${ENTRANCE_COST})`}
+                </Button>
+              )}
+
               {/* Tank Count */}
               <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
                 <span className="text-sm font-medium text-blue-700">
@@ -383,6 +408,13 @@ export const SandboxUI = () => {
                 !contextMessage && (
                   <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                     Click on a grid cell to place a tank
+                  </div>
+                )}
+              {placementMode === "entrance" &&
+                money >= ENTRANCE_COST &&
+                !contextMessage && (
+                  <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 text-sm text-purple-700">
+                    Click on a grid cell to place an entrance
                   </div>
                 )}
             </div>

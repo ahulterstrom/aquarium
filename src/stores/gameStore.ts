@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
-import { GameState, Tank, Fish, Visitor } from "../types/game.types";
+import { GameState, Tank, Fish, Visitor, Entrance } from "../types/game.types";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
   fish: Map<string, Fish>;
   visitors: Map<string, Visitor>;
+  entrances: Map<string, Entrance>;
 
   // Time tracking
   gameTime: number; // Total game time in ms
@@ -40,10 +41,15 @@ interface GameStore extends GameState {
   removeVisitor: (id: string) => void;
   updateVisitor: (id: string, updates: Partial<Visitor>) => void;
 
+  addEntrance: (entrance: Entrance) => void;
+  removeEntrance: (id: string) => void;
+  updateEntrance: (id: string, updates: Partial<Entrance>) => void;
+
   // Queries
   getTank: (id: string) => Tank | undefined;
   getFish: (id: string) => Fish | undefined;
   getVisitor: (id: string) => Visitor | undefined;
+  getEntrance: (id: string) => Entrance | undefined;
   getFishInTank: (tankId: string) => Fish[];
 
   // Game state
@@ -66,6 +72,7 @@ export const useGameStore = create<GameStore>()(
       tanks: new Map(),
       fish: new Map(),
       visitors: new Map(),
+      entrances: new Map(),
       gameTime: 0,
       accumulators: {
         tick: 0,
@@ -205,6 +212,32 @@ export const useGameStore = create<GameStore>()(
 
       getVisitor: (id) => get().visitors.get(id),
 
+      addEntrance: (entrance) =>
+        set((state) => {
+          const entrances = new Map(state.entrances);
+          entrances.set(entrance.id, entrance);
+          return { entrances };
+        }),
+
+      removeEntrance: (id) =>
+        set((state) => {
+          const entrances = new Map(state.entrances);
+          entrances.delete(id);
+          return { entrances };
+        }),
+
+      updateEntrance: (id, updates) =>
+        set((state) => {
+          const entrances = new Map(state.entrances);
+          const entrance = entrances.get(id);
+          if (entrance) {
+            entrances.set(id, { ...entrance, ...updates });
+          }
+          return { entrances };
+        }),
+
+      getEntrance: (id) => get().entrances.get(id),
+
       getFishInTank: (tankId) => {
         const state = get();
         return Array.from(state.fish.values()).filter(
@@ -224,6 +257,7 @@ export const useGameStore = create<GameStore>()(
           tanks: new Map(),
           fish: new Map(),
           visitors: new Map(),
+          entrances: new Map(),
           gameTime: 0,
           accumulators: {
             tick: 0,

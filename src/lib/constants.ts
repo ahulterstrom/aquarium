@@ -5,3 +5,6 @@ export const TICK_RATES = {
   visitors: 10000, // 10 seconds - spawn visitors
   daily: 60000, // 60 seconds - daily revenue (1 minute for testing, could be longer)
 };
+
+export const TANK_COST = 6;
+export const ENTRANCE_COST = 0;
