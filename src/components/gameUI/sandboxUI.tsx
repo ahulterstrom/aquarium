@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Fish,
   DollarSign,
@@ -24,6 +31,10 @@ import {
   ShoppingCart,
   Home,
   AlertTriangle,
+  Trash2,
+  Pause,
+  Play,
+  FastForward,
 } from "lucide-react";
 
 // Import game stores and types
@@ -37,6 +48,14 @@ import {
   FishSpecies,
   Fish as FishType,
 } from "../../types/game.types";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -88,16 +107,45 @@ const FISH_SPECIES: FishSpecies[] = [
 
 export const SandboxUI = () => {
   const [showFishShop, setShowFishShop] = useState(false);
+  const [showSellConfirmation, setShowSellConfirmation] = useState(false);
   const [contextMessage, setContextMessage] = useState("");
 
-  const { tanks, money, spendMoney, addFish, updateTank } = useGameStore();
-  const { canPlaceAt, placeObject } = useGridStore();
+  const {
+    tanks,
+    money,
+    spendMoney,
+    addFish,
+    updateTank,
+    removeTank,
+    gameSpeed,
+    setGameSpeed,
+    isPaused,
+    setPaused,
+    day,
+  } = useGameStore();
+  const { removeObject } = useGridStore();
   const { placementMode, setPlacementMode, selectedTankId, selectTank } =
     useUIStore();
-  const sceneActor = useSceneMachine();
 
   // Get the selected tank from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
+
+  // This is so we can still have the tank info during the exit transition
+  const displaySelectedTank = useMemo(() => {
+    return (
+      selectedTank || {
+        id: "",
+        position: { x: 0, y: 0, z: 0 },
+        size: "medium",
+        waterQuality: 1,
+        temperature: 25,
+        capacity: 5,
+        fishIds: [],
+        decorations: [],
+        maintenanceLevel: 1,
+      }
+    );
+  }, [selectedTank]);
 
   const TANK_COST = 6;
 
@@ -113,8 +161,24 @@ export const SandboxUI = () => {
       setContextMessage("");
     } else {
       setPlacementMode("tank");
-      setContextMessage("Click on a grid cell to place a tank.");
+      setContextMessage("");
     }
+  };
+
+  const handleSellTank = () => {
+    if (!selectedTank) return;
+
+    // Remove from grid
+    removeObject(selectedTank.position, 1, 1);
+
+    // Remove tank (this also removes fish and adds refund money)
+    removeTank(selectedTank.id);
+
+    // Clear selection
+    selectTank(null);
+
+    // Close confirmation dialog
+    setShowSellConfirmation(false);
   };
 
   const handleBuyFishClick = (species: FishSpecies) => {
@@ -191,212 +255,284 @@ export const SandboxUI = () => {
     <div className="fixed inset-0">
       {/* Main UI Overlay */}
       <div className="relative h-full p-4">
-        {/* Aquarium Sandbox Panel - Top Left */}
-        <Card className="pointer-events-auto absolute top-4 left-4 w-80 bg-white/95 shadow-lg backdrop-blur-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Fish className="h-5 w-5 text-blue-600" />
-              Aquarium Sandbox
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Money Display */}
-            <div className="flex items-center gap-2 rounded-lg bg-green-50 p-2">
+        {/* Game Speed Controls - Top Center */}
+        <Card className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 border-white/20 bg-white/20 p-2 shadow-sm backdrop-blur-sm">
+          <CardContent className="flex items-center justify-center gap-2">
+            <div className="flex items-center gap-1">
               <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-semibold text-green-700">${money}</span>
+              <span className="font-semibold text-green-700">{money}</span>
             </div>
+            <Separator orientation="vertical" className="h-10" />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Day {day}</span>
+              <GameTimeDisplay />
+            </div>
+            <Separator orientation="vertical" className="h-10" />
 
-            {/* Place Tank Button */}
             <Button
-              onClick={handlePlaceTank}
-              className={`w-full ${placementMode === "tank" ? "bg-orange-500 hover:bg-orange-600" : ""}`}
-              disabled={money < TANK_COST && placementMode !== "tank"}
+              size="sm"
+              variant={isPaused ? "default" : "outline"}
+              onClick={() => setPaused(!isPaused)}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              {placementMode === "tank"
-                ? "Cancel Placement"
-                : `Place Tank ($${TANK_COST})`}
-            </Button>
-
-            {/* Tank Count */}
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
-              <span className="text-sm font-medium text-blue-700">
-                Tanks Placed:
-              </span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                {tanks.size}/9
-              </Badge>
-            </div>
-
-            {/* Context Message Area */}
-            {contextMessage && (
-              <div
-                className={`rounded-lg p-3 text-sm ${
-                  contextMessage.includes("Not enough") ||
-                  contextMessage.includes("maximum")
-                    ? "border border-red-200 bg-red-50 text-red-700"
-                    : contextMessage.includes("Click on")
-                      ? "border border-yellow-200 bg-yellow-50 text-yellow-700"
-                      : "border border-green-200 bg-green-50 text-green-700"
-                }`}
-              >
-                {(contextMessage.includes("Not enough") ||
-                  contextMessage.includes("maximum")) && (
-                  <AlertTriangle className="mr-2 inline h-4 w-4" />
-                )}
-                {contextMessage}
-              </div>
-            )}
-
-            {/* Placement Instructions */}
-            {placementMode === "tank" &&
-              money >= TANK_COST &&
-              !contextMessage && (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                  Click on a grid cell to place a tank
-                </div>
+              {isPaused ? (
+                <Play className="h-4 w-4" />
+              ) : (
+                <Pause className="h-4 w-4" />
               )}
-
-            {placementMode !== "tank" && money < TANK_COST && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <AlertTriangle className="mr-2 inline h-4 w-4" />
-                Not enough money to place a tank!
-              </div>
-            )}
-
-            {/* Back to Menu Button */}
-            <Button
-              variant="outline"
-              className="w-full bg-transparent"
-              onClick={() => sceneActor.send({ type: "BACK" })}
-            >
-              <Home className="mr-2 h-4 w-4" />
-              Back to Menu
             </Button>
+
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={gameSpeed === 1 ? "default" : "outline"}
+                onClick={() => setGameSpeed(1)}
+                disabled={isPaused}
+              >
+                1x
+              </Button>
+              <Button
+                size="sm"
+                variant={gameSpeed === 2 ? "default" : "outline"}
+                onClick={() => setGameSpeed(2)}
+                disabled={isPaused}
+              >
+                2x
+              </Button>
+              <Button
+                size="sm"
+                variant={gameSpeed === 3 ? "default" : "outline"}
+                onClick={() => setGameSpeed(3)}
+                disabled={isPaused}
+              >
+                3x
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Tank Info Panel - Right Side */}
-        {selectedTank && (
-          <Card className="pointer-events-auto absolute top-4 right-4 w-96 bg-white/95 shadow-lg backdrop-blur-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Droplets className="h-5 w-5 text-blue-600" />
-                  Tank Info
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => selectTank(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Tank Size & Capacity */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Tank Size
-                  </label>
-                  <p className="text-lg font-semibold capitalize">
-                    {selectedTank.size}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Capacity
-                  </label>
-                  <p className="text-lg font-semibold">
-                    {selectedTank.capacity} fish
-                  </p>
-                </div>
-              </div>
+        <Sheet open={true}>
+          <SheetContent
+            withOverlay={false}
+            withCloseButton={false}
+            side="left"
+            className="pointer-events-auto w-50 bg-white/50 shadow-lg backdrop-blur-sm"
+          >
+            <SheetTitle className="sr-only">Game UI</SheetTitle>
+            <div className="space-y-4 p-2">
+              {/* Place Tank Button */}
+              <TooltipProvider>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <span className="block w-full">
+                      <Button
+                        onClick={handlePlaceTank}
+                        className={`w-full ${placementMode === "tank" ? "bg-orange-500 hover:bg-orange-600" : ""}`}
+                        disabled={money < TANK_COST && placementMode !== "tank"}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        {placementMode === "tank"
+                          ? "Cancel Placement"
+                          : `Place Tank ($${TANK_COST})`}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {money < TANK_COST && placementMode !== "tank" && (
+                    <TooltipContent>
+                      <p>You need ${TANK_COST - money} more to place a tank</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
 
-              {/* Water Quality */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-600">
-                    Water Quality
-                  </label>
-                  <span className="text-sm font-semibold">
-                    {Math.round(selectedTank.waterQuality * 100)}%
-                  </span>
-                </div>
-                <Progress
-                  value={selectedTank.waterQuality * 100}
-                  className="h-2"
-                />
-              </div>
-
-              {/* Temperature */}
-              <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-2">
-                <Thermometer className="h-4 w-4 text-blue-600" />
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Temperature
-                  </label>
-                  <p className="text-lg font-semibold">
-                    {selectedTank.temperature}°C
-                  </p>
-                </div>
-              </div>
-
-              {/* Maintenance Level */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                    <Wrench className="h-4 w-4" />
-                    Maintenance Level
-                  </label>
-                  <span className="text-sm font-semibold">
-                    {Math.round(selectedTank.maintenanceLevel * 100)}%
-                  </span>
-                </div>
-                <Progress
-                  value={selectedTank.maintenanceLevel * 100}
-                  className="h-2"
-                />
-              </div>
-
-              {/* Fish Count */}
-              <div className="flex items-center justify-between rounded-lg bg-green-50 p-2">
-                <span className="text-sm font-medium text-green-700">
-                  Fish Count:
+              {/* Tank Count */}
+              <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
+                <span className="text-sm font-medium text-blue-700">
+                  Tanks Placed:
                 </span>
                 <Badge
                   variant="secondary"
-                  className="bg-green-100 text-green-800"
+                  className="bg-blue-100 text-blue-800"
                 >
-                  {selectedTank.fishIds.length} / {selectedTank.capacity}
+                  {tanks.size}/9
                 </Badge>
               </div>
 
-              {/* Tank Position */}
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
-                <MapPin className="h-4 w-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-600">
-                  Position: Grid ({selectedTank.position.x},{" "}
-                  {selectedTank.position.z})
-                </span>
-              </div>
+              {/* Context Message Area */}
+              {contextMessage && (
+                <div
+                  className={`rounded-lg p-3 text-sm ${
+                    contextMessage.includes("Not enough") ||
+                    contextMessage.includes("maximum")
+                      ? "border border-red-200 bg-red-50 text-red-700"
+                      : contextMessage.includes("Click on")
+                        ? "border border-yellow-200 bg-yellow-50 text-yellow-700"
+                        : "border border-green-200 bg-green-50 text-green-700"
+                  }`}
+                >
+                  {(contextMessage.includes("Not enough") ||
+                    contextMessage.includes("maximum")) && (
+                    <AlertTriangle className="mr-2 inline h-4 w-4" />
+                  )}
+                  {contextMessage}
+                </div>
+              )}
 
-              {/* Buy Fish Button */}
-              <Button
-                onClick={() => setShowFishShop(true)}
-                className="w-full"
-                disabled={selectedTank.fishIds.length >= selectedTank.capacity}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                {selectedTank.fishIds.length >= selectedTank.capacity
-                  ? "Tank Full"
-                  : "Buy Fish"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              {/* Placement Instructions */}
+              {placementMode === "tank" &&
+                money >= TANK_COST &&
+                !contextMessage && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                    Click on a grid cell to place a tank
+                  </div>
+                )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Tank Info Panel - Right Side */}
+        {
+          <Sheet open={!!selectedTank}>
+            <SheetContent
+              withOverlay={false}
+              withCloseButton={false}
+              side="right"
+              className="pointer-events-auto w-80 bg-white/50 p-2 shadow-lg backdrop-blur-sm"
+            >
+              <SheetHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <SheetTitle className="flex items-center gap-2 text-lg">
+                    <Droplets className="h-5 w-5 text-blue-600" />
+                    Tank Info
+                  </SheetTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => selectTank(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </SheetHeader>
+              <div className="space-y-4">
+                {/* Tank Size & Capacity */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Tank Size
+                    </label>
+                    <p className="text-lg font-semibold capitalize">
+                      {displaySelectedTank.size}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Capacity
+                    </label>
+                    <p className="text-lg font-semibold">
+                      {displaySelectedTank.capacity} fish
+                    </p>
+                  </div>
+                </div>
+
+                {/* Water Quality */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-600">
+                      Water Quality
+                    </label>
+                    <span className="text-sm font-semibold">
+                      {Math.round(displaySelectedTank.waterQuality * 100)}%
+                    </span>
+                  </div>
+                  <Progress
+                    value={displaySelectedTank.waterQuality * 100}
+                    className="h-2"
+                  />
+                </div>
+
+                {/* Temperature */}
+                <div className="flex items-center gap-3 rounded-lg bg-blue-50 p-2">
+                  <Thermometer className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">
+                      Temperature
+                    </label>
+                    <p className="text-lg font-semibold">
+                      {displaySelectedTank.temperature}°C
+                    </p>
+                  </div>
+                </div>
+
+                {/* Maintenance Level */}
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="flex items-center gap-1 text-sm font-medium text-gray-600">
+                      <Wrench className="h-4 w-4" />
+                      Maintenance Level
+                    </label>
+                    <span className="text-sm font-semibold">
+                      {Math.round(displaySelectedTank.maintenanceLevel * 100)}%
+                    </span>
+                  </div>
+                  <Progress
+                    value={displaySelectedTank.maintenanceLevel * 100}
+                    className="h-2"
+                  />
+                </div>
+
+                {/* Fish Count */}
+                <div className="flex items-center justify-between rounded-lg bg-green-50 p-2">
+                  <span className="text-sm font-medium text-green-700">
+                    Fish Count:
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 text-green-800"
+                  >
+                    {displaySelectedTank.fishIds.length} /{" "}
+                    {displaySelectedTank.capacity}
+                  </Badge>
+                </div>
+
+                {/* Tank Position */}
+                <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
+                  <MapPin className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-600">
+                    Position: Grid ({displaySelectedTank.position.x},{" "}
+                    {displaySelectedTank.position.z})
+                  </span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowFishShop(true)}
+                    className="w-full"
+                    disabled={
+                      displaySelectedTank.fishIds.length >=
+                      displaySelectedTank.capacity
+                    }
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    {displaySelectedTank.fishIds.length >=
+                    displaySelectedTank.capacity
+                      ? "Tank Full"
+                      : "Buy Fish"}
+                  </Button>
+
+                  <Button
+                    onClick={() => setShowSellConfirmation(true)}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Sell Tank (${tanks.size === 1 ? "6" : "3"})
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        }
 
         {/* Fish Shop Modal */}
         <Dialog open={showFishShop} onOpenChange={setShowFishShop}>
@@ -408,11 +544,11 @@ export const SandboxUI = () => {
               </DialogTitle>
             </DialogHeader>
 
-            {/* Selected Tank Summary */}
+            {/* Selected Tank */}
             {selectedTank && (
               <Card className="border-blue-200 bg-blue-50">
-                <CardContent className="pt-4">
-                  <h3 className="mb-2 font-semibold">Selected Tank Summary</h3>
+                <CardContent>
+                  <h3 className="mb-2 font-semibold">Selected Tank</h3>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <span className="text-gray-600">Size:</span>
@@ -531,6 +667,73 @@ export const SandboxUI = () => {
               <Button variant="outline" onClick={() => setShowFishShop(false)}>
                 Close Shop
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Sell Tank Confirmation Dialog */}
+        <Dialog
+          open={showSellConfirmation}
+          onOpenChange={setShowSellConfirmation}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Trash2 className="h-6 w-6 text-red-600" />
+                Sell Tank
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600" />
+                  <div>
+                    <h3 className="font-semibold text-red-800">Warning</h3>
+                    <p className="mt-1 text-sm text-red-700">
+                      Selling this tank will permanently remove all fish inside
+                      it. You cannot recover the fish or their value.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedTank && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    <strong>Tank Info:</strong>
+                  </p>
+                  <ul className="space-y-1 text-sm">
+                    <li>• Size: {selectedTank.size}</li>
+                    <li>• Fish count: {selectedTank.fishIds.length}</li>
+                    <li>• Refund amount: ${tanks.size === 1 ? "6" : "3"}</li>
+                  </ul>
+                  {tanks.size === 1 && (
+                    <p className="mt-2 rounded bg-green-50 p-2 text-sm text-green-700">
+                      <strong>Note:</strong> Since this is your last tank,
+                      you'll receive a full refund to help you rebuild.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowSellConfirmation(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleSellTank}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Sell Tank
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

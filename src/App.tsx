@@ -1,4 +1,11 @@
-import { Box, Html, Loader, PerspectiveCamera, Stage } from "@react-three/drei";
+import {
+  Box,
+  Html,
+  Loader,
+  PerspectiveCamera,
+  Stage,
+  Stars,
+} from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
 import { Suspense } from "react";
@@ -35,7 +42,6 @@ function App() {
             <Canvas
               shadows
               onPointerMissed={() => {
-                console.log("Canvas pointer missed");
                 if (placementMode !== "tank") {
                   selectTank(null);
                 }

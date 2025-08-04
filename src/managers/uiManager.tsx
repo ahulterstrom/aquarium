@@ -25,8 +25,6 @@ export const UIManager = () => {
   const actorRef = useSceneMachine();
   const state = useSelector(actorRef, (state) => state);
 
-  console.log("state", state);
-
   const transitions = useTransition(state.value, {
     from: () => ({
       opacity: 0,

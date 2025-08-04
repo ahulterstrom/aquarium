@@ -1,10 +1,17 @@
-import { PerspectiveCamera, MapControls } from "@react-three/drei";
+import {
+  PerspectiveCamera,
+  MapControls,
+  OrthographicCamera,
+  Stars,
+} from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Tank as TankType } from "../types/game.types";
+import { GameSystems } from "../components/systems/GameSystems";
+import { OrthoStars } from "@/components/orthoStars";
 
 const GridCell = ({
   x,
@@ -214,14 +221,25 @@ export const SandboxScene = () => {
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[6, 8, 6]} fov={50} />
+      {/* Game tick system */}
+      <GameSystems />
+
+      <OrthographicCamera
+        makeDefault
+        position={[10, 10, 10]}
+        zoom={50}
+        near={0.1}
+        far={1000}
+      />
+
+      {/* <OrthoStars layers={3} count={1000} area={[20, 20]} /> */}
       {/* <OrbitControls
         target={[2, 0, 2]}
         maxPolarAngle={Math.PI / 2.2}
         minDistance={5}
         maxDistance={15}
       /> */}
-      <MapControls makeDefault />
+      <MapControls makeDefault enableZoom={false} />
 
       {/* Lighting */}
       <ambientLight intensity={0.6} />
@@ -250,21 +268,23 @@ export const SandboxScene = () => {
       </mesh>
 
       {/* Grid */}
-      <group
-        onPointerMove={(e) => {
-          if (placementMode === "tank") {
-            const point = e.point;
-            const gridX = Math.floor((point.x + 1) / 2);
-            const gridZ = Math.floor((point.z + 1) / 2);
-            if (gridX >= 0 && gridX < 3 && gridZ >= 0 && gridZ < 3) {
-              setHoveredCell({ x: gridX, z: gridZ });
+      {placementMode === "tank" && (
+        <group
+          onPointerMove={(e) => {
+            if (placementMode === "tank") {
+              const point = e.point;
+              const gridX = Math.floor((point.x + 1) / 2);
+              const gridZ = Math.floor((point.z + 1) / 2);
+              if (gridX >= 0 && gridX < 3 && gridZ >= 0 && gridZ < 3) {
+                setHoveredCell({ x: gridX, z: gridZ });
+              }
             }
-          }
-        }}
-        onPointerLeave={() => setHoveredCell(null)}
-      >
-        {renderGrid()}
-      </group>
+          }}
+          onPointerLeave={() => setHoveredCell(null)}
+        >
+          {renderGrid()}
+        </group>
+      )}
 
       {/* Tanks */}
       {Array.from(tanks.values()).map((tank) => (
