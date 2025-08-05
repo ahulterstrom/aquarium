@@ -200,9 +200,29 @@ export const useGridStore = createSelectors(
           console.log(`No cell at ${x},${y},${z}`);
           return false;
         }
-        const walkable = cell.type === "path" || cell.type === "empty";
-        // console.log(`Cell ${x},${y},${z}: type=${cell.type}, occupied=${cell.occupied}, walkable=${walkable}`);
-        return walkable;
+        
+        // First check basic walkability
+        if (cell.occupied || (cell.type !== "path" && cell.type !== "empty")) {
+          return false;
+        }
+        
+        // Then check distance to nearby tanks (1.2 tile buffer)
+        const checkRadius = 1; // Check cells within 1 tile
+        for (let dx = -checkRadius; dx <= checkRadius; dx++) {
+          for (let dz = -checkRadius; dz <= checkRadius; dz++) {
+            if (dx === 0 && dz === 0) continue; // Skip self
+            
+            const nearbyCell = get().getCell(x + dx, y, z + dz);
+            if (nearbyCell && nearbyCell.type === "tank") {
+              // For diagonal neighbors, prevent movement (prevents corner cutting)
+              if (Math.abs(dx) === 1 && Math.abs(dz) === 1) {
+                return false;
+              }
+            }
+          }
+        }
+        
+        return true;
       },
 
       findPath: (start, end) => {

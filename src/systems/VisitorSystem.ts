@@ -134,6 +134,9 @@ export class VisitorSystem {
       case "thinking":
         this.handleThinkingState(visitor, deltaTime);
         break;
+      case "travelingToPoi":
+        this.handleTravelingToPoiState(visitor, deltaTime);
+        break;
       case "viewing":
         this.handleViewingState(visitor, deltaTime);
         break;
@@ -189,15 +192,22 @@ export class VisitorSystem {
     // Stop moving and think for 1-2 seconds
     visitor.velocity.set(0, 0, 0);
 
+    // Set thinking duration when first entering this state
+    if (!visitor.thinkingDuration) {
+      visitor.thinkingDuration = 1000 + Math.random() * 1000; // 1-2 seconds
+    }
+
     // After thinking time, decide what to do next
-    if (visitor.stateTimer > 1000 + Math.random() * 1000) {
-      // 1-2 seconds
+    if (visitor.stateTimer > visitor.thinkingDuration) {
+      console.log("Done thinking");
       // Random choice between exploring and viewing a POI
-      if (Math.random() < 0.5) {
+      if (Math.random() < 0.3) {
+        console.log("Choosing to explore");
         // Choose to explore
         this.transitionToState(visitor, "exploring");
       } else {
-        // Choose to view a POI
+        console.log("Choosing to view a POI");
+        // Choose to visit a POI
         const poi = this.poiSystem.getRandomPOI();
         if (poi) {
           // Calculate viewing position for this POI
@@ -205,76 +215,122 @@ export class VisitorSystem {
           if (viewingPosition) {
             visitor.targetPosition = viewingPosition;
             visitor.targetPOIId = poi.id;
-            this.transitionToState(visitor, "viewing");
+            this.transitionToState(visitor, "travelingToPoi");
           } else {
             // If no valid viewing position, go explore instead
+            console.warn(
+              "No valid viewing position for POI, switching to exploring",
+            );
             this.transitionToState(visitor, "exploring");
           }
         } else {
           // No POIs available, go explore
+          console.warn("No POIs available, switching to exploring");
           this.transitionToState(visitor, "exploring");
         }
       }
     }
   }
 
-  private handleViewingState(visitor: Visitor, deltaTime: number) {
-    // If we have a target position, navigate to it first
-    if (visitor.targetPosition && !this.isAtTarget(visitor)) {
-      this.updateVisitorMovement(visitor, deltaTime);
+  private handleTravelingToPoiState(visitor: Visitor, deltaTime: number) {
+    // Navigate to the POI viewing position
+    if (!visitor.targetPosition) {
+      // No target position, go back to thinking
+      console.error(
+        "No target position for traveling to POI, switching to thinking",
+      );
+      this.transitionToState(visitor, "thinking");
       return;
     }
 
-    // If we have a target POI, check if we're close enough to view it
-    if (visitor.targetPOIId) {
-      const poi = this.poiSystem
-        .getPOIs()
-        .find((p) => p.id === visitor.targetPOIId);
-      if (
-        poi &&
-        this.poiSystem.isWithinViewingDistance(visitor.position, poi)
-      ) {
-        // Stop moving and look at the POI
-        visitor.velocity.set(0, 0, 0);
+    this.updateVisitorMovement(visitor, deltaTime);
 
-        if (poi.type === "tank") {
-          const tank = poi.object as Tank;
-          // Calculate satisfaction gain from this tank
-          const satisfactionGain = this.calculateSatisfactionGain(
-            visitor,
-            tank,
-            deltaTime,
+    // Check if we've reached our viewing position
+    if (this.isAtTarget(visitor)) {
+      // Now check if we're close enough to the POI to view it
+      if (visitor.targetPOIId) {
+        const poi = this.poiSystem
+          .getPOIs()
+          .find((p) => p.id === visitor.targetPOIId);
+        if (
+          poi &&
+          this.poiSystem.isWithinViewingDistance(visitor.position, poi)
+        ) {
+          // We're at the viewing position and close enough to the POI
+          this.transitionToState(visitor, "viewing");
+        } else {
+          console.error(
+            `POI ${visitor.targetPOIId} not found or not close enough to view`,
           );
-          visitor.satisfaction = Math.min(
-            visitor.satisfaction + satisfactionGain,
-            visitor.maxSatisfaction,
-          );
-
-          // Add to visited tanks
-          if (!visitor.tanksVisited.includes(tank.id)) {
-            visitor.tanksVisited.push(tank.id);
-          }
-        }
-
-        // After viewing for a while, go back to thinking
-        const viewingTime = visitor.preferences.viewingTime;
-        const minViewTime =
-          viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
-
-        if (visitor.stateTimer > minViewTime) {
-          if (visitor.satisfaction >= visitor.maxSatisfaction) {
-            this.transitionToState(visitor, "satisfied");
-          } else {
-            this.transitionToState(visitor, "thinking");
-          }
+          // Something went wrong, go back to thinking
+          this.transitionToState(visitor, "thinking");
         }
       } else {
-        // Not close enough to POI, go back to thinking
+        console.error(
+          "No target POI ID set when transitioning to viewing state",
+        );
+        // No POI target, go back to thinking
         this.transitionToState(visitor, "thinking");
       }
-    } else {
-      // No target POI, go back to thinking
+    }
+
+    // Timeout protection - if we've been traveling too long, give up
+    if (visitor.stateTimer > 10000) {
+      // 10 seconds
       this.transitionToState(visitor, "thinking");
+    }
+  }
+
+  private handleViewingState(visitor: Visitor, deltaTime: number) {
+    // We should already be at the viewing position and have a POI
+    if (!visitor.targetPOIId) {
+      // No POI to view, go back to thinking
+      this.transitionToState(visitor, "thinking");
+      return;
+    }
+
+    // Stop moving and look at the POI
+    visitor.velocity.set(0, 0, 0);
+
+    const poi = this.poiSystem
+      .getPOIs()
+      .find((p) => p.id === visitor.targetPOIId);
+    if (!poi) {
+      // POI doesn't exist anymore, go back to thinking
+      this.transitionToState(visitor, "thinking");
+      return;
+    }
+
+    if (poi.type === "tank") {
+      const tank = poi.object as Tank;
+      // Calculate satisfaction gain from this tank
+      const satisfactionGain = this.calculateSatisfactionGain(
+        visitor,
+        tank,
+        deltaTime,
+      );
+      visitor.satisfaction = Math.min(
+        visitor.satisfaction + satisfactionGain,
+        visitor.maxSatisfaction,
+      );
+
+      // Add to visited tanks
+      if (!visitor.tanksVisited.includes(tank.id)) {
+        visitor.tanksVisited.push(tank.id);
+      }
+    }
+
+    // After viewing for a while, go back to thinking
+    const viewingTime = visitor.preferences.viewingTime;
+    const minViewTime =
+      viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
+
+    if (visitor.stateTimer > minViewTime) {
+      if (visitor.satisfaction >= visitor.maxSatisfaction) {
+        this.transitionToState(visitor, "satisfied");
+      } else {
+        this.transitionToState(visitor, "thinking");
+      }
     }
   }
 
@@ -501,17 +557,22 @@ export class VisitorSystem {
     visitor.state = newState;
     visitor.stateTimer = 0;
 
-    // For leaving state, preserve the target position (entrance)
-    if (newState !== "leaving") {
+    // For leaving and travelingToPoi states, preserve the target position
+    if (newState !== "leaving" && newState !== "travelingToPoi") {
       visitor.targetPosition = null;
     } else {
-      // Keep the current target (should be the entrance) for leaving state
+      // Keep the current target for leaving state (entrance) and travelingToPoi state (viewing position)
       visitor.targetPosition = previousTarget;
     }
 
-    // Clear POI reference unless transitioning to viewing state
-    if (newState !== "viewing") {
+    // Clear POI reference unless transitioning to viewing or travelingToPoi state
+    if (newState !== "viewing" && newState !== "travelingToPoi") {
       visitor.targetPOIId = null;
+    }
+
+    // Clear thinking duration when leaving thinking state
+    if (visitor.state === "thinking") {
+      visitor.thinkingDuration = undefined;
     }
 
     // Clear pathfinding data when changing states

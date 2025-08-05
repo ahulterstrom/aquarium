@@ -24,6 +24,8 @@ const VisitorMesh = ({
         return 0xffff00; // Yellow - looking around
       case "thinking":
         return 0x800080; // Purple - deciding what to do
+      case "travelingToPoi":
+        return 0x00ffff; // Cyan - heading to a POI
       case "viewing":
         return 0x0000ff; // Blue - engaged with content
       case "satisfied":

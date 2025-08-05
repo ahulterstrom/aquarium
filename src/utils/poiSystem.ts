@@ -68,40 +68,73 @@ export class POISystem {
     if (poi.type !== "tank") return null;
 
     const tankPos = poi.position;
-    const viewingDistance = 1; // Half a tile as specified
 
-    // 4 cardinal directions: North, East, South, West
+    // Convert tank position to grid coordinates
+    const tankGridPos = {
+      x: Math.round(tankPos.x / 2),
+      y: 0,
+      z: Math.round(tankPos.z / 2),
+    };
+
+    // 4 cardinal directions in grid coordinates: North, East, South, West
     const directions = [
-      { x: 0, z: -viewingDistance }, // North
-      { x: viewingDistance, z: 0 }, // East
-      { x: 0, z: viewingDistance }, // South
-      { x: -viewingDistance, z: 0 }, // West
+      { x: 0, z: -1 }, // North
+      { x: 1, z: 0 }, // East
+      { x: 0, z: 1 }, // South
+      { x: -1, z: 0 }, // West
     ];
 
     // Shuffle directions to get random viewing positions
     const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
 
     for (const direction of shuffledDirections) {
-      const viewingPos = new THREE.Vector3(
-        tankPos.x + direction.x,
-        0.5,
-        tankPos.z + direction.z,
-      );
-
-      // Convert to grid coordinates to check if walkable
-      const gridPos: GridPosition = {
-        x: Math.round(viewingPos.x / 2),
+      // Calculate grid position for viewing
+      const viewingGridPos: GridPosition = {
+        x: tankGridPos.x + direction.x,
         y: 0,
-        z: Math.round(viewingPos.z / 2),
+        z: tankGridPos.z + direction.z,
       };
 
       // Check if position is walkable
-      if (this.gridStore.isWalkable(gridPos.x, gridPos.y, gridPos.z)) {
-        return viewingPos;
+      if (
+        this.gridStore.isWalkable(
+          viewingGridPos.x,
+          viewingGridPos.y,
+          viewingGridPos.z,
+        )
+      ) {
+        const randomDistance = 0.2 + Math.random() * 0.6; // Random offset for viewing position
+        const randomSideOffset = Math.random() * 1.8 - 0.9;
+        // Convert back to world position and position on the half of tile closer to POI
+        const offsetX =
+          direction.x > 0
+            ? -randomDistance
+            : direction.x < 0
+              ? randomDistance
+              : randomSideOffset;
+        const offsetZ =
+          direction.z > 0
+            ? -randomDistance
+            : direction.z < 0
+              ? randomDistance
+              : randomSideOffset;
+
+        const worldPos = new THREE.Vector3(
+          viewingGridPos.x * 2 + offsetX,
+          0.5,
+          viewingGridPos.z * 2 + offsetZ,
+        );
+
+        console.log(
+          `Found valid viewing position at grid (${viewingGridPos.x}, ${viewingGridPos.z}), world (${worldPos.x}, ${worldPos.z})`,
+        );
+        return worldPos;
       }
     }
 
-    // If no cardinal direction works, return null
+    console.error(
+      `No valid viewing position found for tank at grid (${tankGridPos.x}, ${tankGridPos.z})`,
+    );
     return null;
   }
 
@@ -142,6 +175,6 @@ export class POISystem {
    */
   isWithinViewingDistance(visitorPos: THREE.Vector3, poi: POI): boolean {
     const distance = visitorPos.distanceTo(poi.position);
-    return distance <= 1; // Half a tile as specified
+    return distance <= 2.5; // Allow viewing from adjacent tiles (2 units) plus some buffer
   }
 }

@@ -53,6 +53,7 @@ export type VisitorState =
   | "entering"
   | "exploring"
   | "thinking"
+  | "travelingToPoi"
   | "viewing"
   | "satisfied"
   | "leaving";
@@ -93,6 +94,7 @@ export interface Visitor {
   preferences: VisitorPreferences;
   stateTimer: number; // Time in current state
   totalVisitTime: number;
+  thinkingDuration?: number; // Duration for current thinking state
 
   // Future extensibility (ready to use)
   money: number;
