@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { GameState, Tank, Fish, Visitor, Entrance } from "../types/game.types";
+import { createSelectors } from "@/stores/utils";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
@@ -65,9 +66,9 @@ const initialState: GameState = {
   gameSpeed: 1,
 };
 
-export const useGameStore = create<GameStore>()(
-  devtools(
-    subscribeWithSelector((set, get) => ({
+export const useGameStore = createSelectors(
+  create<GameStore>()(
+    devtools((set, get) => ({
       ...initialState,
       tanks: new Map(),
       fish: new Map(),

@@ -1,4 +1,4 @@
-import { Vector3 } from 'three';
+import { Vector3 } from "three";
 
 export interface GridPosition {
   x: number;
@@ -9,7 +9,7 @@ export interface GridPosition {
 export interface Tank {
   id: string;
   position: GridPosition;
-  size: 'small' | 'medium' | 'large';
+  size: "small" | "medium" | "large";
   waterQuality: number;
   temperature: number;
   capacity: number;
@@ -22,7 +22,7 @@ export interface Entrance {
   id: string;
   position: GridPosition;
   isMainEntrance: boolean;
-  edge: 'north' | 'south' | 'east' | 'west';
+  edge: "north" | "south" | "east" | "west";
 }
 
 export interface Fish {
@@ -41,24 +41,29 @@ export interface FishSpecies {
   id: string;
   name: string;
   price: number;
-  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
+  rarity: "common" | "uncommon" | "rare" | "legendary";
   preferredTemperature: { min: number; max: number };
-  size: 'small' | 'medium' | 'large';
+  size: "small" | "medium" | "large";
   schooling: boolean;
   aggressiveness: number;
   feedingInterval: number;
 }
 
-export type VisitorState = 'entering' | 'exploring' | 'viewing' | 'satisfied' | 'leaving';
+export type VisitorState =
+  | "entering"
+  | "exploring"
+  | "viewing"
+  | "satisfied"
+  | "leaving";
 
 export interface VisitorInterests {
-  fishTypes: string[];        // Preferred fish species
-  tankSizes: ('small' | 'medium' | 'large')[];
-  decorationTypes: string[];  // Future: coral, plants, etc.
+  fishTypes: string[]; // Preferred fish species
+  tankSizes: ("small" | "medium" | "large")[];
+  decorationTypes: string[]; // Future: coral, plants, etc.
 }
 
 export interface VisitorPreferences {
-  viewingTime: { min: number; max: number };  // How long they look at tanks
+  viewingTime: { min: number; max: number }; // How long they look at tanks
   walkingSpeed: number;
   satisfactionThreshold: number;
 }
@@ -66,40 +71,41 @@ export interface VisitorPreferences {
 export interface Visitor {
   id: string;
   name: string;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   position: Vector3;
   velocity: Vector3;
-  
+
   // State management
   state: VisitorState;
   targetPosition: Vector3 | null;
   targetTankId: string | null;
   currentPath: GridPosition[] | null;
-  
+
   // Interest & satisfaction system
   interests: VisitorInterests;
   satisfaction: number;
   maxSatisfaction: number;
-  
+
   // Timing & behavior
   preferences: VisitorPreferences;
-  stateTimer: number;  // Time in current state
+  stateTimer: number; // Time in current state
   totalVisitTime: number;
-  
+
   // Future extensibility (ready to use)
   money: number;
   happiness: number;
   patience: number;
   moneySpent: number;
-  
+
   // Analytics & future features
   tanksVisited: string[];
+  thoughts: string[];
   entryEntranceId: string;
 }
 
 export interface TankDecoration {
   id: string;
-  type: 'plant' | 'rock' | 'coral' | 'castle' | 'treasure';
+  type: "plant" | "rock" | "coral" | "castle" | "treasure";
   position: Vector3;
   scale: number;
 }
@@ -120,7 +126,7 @@ export interface GridCell {
   occupied: boolean;
   tankId?: string;
   entranceId?: string;
-  type: 'empty' | 'tank' | 'path' | 'decoration' | 'facility' | 'entrance';
+  type: "empty" | "tank" | "path" | "decoration" | "facility" | "entrance";
 }
 
 export interface Revenue {

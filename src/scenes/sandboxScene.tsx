@@ -4,61 +4,11 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GameSystems } from "../components/systems/GameSystems";
+import { Grid } from "../components/game/Grid";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType, Visitor } from "../types/game.types";
-
-const GridCell = ({
-  x,
-  z,
-  onClick,
-  isHighlighted,
-  isValidPlacement = true,
-}: {
-  x: number;
-  z: number;
-  onClick: (x: number, z: number) => void;
-  isHighlighted: boolean;
-  isValidPlacement?: boolean;
-}) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  return (
-    <mesh
-      ref={meshRef}
-      position={[x * 2, 0, z * 2]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(x, z);
-      }}
-      onPointerEnter={() => {
-        if (meshRef.current) {
-          (
-            meshRef.current.material as THREE.MeshStandardMaterial
-          ).emissive.setHex(0x222222);
-        }
-      }}
-      onPointerLeave={() => {
-        if (meshRef.current) {
-          (
-            meshRef.current.material as THREE.MeshStandardMaterial
-          ).emissive.setHex(0x000000);
-        }
-      }}
-    >
-      <planeGeometry args={[1.8, 1.8]} />
-      <meshStandardMaterial
-        color={
-          isHighlighted ? (isValidPlacement ? 0x33aa33 : 0xaa3333) : 0x666666
-        }
-        transparent
-        opacity={0.8}
-      />
-    </mesh>
-  );
-};
 
 const TankMesh = ({
   tank,
@@ -287,15 +237,6 @@ const VisitorMesh = ({
     }
   };
 
-  // Add gentle bobbing animation
-  useFrame((state) => {
-    if (meshRef.current) {
-      const time = state.clock.getElapsedTime();
-      meshRef.current.position.y =
-        visitor.position.y + Math.sin(time * 2 + visitor.position.x) * 0.1;
-    }
-  });
-
   return (
     <mesh
       ref={meshRef}
@@ -335,22 +276,36 @@ const VisitorMesh = ({
 };
 
 export const SandboxScene = () => {
+  console.log("Rendering SandboxScene");
   const [hoveredCell, setHoveredCell] = useState<{
     x: number;
+    y: number;
     z: number;
   } | null>(null);
 
-  const { tanks, entrances, visitors, addTank, addEntrance, spendMoney } =
-    useGameStore();
-  const {
-    initializeGrid,
-    canPlaceAt,
-    canPlaceEntranceAt,
-    placeObject,
-    getEdgeForPosition,
-  } = useGridStore();
-  const { placementMode, selectedTankId, selectTank, selectVisitor, selectEntrance, clearSelection, setPlacementMode } =
-    useUIStore();
+  const tanks = useGameStore.use.tanks();
+  const entrances = useGameStore.use.entrances();
+  const visitors = useGameStore.use.visitors();
+  const addTank = useGameStore.use.addTank();
+  const addEntrance = useGameStore.use.addEntrance();
+  const spendMoney = useGameStore.use.spendMoney();
+
+  const cells = useGridStore.use.cells();
+  const initializeGrid = useGridStore.use.initializeGrid();
+  const canPlaceAt = useGridStore.use.canPlaceAt();
+  const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
+  const placeObject = useGridStore.use.placeObject();
+  const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
+
+  const placementMode = useUIStore.use.placementMode();
+  const selectedTankId = useUIStore.use.selectedTankId();
+  const selectTank = useUIStore.use.selectTank();
+  const selectVisitor = useUIStore.use.selectVisitor();
+  const selectEntrance = useUIStore.use.selectEntrance();
+  const clearSelection = useUIStore.use.clearSelection();
+  const setPlacementMode = useUIStore.use.setPlacementMode();
+
+  console.log("cells:", cells);
 
   useEffect(() => {
     initializeGrid(3, 1, 3);
@@ -416,40 +371,6 @@ export const SandboxScene = () => {
     selectVisitor(visitor.id);
   };
 
-  const renderGrid = () => {
-    const cells = [];
-    for (let x = 0; x < 3; x++) {
-      for (let z = 0; z < 3; z++) {
-        const isHighlighted =
-          hoveredCell?.x === x &&
-          hoveredCell?.z === z &&
-          (placementMode === "tank" || placementMode === "entrance");
-
-        // Check if this is a valid placement position
-        let isValidPlacement = true;
-        if (isHighlighted) {
-          if (placementMode === "tank") {
-            isValidPlacement = canPlaceAt({ x, y: 0, z }, 1, 1);
-          } else if (placementMode === "entrance") {
-            isValidPlacement = canPlaceEntranceAt({ x, y: 0, z });
-          }
-        }
-
-        cells.push(
-          <GridCell
-            key={`${x}-${z}`}
-            x={x}
-            z={z}
-            onClick={handleCellClick}
-            isHighlighted={isHighlighted}
-            isValidPlacement={isValidPlacement}
-          />,
-        );
-      }
-    }
-    return cells;
-  };
-
   return (
     <>
       {/* Game tick system */}
@@ -482,21 +403,29 @@ export const SandboxScene = () => {
         shadow-mapSize-height={2048}
       />
 
-      {/* Ground */}
-      <mesh
-        position={[2, -0.01, 2]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        receiveShadow
-        onClick={(e) => {
-          e.stopPropagation();
-          if (placementMode !== "tank" && placementMode !== "entrance") {
-            clearSelection();
-          }
-        }}
-      >
-        <planeGeometry args={[8, 8]} />
-        <meshStandardMaterial color={0x8b4513} />
-      </mesh>
+      {/* Ground tiles - one for each grid cell */}
+      {Array.from(cells.values()).map((cell) => {
+        // Only render ground tiles for y=0 (ground level)
+        if (cell.y !== 0) return null;
+
+        return (
+          <mesh
+            key={`ground-${cell.x}-${cell.z}`}
+            position={[cell.x * 2, -0.01, cell.z * 2]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            receiveShadow
+            onClick={(e) => {
+              e.stopPropagation();
+              if (placementMode !== "tank" && placementMode !== "entrance") {
+                clearSelection();
+              }
+            }}
+          >
+            <planeGeometry args={[1.95, 1.95]} />
+            <meshStandardMaterial color={0x8b4513} />
+          </mesh>
+        );
+      })}
 
       {/* Grid */}
       {(placementMode === "tank" || placementMode === "entrance") && (
@@ -507,13 +436,13 @@ export const SandboxScene = () => {
               const gridX = Math.floor((point.x + 1) / 2);
               const gridZ = Math.floor((point.z + 1) / 2);
               if (gridX >= 0 && gridX < 3 && gridZ >= 0 && gridZ < 3) {
-                setHoveredCell({ x: gridX, z: gridZ });
+                setHoveredCell({ x: gridX, y: 0, z: gridZ });
               }
             }
           }}
           onPointerLeave={() => setHoveredCell(null)}
         >
-          {renderGrid()}
+          <Grid hoveredCell={hoveredCell} onCellClick={handleCellClick} />
         </group>
       )}
 

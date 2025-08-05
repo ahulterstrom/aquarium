@@ -4,13 +4,11 @@ import { useTransition, animated } from "@react-spring/three";
 import { useSceneMachine } from "@/contexts/scene/useScene";
 import { MainMenuScene } from "@/scenes/mainMenuScene";
 import { CharacterSelectScene } from "@/scenes/characterSelectScene";
-import { MapScene } from "@/scenes/mapScene";
 import { SandboxScene } from "@/scenes/sandboxScene";
 
 const sceneMap: Record<string, React.FC> = {
   mainMenu: MainMenuScene,
   characterSelection: CharacterSelectScene,
-  map: MapScene,
   battle: MainMenuScene,
   battleResults: MainMenuScene,
   sandbox: SandboxScene,

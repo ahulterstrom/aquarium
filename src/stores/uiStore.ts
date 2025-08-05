@@ -1,3 +1,4 @@
+import { createSelectors } from "@/stores/utils";
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 
@@ -78,9 +79,9 @@ interface Notification {
   duration?: number;
 }
 
-export const useUIStore = create<UIStore>()(
-  devtools(
-    subscribeWithSelector((set, get) => ({
+export const useUIStore = createSelectors(
+  create<UIStore>()(
+    devtools((set, get) => ({
       selectedTankId: null,
       selectedVisitorId: null,
       selectedEntranceId: null,

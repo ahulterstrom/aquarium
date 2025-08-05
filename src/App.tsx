@@ -1,29 +1,19 @@
-import {
-  Box,
-  Html,
-  Loader,
-  PerspectiveCamera,
-  Stage,
-  Stars,
-} from "@react-three/drei";
+import { Loader } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
 import { Suspense } from "react";
 
-import { CustomButton } from "@/components/customButton";
-import { CustomCameraControls } from "@/components/customCameraControls";
 import { DebugControls } from "@/components/debugControls";
-import { MenuManager } from "@/managers/menuManager";
 import { SoundProvider } from "@/contexts/sound/soundContextProvider";
+import { MenuManager } from "@/managers/menuManager";
 import { useGame } from "@/stores/useGame";
 
-import "./App.css";
 import { MenuProvider } from "@/contexts/menu/menuContextProvider";
-import { SceneManager } from "@/managers/sceneManager";
 import { SceneProvider } from "@/contexts/scene/sceneContextProvider";
+import { SceneManager } from "@/managers/sceneManager";
 import { UIManager } from "@/managers/uiManager";
-import { useGridStore } from "@/stores/gridStore";
 import { useUIStore } from "@/stores/uiStore";
+import "./App.css";
 
 function App() {
   const isDebugging = useGame.use.isDebugging();
@@ -56,7 +46,7 @@ function App() {
               </Suspense>
             </Canvas>
             <Loader />
-            {/* <Leva hidden={!isDebugging} collapsed flat /> */}
+            <Leva hidden={true} collapsed flat />
           </MenuProvider>
         </SceneProvider>
       </SoundProvider>

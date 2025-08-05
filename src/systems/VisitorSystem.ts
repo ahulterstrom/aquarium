@@ -7,26 +7,47 @@ import {
   GridPosition,
   VisitorInterests,
   VisitorPreferences,
+  GridCell,
 } from "../types/game.types";
 import { generateVisitorName } from "../utils/nameGenerator";
+import { SteeringBehaviors, SteeringForce } from "../utils/steeringBehaviors";
+import { WaypointSystem, Waypoint } from "../utils/waypointSystem";
+import { nanoid } from "nanoid";
+
+export interface GridStoreInterface {
+  gridSize: { width: number; height: number; depth: number };
+  getCell: (x: number, y: number, z: number) => GridCell | undefined;
+  isWalkable: (x: number, y: number, z: number) => boolean;
+  findPath: (start: GridPosition, end: GridPosition) => GridPosition[] | null;
+  getNeighbors: (position: GridPosition) => GridCell[];
+}
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;
   private tanks: Map<string, Tank>;
   private entrances: Map<string, Entrance>;
-  private gridSize: { width: number; depth: number };
+  private gridStore: GridStoreInterface;
+  private waypointSystem: WaypointSystem;
+  private currentWaypoints: Map<string, string> = new Map(); // visitorId -> waypointId
 
-  constructor() {
+  constructor(gridStore: GridStoreInterface) {
     this.visitors = new Map();
     this.tanks = new Map();
     this.entrances = new Map();
-    this.gridSize = { width: 3, depth: 3 };
+    this.gridStore = gridStore;
+    this.waypointSystem = new WaypointSystem(
+      { width: gridStore.gridSize.width, depth: gridStore.gridSize.depth },
+      gridStore,
+    );
   }
 
   // Update references from game state
   updateReferences(tanks: Map<string, Tank>, entrances: Map<string, Entrance>) {
     this.tanks = tanks;
     this.entrances = entrances;
+
+    // Regenerate waypoints when tanks change
+    this.waypointSystem.generateWaypoints(tanks);
   }
 
   // Create a new visitor with random interests
@@ -36,7 +57,7 @@ export class VisitorSystem {
       throw new Error(`Entrance ${entryEntranceId} not found`);
     }
 
-    const visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const visitorId = `visitor_${nanoid()}`;
 
     // Generate random gender
     const gender: "male" | "female" = Math.random() < 0.5 ? "male" : "female";
@@ -44,15 +65,14 @@ export class VisitorSystem {
     // Generate random interests
     const interests: VisitorInterests = {
       fishTypes: this.generateRandomFishInterests(),
-      tankSizes: this.generateRandomSizePreferences(),
       decorationTypes: [], // Future use
     };
 
     // Generate random preferences
     const preferences: VisitorPreferences = {
-      viewingTime: { min: 2000, max: 5000 }, // 2-5 seconds viewing time
+      viewingTime: { min: 4000, max: 8000 }, // 4-8 seconds viewing time
       walkingSpeed: 0.5 + Math.random() * 0.5, // 0.5-1.0 speed
-      satisfactionThreshold: 60 + Math.random() * 40, // 60-100 satisfaction needed
+      satisfactionThreshold: Math.floor(60 + Math.random() * 40), // 60-100 satisfaction needed
     };
 
     const visitor: Visitor = {
@@ -85,6 +105,7 @@ export class VisitorSystem {
       patience: 30000 + Math.random() * 60000, // 30-90 seconds patience
       moneySpent: 0,
 
+      thoughts: [],
       tanksVisited: [],
       entryEntranceId,
     };
@@ -131,15 +152,28 @@ export class VisitorSystem {
   private handleEnteringState(visitor: Visitor, deltaTime: number) {
     // Move away from entrance into the aquarium
     if (!visitor.targetPosition) {
-      // Find a central position to move to
-      visitor.targetPosition = new THREE.Vector3(
-        ((this.gridSize.width - 1) * 2) / 2,
-        0.5,
-        ((this.gridSize.depth - 1) * 2) / 2,
+      // Find a central exploration waypoint to move to
+      const waypoint = this.waypointSystem.findBestWaypoint(
+        visitor.position,
+        visitor.interests,
+        visitor.tanksVisited,
+        "exploration",
       );
+
+      if (waypoint) {
+        visitor.targetPosition = waypoint.position.clone();
+        this.currentWaypoints.set(visitor.id, waypoint.id);
+      } else {
+        // Fallback to center
+        visitor.targetPosition = new THREE.Vector3(
+          ((this.gridStore.gridSize.width - 1) * 2) / 2,
+          0.5,
+          ((this.gridStore.gridSize.depth - 1) * 2) / 2,
+        );
+      }
     }
 
-    this.moveTowardsTarget(visitor, deltaTime);
+    this.updateVisitorMovement(visitor, deltaTime);
 
     // Check if close to target or enough time has passed
     if (this.isAtTarget(visitor) || visitor.stateTimer > 3000) {
@@ -148,26 +182,64 @@ export class VisitorSystem {
   }
 
   private handleExploringState(visitor: Visitor, deltaTime: number) {
-    // Look for interesting tanks or wander randomly
+    // Look for interesting waypoints or continue to current target
     if (!visitor.targetPosition) {
-      const interestingTank = this.findInterestingTank(visitor);
+      // First try to find a viewing waypoint for tanks we haven't seen
+      let waypoint = this.waypointSystem.findBestWaypoint(
+        visitor.position,
+        visitor.interests,
+        visitor.tanksVisited,
+        "viewing",
+      );
 
-      if (interestingTank) {
-        // Go view this tank
-        visitor.targetTankId = interestingTank.id;
-        visitor.targetPosition = new THREE.Vector3(
-          interestingTank.position.x * 2,
-          0.5,
-          interestingTank.position.z * 2 + 1.5, // Stand in front of tank
+      // If no interesting viewing spots, find exploration waypoint
+      if (!waypoint) {
+        waypoint = this.waypointSystem.findBestWaypoint(
+          visitor.position,
+          visitor.interests,
+          visitor.tanksVisited,
+          "exploration",
         );
-        this.transitionToState(visitor, "viewing");
+      }
+
+      if (waypoint) {
+        visitor.targetPosition = waypoint.position.clone();
+        this.currentWaypoints.set(visitor.id, waypoint.id);
+
+        // If it's a viewing waypoint, prepare to transition to viewing
+        if (waypoint.type === "viewing" && waypoint.associatedTankId) {
+          visitor.targetTankId = waypoint.associatedTankId;
+        }
       } else {
-        // Wander randomly
-        visitor.targetPosition = this.getRandomWalkablePosition();
+        // Transition to leaving
+        visitor.thoughts.push("I couldn't find anything interesting...");
+        this.transitionToState(visitor, "leaving");
       }
     }
 
-    this.moveTowardsTarget(visitor, deltaTime);
+    // Use steering behaviors for movement
+    this.updateVisitorMovement(visitor, deltaTime);
+
+    // Check if we've reached our waypoint
+    if (this.isAtTarget(visitor)) {
+      const waypointId = this.currentWaypoints.get(visitor.id);
+      if (waypointId) {
+        const waypoint = this.waypointSystem.getWaypoint(waypointId);
+        if (waypoint) {
+          this.waypointSystem.markWaypointVisited(waypointId);
+
+          // If this is a viewing waypoint, transition to viewing
+          if (waypoint.type === "viewing" && waypoint.associatedTankId) {
+            this.transitionToState(visitor, "viewing");
+            return;
+          }
+        }
+      }
+
+      // Clear target to find a new one
+      visitor.targetPosition = null;
+      this.currentWaypoints.delete(visitor.id);
+    }
 
     // If we've been exploring too long or reached satisfaction, time to leave
     if (
@@ -230,76 +302,145 @@ export class VisitorSystem {
       }
     }
 
-    this.moveTowardsTarget(visitor, deltaTime);
-    this.transitionToState(visitor, "leaving");
+    this.updateVisitorMovement(visitor, deltaTime);
+
+    // Only transition to leaving when we're close to the entrance or timeout
+    if (this.isAtTarget(visitor) || visitor.stateTimer > 10000) {
+      this.transitionToState(visitor, "leaving");
+    }
   }
 
   private handleLeavingState(visitor: Visitor, deltaTime: number) {
-    this.moveTowardsTarget(visitor, deltaTime);
+    // Make sure we still have a target (the entrance position)
+    if (!visitor.targetPosition) {
+      const nearestEntrance = this.findNearestEntrance(visitor);
+      if (nearestEntrance) {
+        // Move slightly beyond the entrance to simulate exiting
+        const entrancePos = new THREE.Vector3(
+          nearestEntrance.position.x * 2,
+          0.5,
+          nearestEntrance.position.z * 2,
+        );
 
-    // Remove visitor when they reach the exit
-    if (this.isAtTarget(visitor) || visitor.stateTimer > 10000) {
+        // Determine exit direction based on entrance edge
+        const exitOffset = new THREE.Vector3(0, 0, 0);
+        switch (nearestEntrance.edge) {
+          case "north":
+            exitOffset.set(0, 0, -1.5); // Exit north
+            break;
+          case "south":
+            exitOffset.set(0, 0, 1.5); // Exit south
+            break;
+          case "east":
+            exitOffset.set(1.5, 0, 0); // Exit east
+            break;
+          case "west":
+            exitOffset.set(-1.5, 0, 0); // Exit west
+            break;
+        }
+
+        visitor.targetPosition = entrancePos.add(exitOffset);
+      }
+    }
+
+    this.updateVisitorMovement(visitor, deltaTime);
+
+    // Remove visitor when they reach the exit or timeout
+    if (this.isAtTarget(visitor) || visitor.stateTimer > 15000) {
       this.removeVisitor(visitor.id);
     }
   }
 
-  private moveTowardsTarget(visitor: Visitor, deltaTime: number) {
+  private updateVisitorMovement(visitor: Visitor, deltaTime: number) {
     if (!visitor.targetPosition) return;
 
-    const direction = visitor.targetPosition.clone().sub(visitor.position);
-    const distance = direction.length();
+    // Collect all steering forces
+    const steeringForces: SteeringForce[] = [];
 
-    if (distance > 0.1) {
-      direction.normalize();
-      visitor.velocity = direction.multiplyScalar(
-        visitor.preferences.walkingSpeed,
+    // Primary movement toward target
+    const seekForce = SteeringBehaviors.arrive(
+      visitor.position,
+      visitor.targetPosition,
+      visitor.velocity,
+      0.3, // Slowing radius
+    );
+    steeringForces.push({ force: seekForce, weight: 1.0 });
+
+    // Avoid obstacles using grid-based detection (but not when leaving - they need to exit)
+    if (visitor.state !== "leaving") {
+      const gridAvoidForce = SteeringBehaviors.avoidGridObstacles(
+        visitor.position,
+        this.gridStore,
+        2.0, // Avoidance distance
       );
-    } else {
-      visitor.velocity.set(0, 0, 0);
+      steeringForces.push({ force: gridAvoidForce, weight: 2.5 });
+    }
+
+    // Avoid boundaries (but reduce weight when leaving to allow exit)
+    const boundaryWeight = visitor.state === "leaving" ? 0.3 : 1.5;
+    const boundaryForce = SteeringBehaviors.avoidBoundaries(
+      visitor.position,
+      {
+        width: this.gridStore.gridSize.width,
+        depth: this.gridStore.gridSize.depth,
+      },
+      0.5,
+    );
+    steeringForces.push({ force: boundaryForce, weight: boundaryWeight });
+
+    // Separate from other visitors
+    // const separateForce = SteeringBehaviors.separate(
+    //   visitor,
+    //   Array.from(this.visitors.values()),
+    //   1.2, // Separation radius
+    // );
+    // steeringForces.push({ force: separateForce, weight: 1.0 });
+
+    // Add some wandering for natural movement (less when leaving)
+
+    // const wanderWeight = visitor.state === "leaving" ? 0.1 : 0.5;
+    // const wanderForce = SteeringBehaviors.wander(
+    //   visitor.velocity,
+    //   0.5,
+    // );
+    // steeringForces.push({ force: wanderForce, weight: wanderWeight });
+
+    // Combine all forces
+    const combinedForce = SteeringBehaviors.combineSteering(steeringForces);
+
+    // Apply force to velocity
+    visitor.velocity.add(combinedForce.multiplyScalar(deltaTime / 1000));
+
+    // Limit velocity to walking speed
+    const maxSpeed = visitor.preferences.walkingSpeed;
+    if (visitor.velocity.length() > maxSpeed) {
+      visitor.velocity.normalize().multiplyScalar(maxSpeed);
     }
   }
 
   private isAtTarget(visitor: Visitor): boolean {
     if (!visitor.targetPosition) return false;
-    return visitor.position.distanceTo(visitor.targetPosition) < 0.5;
+    return visitor.position.distanceTo(visitor.targetPosition) < 0.1;
   }
 
   private transitionToState(visitor: Visitor, newState: VisitorState) {
+    const previousTarget = visitor.targetPosition;
+
     visitor.state = newState;
     visitor.stateTimer = 0;
-    visitor.targetPosition = null;
-    visitor.targetTankId = null;
-  }
 
-  private findInterestingTank(visitor: Visitor): Tank | null {
-    let bestTank: Tank | null = null;
-    let bestInterestScore = 0;
-
-    for (const tank of Array.from(this.tanks.values())) {
-      // Skip tanks already visited
-      if (visitor.tanksVisited.includes(tank.id)) continue;
-
-      // Calculate interest score
-      let interestScore = 0;
-
-      // Size preference
-      if (visitor.interests.tankSizes.includes(tank.size)) {
-        interestScore += 30;
-      }
-
-      // Fish species interest (would need fish data)
-      interestScore += Math.random() * 20; // Random factor for now
-
-      // Water quality bonus
-      interestScore += tank.waterQuality * 10;
-
-      if (interestScore > bestInterestScore) {
-        bestInterestScore = interestScore;
-        bestTank = tank;
-      }
+    // For leaving state, preserve the target position (entrance)
+    if (newState !== "leaving") {
+      visitor.targetPosition = null;
+    } else {
+      // Keep the current target (should be the entrance) for leaving state
+      visitor.targetPosition = previousTarget;
     }
 
-    return bestInterestScore > 25 ? bestTank : null; // Minimum interest threshold
+    visitor.targetTankId = null;
+
+    // Clean up waypoint tracking
+    this.currentWaypoints.delete(visitor.id);
   }
 
   private calculateSatisfactionGain(
@@ -344,21 +485,6 @@ export class VisitorSystem {
     return nearestEntrance;
   }
 
-  private getRandomWalkablePosition(): THREE.Vector3 {
-    // Generate random position avoiding tanks
-    const attempts = 10;
-    while (attempts > 0) {
-      const x = Math.random() * (this.gridSize.width - 1) * 2;
-      const z = Math.random() * (this.gridSize.depth - 1) * 2;
-
-      // Simple check - avoid tank positions (would need proper collision detection)
-      const position = new THREE.Vector3(x, 0.5, z);
-      return position; // For now, return any position
-    }
-
-    return new THREE.Vector3(2, 0.5, 2); // Fallback to center
-  }
-
   private generateRandomFishInterests(): string[] {
     const allSpecies = ["goldfish", "neon_tetra", "angelfish", "clownfish"];
     const interestCount = 1 + Math.floor(Math.random() * 3); // 1-3 interests
@@ -374,25 +500,6 @@ export class VisitorSystem {
     return interests;
   }
 
-  private generateRandomSizePreferences(): ("small" | "medium" | "large")[] {
-    const sizes: ("small" | "medium" | "large")[] = [
-      "small",
-      "medium",
-      "large",
-    ];
-    const preferenceCount = 1 + Math.floor(Math.random() * 2); // 1-2 size preferences
-
-    const result: ("small" | "medium" | "large")[] = [];
-    for (let i = 0; i < preferenceCount; i++) {
-      const size = sizes[Math.floor(Math.random() * sizes.length)];
-      if (!result.includes(size)) {
-        result.push(size);
-      }
-    }
-
-    return result;
-  }
-
   // Public interface methods
   spawnVisitor(entranceId: string): Visitor | null {
     if (!this.entrances.has(entranceId)) return null;
@@ -401,6 +508,7 @@ export class VisitorSystem {
 
   removeVisitor(visitorId: string) {
     this.visitors.delete(visitorId);
+    this.currentWaypoints.delete(visitorId);
   }
 
   getVisitors(): Visitor[] {

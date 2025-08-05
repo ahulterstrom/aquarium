@@ -15,7 +15,7 @@ import { SandboxUI } from "@/components/gameUI/sandboxUI";
 const uis: Record<SnapshotFrom<typeof sceneMachine>["value"], ReactNode> = {
   mainMenu: <MainMenuUI />,
   characterSelection: <CharacterSelectUI />,
-  map: <MapUI />,
+  map: <div>Map</div>,
   battle: <div>Battle</div>,
   battleResults: <div>Battle Results</div>,
   sandbox: <SandboxUI />,

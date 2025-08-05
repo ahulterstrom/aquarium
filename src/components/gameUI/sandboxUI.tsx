@@ -61,6 +61,7 @@ import {
   Entrance,
 } from "../../types/game.types";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
+import { useGame } from "@/stores/useGame";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -113,6 +114,7 @@ const FISH_SPECIES: FishSpecies[] = [
 export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
 
+  const isDebugging = useGame.use.isDebugging();
   const {
     tanks,
     entrances,
@@ -410,6 +412,7 @@ export const SandboxUI = () => {
                   {tanks.size}/9
                 </Badge>
               </div>
+              {isDebugging && <div></div>}
 
               {/* Context Message Area */}
               {contextMessage && (
