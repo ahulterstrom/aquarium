@@ -9,6 +9,7 @@ import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType, Visitor } from "../types/game.types";
+import { Visitors } from "@/components/visitors";
 
 const TankMesh = ({
   tank,
@@ -210,71 +211,6 @@ const EntranceMesh = ({
   );
 };
 
-const VisitorMesh = ({
-  visitor,
-  onClick,
-}: {
-  visitor: Visitor;
-  onClick: (visitor: Visitor) => void;
-}) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  // Get color based on visitor state
-  const getVisitorColor = () => {
-    switch (visitor.state) {
-      case "entering":
-        return 0x00ff00; // Green - just arrived
-      case "exploring":
-        return 0xffff00; // Yellow - looking around
-      case "viewing":
-        return 0x0000ff; // Blue - engaged with content
-      case "satisfied":
-        return 0xff8000; // Orange - happy, ready to leave
-      case "leaving":
-        return 0xff0000; // Red - leaving
-      default:
-        return 0x888888; // Gray - default
-    }
-  };
-
-  return (
-    <mesh
-      ref={meshRef}
-      position={[visitor.position.x, visitor.position.y, visitor.position.z]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(visitor);
-      }}
-      onPointerEnter={(e) => {
-        e.stopPropagation();
-        document.body.style.cursor = "pointer";
-      }}
-      onPointerLeave={() => {
-        document.body.style.cursor = "default";
-      }}
-    >
-      <boxGeometry args={[0.3, 0.6, 0.3]} />
-      <meshLambertMaterial color={getVisitorColor()} />
-
-      {/* Add a simple "head" indicator */}
-      <mesh position={[0, 0.4, 0]}>
-        <sphereGeometry args={[0.12, 8, 8]} />
-        <meshLambertMaterial color={0xfdbcb4} />
-      </mesh>
-
-      {/* State indicator (small floating orb) */}
-      <mesh position={[0, 0.8, 0]}>
-        <sphereGeometry args={[0.05, 6, 6]} />
-        <meshBasicMaterial
-          color={getVisitorColor()}
-          transparent
-          opacity={0.7}
-        />
-      </mesh>
-    </mesh>
-  );
-};
-
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
   const [hoveredCell, setHoveredCell] = useState<{
@@ -285,7 +221,6 @@ export const SandboxScene = () => {
 
   const tanks = useGameStore.use.tanks();
   const entrances = useGameStore.use.entrances();
-  const visitors = useGameStore.use.visitors();
   const addTank = useGameStore.use.addTank();
   const addEntrance = useGameStore.use.addEntrance();
   const spendMoney = useGameStore.use.spendMoney();
@@ -300,7 +235,6 @@ export const SandboxScene = () => {
   const placementMode = useUIStore.use.placementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
-  const selectVisitor = useUIStore.use.selectVisitor();
   const selectEntrance = useUIStore.use.selectEntrance();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
@@ -365,10 +299,6 @@ export const SandboxScene = () => {
 
   const handleEntranceClick = (entrance: Entrance) => {
     selectEntrance(entrance.id);
-  };
-
-  const handleVisitorClick = (visitor: Visitor) => {
-    selectVisitor(visitor.id);
   };
 
   return (
@@ -466,13 +396,7 @@ export const SandboxScene = () => {
       ))}
 
       {/* Visitors */}
-      {Array.from(visitors.values()).map((visitor) => (
-        <VisitorMesh
-          key={visitor.id}
-          visitor={visitor}
-          onClick={handleVisitorClick}
-        />
-      ))}
+      <Visitors />
     </>
   );
 };

@@ -62,6 +62,10 @@ import {
 } from "../../types/game.types";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 import { useGame } from "@/stores/useGame";
+import {
+  getVisitorSystem,
+  spawnVisitor,
+} from "@/components/systems/visitorSystem";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -115,63 +119,31 @@ export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
 
   const isDebugging = useGame.use.isDebugging();
-  const {
-    tanks,
-    entrances,
-    visitors,
-    money,
-    spendMoney,
-    addFish,
-    updateTank,
-    removeTank,
-    addEntrance,
-    gameSpeed,
-    setGameSpeed,
-    isPaused,
-    setPaused,
-    day,
-  } = useGameStore();
-  const { removeObject } = useGridStore();
-  const {
-    showFishShop,
-    setShowFishShop,
-    showSellConfirmation,
-    setShowSellConfirmation,
-    placementMode,
-    setPlacementMode,
-    selectedTankId,
-    selectedVisitorId,
-    selectedEntranceId,
-    selectedEntityType,
-    selectTank,
-    clearSelection,
-  } = useUIStore();
+  const tanks = useGameStore.use.tanks();
+  const entrances = useGameStore.use.entrances();
+  const money = useGameStore.use.money();
+  const spendMoney = useGameStore.use.spendMoney();
+  const addFish = useGameStore.use.addFish();
+  const updateTank = useGameStore.use.updateTank();
+  const removeTank = useGameStore.use.removeTank();
+  const gameSpeed = useGameStore.use.gameSpeed();
+  const setGameSpeed = useGameStore.use.setGameSpeed();
+  const isPaused = useGameStore.use.isPaused();
+  const setPaused = useGameStore.use.setPaused();
+  const day = useGameStore.use.day();
+
+  const removeObject = useGridStore.use.removeObject();
+  const showFishShop = useUIStore.use.showFishShop();
+  const setShowFishShop = useUIStore.use.setShowFishShop();
+  const showSellConfirmation = useUIStore.use.showSellConfirmation();
+  const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
+  const placementMode = useUIStore.use.placementMode();
+  const setPlacementMode = useUIStore.use.setPlacementMode();
+  const selectedTankId = useUIStore.use.selectedTankId();
+  const selectTank = useUIStore.use.selectTank();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
-  const selectedVisitor = selectedVisitorId
-    ? visitors.get(selectedVisitorId)
-    : null;
-  const selectedEntrance = selectedEntranceId
-    ? entrances.get(selectedEntranceId)
-    : null;
-
-  // This is so we can still have the tank info during the exit transition
-  const displaySelectedTank = useMemo(() => {
-    return (
-      selectedTank || {
-        id: "",
-        position: { x: 0, y: 0, z: 0 },
-        size: "medium",
-        waterQuality: 1,
-        temperature: 25,
-        capacity: 5,
-        fishIds: [],
-        decorations: [],
-        maintenanceLevel: 1,
-      }
-    );
-  }, [selectedTank]);
 
   const handlePlaceTank = () => {
     if (money < TANK_COST) {
@@ -412,7 +384,17 @@ export const SandboxUI = () => {
                   {tanks.size}/9
                 </Badge>
               </div>
-              {isDebugging && <div></div>}
+              {isDebugging && (
+                <div>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => spawnVisitor()}
+                  >
+                    Debug Spawn Visitor
+                  </Button>
+                </div>
+              )}
 
               {/* Context Message Area */}
               {contextMessage && (

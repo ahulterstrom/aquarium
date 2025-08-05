@@ -3,7 +3,7 @@ import { devtools } from "zustand/middleware";
 import { GridCell, GridPosition } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 
-interface GridStore {
+export interface GridStore {
   gridSize: { width: number; height: number; depth: number };
   cells: Map<string, GridCell>;
 
@@ -192,7 +192,92 @@ export const useGridStore = createSelectors(
 
       isWalkable: (x, y, z) => {
         const cell = get().getCell(x, y, z);
-        return cell ? cell.type === "path" || cell.type === "empty" : false;
+        if (!cell) {
+          console.log(`No cell at ${x},${y},${z}`);
+          return false;
+        }
+        const walkable = cell.type === "path" || cell.type === "empty";
+        // console.log(`Cell ${x},${y},${z}: type=${cell.type}, occupied=${cell.occupied}, walkable=${walkable}`);
+        return walkable;
+      },
+
+      findPath: (start, end) => {
+        // Simple A* pathfinding implementation
+        const state = get();
+        const openSet = new Set<string>();
+        const closedSet = new Set<string>();
+        const cameFrom = new Map<string, string>();
+        const gScore = new Map<string, number>();
+        const fScore = new Map<string, number>();
+
+        const startKey = state.getCellKey(start.x, start.y, start.z);
+        const endKey = state.getCellKey(end.x, end.y, end.z);
+
+        openSet.add(startKey);
+        gScore.set(startKey, 0);
+        fScore.set(startKey, heuristic(start, end));
+
+        let iterations = 0;
+        const maxIterations = 1000; // Prevent infinite loops
+
+        while (openSet.size > 0 && iterations < maxIterations) {
+          iterations++;
+          let current = "";
+          let lowestF = Infinity;
+
+          for (const key of openSet) {
+            const f = fScore.get(key) || Infinity;
+            if (f < lowestF) {
+              lowestF = f;
+              current = key;
+            }
+          }
+
+          if (current === endKey) {
+            return reconstructPath(cameFrom, current, state);
+          }
+
+          openSet.delete(current);
+          closedSet.add(current);
+
+          const currentPos = state.parseCellKey(current);
+          const neighbors = state.getNeighbors(currentPos);
+
+          for (const neighbor of neighbors) {
+            const neighborKey = state.getCellKey(
+              neighbor.x,
+              neighbor.y,
+              neighbor.z,
+            );
+
+            if (
+              closedSet.has(neighborKey) ||
+              !state.isWalkable(neighbor.x, neighbor.y, neighbor.z)
+            ) {
+              continue;
+            }
+
+            const tentativeG = (gScore.get(current) || 0) + 1;
+
+            if (!openSet.has(neighborKey)) {
+              openSet.add(neighborKey);
+            } else if (tentativeG >= (gScore.get(neighborKey) || Infinity)) {
+              continue;
+            }
+
+            cameFrom.set(neighborKey, current);
+            gScore.set(neighborKey, tentativeG);
+            fScore.set(neighborKey, tentativeG + heuristic(neighbor, end));
+          }
+        }
+
+        if (iterations >= maxIterations) {
+          console.warn(
+            `A* pathfinding hit iteration limit (${maxIterations}) from ${JSON.stringify(start)} to ${JSON.stringify(end)}`,
+          );
+        }
+
+        return null;
       },
 
       getCellKey: (x, y, z) => `${x},${y},${z}`,
@@ -222,3 +307,24 @@ export const useGridStore = createSelectors(
     })),
   ),
 );
+
+function heuristic(a: GridPosition, b: GridPosition): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
+}
+
+function reconstructPath(
+  cameFrom: Map<string, string>,
+  current: string,
+  state: ReturnType<typeof useGridStore.getState>,
+): GridPosition[] {
+  const path: GridPosition[] = [];
+  let currentKey = current;
+
+  while (cameFrom.has(currentKey)) {
+    path.unshift(state.parseCellKey(currentKey));
+    currentKey = cameFrom.get(currentKey)!;
+  }
+
+  path.unshift(state.parseCellKey(currentKey));
+  return path;
+}

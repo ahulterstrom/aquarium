@@ -5,7 +5,7 @@ import { VisitorSystem } from "../../systems/VisitorSystem";
 // Global visitor system instance
 let visitorSystem: VisitorSystem | null = null;
 
-function getVisitorSystem(): VisitorSystem {
+export function getVisitorSystem(): VisitorSystem {
   if (!visitorSystem) {
     const gridStore = useGridStore.getState();
     visitorSystem = new VisitorSystem(gridStore);
@@ -23,34 +23,56 @@ export function updateVisitors(deltaTime: number) {
   // Update system with current game state
   system.updateReferences(state.tanks, state.entrances);
 
-  // Update all visitors
+  // Update all visitors (no syncing back to store)
   system.update(deltaTime);
-
-  // Sync visitors back to game store
-  const currentVisitors = system.getVisitors();
-  const storeVisitors = state.visitors;
-
-  // Remove visitors that no longer exist in the system
-  for (const [visitorId] of storeVisitors) {
-    if (!currentVisitors.find((v) => v.id === visitorId)) {
-      state.removeVisitor(visitorId);
-    }
-  }
-
-  // Update existing visitors in store
-  for (const visitor of currentVisitors) {
-    if (storeVisitors.has(visitor.id)) {
-      state.updateVisitor(visitor.id, visitor);
-    } else {
-      state.addVisitor(visitor);
-    }
-  }
 }
 
 /**
- * Spawn visitors based on reputation and available entrances
+ * Spawn a visitor at a specific entrance (guaranteed spawn)
  */
-export function spawnVisitors() {
+export function spawnVisitor(entranceId?: string) {
+  const state = useGameStore.getState();
+  const system = getVisitorSystem();
+
+  // Update system with current game state
+  system.updateReferences(state.tanks, state.entrances);
+
+  // Need at least one entrance to spawn visitors
+  if (state.entrances.size === 0) {
+    return null;
+  }
+
+  // Choose entrance (use provided ID or select one)
+  let selectedEntrance;
+  if (entranceId) {
+    selectedEntrance = state.entrances.get(entranceId);
+    if (!selectedEntrance) {
+      console.warn(`Entrance ${entranceId} not found`);
+      return null;
+    }
+  } else {
+    // Choose random entrance (prefer main entrance)
+    const entrances = Array.from(state.entrances.values());
+    const mainEntrance = entrances.find((e) => e.isMainEntrance);
+    selectedEntrance = mainEntrance
+      ? mainEntrance
+      : entrances[Math.floor(Math.random() * entrances.length)];
+  }
+
+  // Spawn visitor
+  const visitor = system.spawnVisitor(selectedEntrance.id);
+  if (visitor) {
+    console.log(
+      `Spawned visitor ${visitor.id} at entrance ${selectedEntrance.id}`,
+    );
+  }
+  return visitor;
+}
+
+/**
+ * Attempt to spawn visitors based on reputation and available entrances
+ */
+export function attemptSpawnVisitors() {
   const state = useGameStore.getState();
   const system = getVisitorSystem();
 
@@ -62,11 +84,6 @@ export function spawnVisitors() {
     return;
   }
 
-  // Calculate spawn rate based on reputation and tank count
-  const baseSpawnChance = Math.min(state.reputation / 100, 0.8); // Max 80% chance
-  const tankBonus = state.tanks.size * 0.1; // More tanks = more visitors
-  const finalSpawnChance = Math.min(baseSpawnChance + tankBonus, 0.9);
-
   // Limit concurrent visitors
   const maxVisitors = Math.max(2, Math.floor(state.tanks.size * 1.5));
   const currentVisitorCount = system.getVisitorCount();
@@ -75,24 +92,13 @@ export function spawnVisitors() {
     return;
   }
 
-  // Random chance to spawn
-  // TODO: remove true
-  if (true || Math.random() < finalSpawnChance) {
-    // Choose random entrance (prefer main entrance)
-    const entrances = Array.from(state.entrances.values());
-    const mainEntrance = entrances.find((e) => e.isMainEntrance);
-    const selectedEntrance =
-      mainEntrance && Math.random() < 0.7
-        ? mainEntrance
-        : entrances[Math.floor(Math.random() * entrances.length)];
+  // Calculate spawn rate based on reputation and tank count
+  const baseSpawnChance = Math.min(state.reputation / 100, 0.8); // Max 80% chance
+  const tankBonus = state.tanks.size * 0.1; // More tanks = more visitors
+  const finalSpawnChance = Math.min(baseSpawnChance + tankBonus, 0.9);
 
-    // Spawn visitor
-    const visitor = system.spawnVisitor(selectedEntrance.id);
-    if (visitor) {
-      state.addVisitor(visitor);
-      console.log(
-        `Spawned visitor ${visitor.id} at entrance ${selectedEntrance.id}`,
-      );
-    }
+  // Random chance to spawn
+  if (Math.random() < finalSpawnChance) {
+    spawnVisitor(); // Spawn at random entrance
   }
 }

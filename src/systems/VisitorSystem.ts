@@ -10,17 +10,9 @@ import {
   GridCell,
 } from "../types/game.types";
 import { generateVisitorName } from "../utils/nameGenerator";
-import { SteeringBehaviors, SteeringForce } from "../utils/steeringBehaviors";
-import { WaypointSystem, Waypoint } from "../utils/waypointSystem";
+import { WaypointSystem } from "../utils/waypointSystem";
 import { nanoid } from "nanoid";
-
-export interface GridStoreInterface {
-  gridSize: { width: number; height: number; depth: number };
-  getCell: (x: number, y: number, z: number) => GridCell | undefined;
-  isWalkable: (x: number, y: number, z: number) => boolean;
-  findPath: (start: GridPosition, end: GridPosition) => GridPosition[] | null;
-  getNeighbors: (position: GridPosition) => GridCell[];
-}
+import { GridStore as GridStoreInterface } from "../stores/gridStore";
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;
@@ -65,6 +57,7 @@ export class VisitorSystem {
     // Generate random interests
     const interests: VisitorInterests = {
       fishTypes: this.generateRandomFishInterests(),
+      tankSizes: this.generateRandomSizePreferences(),
       decorationTypes: [], // Future use
     };
 
@@ -90,6 +83,7 @@ export class VisitorSystem {
       targetPosition: null,
       targetTankId: null,
       currentPath: null,
+      pathIndex: 0,
 
       interests,
       satisfaction: 0,
@@ -354,68 +348,142 @@ export class VisitorSystem {
   private updateVisitorMovement(visitor: Visitor, deltaTime: number) {
     if (!visitor.targetPosition) return;
 
-    // Collect all steering forces
-    const steeringForces: SteeringForce[] = [];
+    // Convert current position to grid coordinates
+    const currentGridPos = this.worldToGrid(visitor.position);
+    const targetGridPos = this.worldToGrid(visitor.targetPosition);
 
-    // Primary movement toward target
-    const seekForce = SteeringBehaviors.arrive(
-      visitor.position,
-      visitor.targetPosition,
-      visitor.velocity,
-      0.3, // Slowing radius
-    );
-    steeringForces.push({ force: seekForce, weight: 1.0 });
+    // Check if we need to calculate or recalculate the path
+    const needsNewPath =
+      !visitor.currentPath ||
+      visitor.currentPath.length === 0 ||
+      visitor.pathIndex === undefined ||
+      visitor.pathIndex >= visitor.currentPath.length;
 
-    // Avoid obstacles using grid-based detection (but not when leaving - they need to exit)
-    if (visitor.state !== "leaving") {
-      const gridAvoidForce = SteeringBehaviors.avoidGridObstacles(
-        visitor.position,
-        this.gridStore,
-        2.0, // Avoidance distance
+    if (needsNewPath) {
+      // Check if both positions are valid before pathfinding
+      const startWalkable = this.gridStore.isWalkable(currentGridPos.x, currentGridPos.y, currentGridPos.z);
+      const endWalkable = this.gridStore.isWalkable(targetGridPos.x, targetGridPos.y, targetGridPos.z);
+      
+      console.log(`Pathfinding for visitor ${visitor.id}:`);
+      console.log(`  From: ${JSON.stringify(currentGridPos)} (walkable: ${startWalkable})`);
+      console.log(`  To: ${JSON.stringify(targetGridPos)} (walkable: ${endWalkable})`);
+      
+      if (!startWalkable || !endWalkable) {
+        console.warn(`Cannot pathfind - start or end position not walkable`);
+        // Fall back to direct movement
+        this.moveDirectlyToTarget(visitor, deltaTime);
+        return;
+      }
+      
+      // Calculate A* path to target with timeout protection
+      try {
+        const startTime = Date.now();
+        const path = this.gridStore.findPath(currentGridPos, targetGridPos);
+        const endTime = Date.now();
+        
+        if (endTime - startTime > 100) {
+          console.warn(`Pathfinding took ${endTime - startTime}ms - too long!`);
+        }
+        
+        if (path && path.length > 0) {
+          visitor.currentPath = path;
+          visitor.pathIndex = 0;
+          console.log(`Generated path: ${path.length} nodes`);
+        } else {
+          console.warn(`No path found - using direct movement`);
+          this.moveDirectlyToTarget(visitor, deltaTime);
+          return;
+        }
+      } catch (error) {
+        console.error(`Pathfinding error:`, error);
+        this.moveDirectlyToTarget(visitor, deltaTime);
+        return;
+      }
+    }
+
+    // Follow the A* path
+    this.followPath(visitor, deltaTime);
+  }
+
+  private followPath(visitor: Visitor, deltaTime: number) {
+    if (!visitor.currentPath || visitor.currentPath.length === 0) return;
+
+    // Initialize path index if needed
+    if (visitor.pathIndex === undefined) visitor.pathIndex = 0;
+
+    // Get current target node from path
+    const currentTargetNode = visitor.currentPath[visitor.pathIndex];
+    if (!currentTargetNode) return;
+
+    // Convert grid position to world position
+    const targetWorldPos = this.gridToWorld(currentTargetNode);
+    const distance = visitor.position.distanceTo(targetWorldPos);
+
+    // Check if we've reached the current node
+    if (distance < 0.3) {
+      visitor.pathIndex++;
+
+      // Check if we've reached the end of the path
+      if (visitor.pathIndex >= visitor.currentPath.length) {
+        visitor.currentPath = null;
+        visitor.pathIndex = 0;
+        visitor.velocity.set(0, 0, 0);
+        return;
+      }
+
+      // Move to next node
+      const nextNode = visitor.currentPath[visitor.pathIndex];
+      const nextWorldPos = this.gridToWorld(nextNode);
+      const direction = nextWorldPos.clone().sub(visitor.position).normalize();
+      visitor.velocity = direction.multiplyScalar(
+        visitor.preferences.walkingSpeed,
       );
-      steeringForces.push({ force: gridAvoidForce, weight: 2.5 });
+    } else {
+      // Move toward current target node
+      const direction = targetWorldPos
+        .clone()
+        .sub(visitor.position)
+        .normalize();
+      visitor.velocity = direction.multiplyScalar(
+        visitor.preferences.walkingSpeed,
+      );
     }
 
-    // Avoid boundaries (but reduce weight when leaving to allow exit)
-    const boundaryWeight = visitor.state === "leaving" ? 0.3 : 1.5;
-    const boundaryForce = SteeringBehaviors.avoidBoundaries(
-      visitor.position,
-      {
-        width: this.gridStore.gridSize.width,
-        depth: this.gridStore.gridSize.depth,
-      },
-      0.5,
+    // Apply movement
+    visitor.position.add(
+      visitor.velocity.clone().multiplyScalar(deltaTime / 1000),
     );
-    steeringForces.push({ force: boundaryForce, weight: boundaryWeight });
+  }
 
-    // Separate from other visitors
-    // const separateForce = SteeringBehaviors.separate(
-    //   visitor,
-    //   Array.from(this.visitors.values()),
-    //   1.2, // Separation radius
-    // );
-    // steeringForces.push({ force: separateForce, weight: 1.0 });
+  private moveDirectlyToTarget(visitor: Visitor, deltaTime: number) {
+    if (!visitor.targetPosition) return;
 
-    // Add some wandering for natural movement (less when leaving)
+    const direction = visitor.targetPosition.clone().sub(visitor.position);
+    const distance = direction.length();
 
-    // const wanderWeight = visitor.state === "leaving" ? 0.1 : 0.5;
-    // const wanderForce = SteeringBehaviors.wander(
-    //   visitor.velocity,
-    //   0.5,
-    // );
-    // steeringForces.push({ force: wanderForce, weight: wanderWeight });
-
-    // Combine all forces
-    const combinedForce = SteeringBehaviors.combineSteering(steeringForces);
-
-    // Apply force to velocity
-    visitor.velocity.add(combinedForce.multiplyScalar(deltaTime / 1000));
-
-    // Limit velocity to walking speed
-    const maxSpeed = visitor.preferences.walkingSpeed;
-    if (visitor.velocity.length() > maxSpeed) {
-      visitor.velocity.normalize().multiplyScalar(maxSpeed);
+    if (distance > 0.1) {
+      direction.normalize();
+      visitor.velocity = direction.multiplyScalar(
+        visitor.preferences.walkingSpeed,
+      );
+      visitor.position.add(
+        visitor.velocity.clone().multiplyScalar(deltaTime / 1000),
+      );
+    } else {
+      visitor.velocity.set(0, 0, 0);
     }
+  }
+
+  private worldToGrid(worldPos: THREE.Vector3): GridPosition {
+    return {
+      x: Math.round(worldPos.x / 2),
+      y: 0, // Always ground level for now
+      z: Math.round(worldPos.z / 2),
+    };
+  }
+
+  private gridToWorld(gridPos: GridPosition): THREE.Vector3 {
+    return new THREE.Vector3(gridPos.x * 2, 0.5, gridPos.z * 2);
   }
 
   private isAtTarget(visitor: Visitor): boolean {
@@ -438,6 +506,10 @@ export class VisitorSystem {
     }
 
     visitor.targetTankId = null;
+
+    // Clear pathfinding data when changing states
+    visitor.currentPath = null;
+    visitor.pathIndex = 0;
 
     // Clean up waypoint tracking
     this.currentWaypoints.delete(visitor.id);
@@ -498,6 +570,25 @@ export class VisitorSystem {
     }
 
     return interests;
+  }
+
+  private generateRandomSizePreferences(): ("small" | "medium" | "large")[] {
+    const sizes: ("small" | "medium" | "large")[] = [
+      "small",
+      "medium",
+      "large",
+    ];
+    const preferenceCount = 1 + Math.floor(Math.random() * 2); // 1-2 size preferences
+
+    const result: ("small" | "medium" | "large")[] = [];
+    for (let i = 0; i < preferenceCount; i++) {
+      const size = sizes[Math.floor(Math.random() * sizes.length)];
+      if (!result.includes(size)) {
+        result.push(size);
+      }
+    }
+
+    return result;
   }
 
   // Public interface methods

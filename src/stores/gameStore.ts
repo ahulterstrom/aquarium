@@ -1,12 +1,11 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
-import { GameState, Tank, Fish, Visitor, Entrance } from "../types/game.types";
+import { GameState, Tank, Fish, Entrance } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
   fish: Map<string, Fish>;
-  visitors: Map<string, Visitor>;
   entrances: Map<string, Entrance>;
 
   // Time tracking
@@ -38,9 +37,6 @@ interface GameStore extends GameState {
   removeFish: (id: string) => void;
   updateFish: (id: string, updates: Partial<Fish>) => void;
 
-  addVisitor: (visitor: Visitor) => void;
-  removeVisitor: (id: string) => void;
-  updateVisitor: (id: string, updates: Partial<Visitor>) => void;
 
   addEntrance: (entrance: Entrance) => void;
   removeEntrance: (id: string) => void;
@@ -49,7 +45,6 @@ interface GameStore extends GameState {
   // Queries
   getTank: (id: string) => Tank | undefined;
   getFish: (id: string) => Fish | undefined;
-  getVisitor: (id: string) => Visitor | undefined;
   getEntrance: (id: string) => Entrance | undefined;
   getFishInTank: (tankId: string) => Fish[];
 
@@ -72,7 +67,6 @@ export const useGameStore = createSelectors(
       ...initialState,
       tanks: new Map(),
       fish: new Map(),
-      visitors: new Map(),
       entrances: new Map(),
       gameTime: 0,
       accumulators: {
@@ -180,38 +174,11 @@ export const useGameStore = createSelectors(
           return { fish: fishMap };
         }),
 
-      addVisitor: (visitor) =>
-        set((state) => {
-          const visitors = new Map(state.visitors);
-          visitors.set(visitor.id, visitor);
-          return {
-            visitors,
-            visitorCount: state.visitorCount + 1,
-          };
-        }),
-
-      removeVisitor: (id) =>
-        set((state) => {
-          const visitors = new Map(state.visitors);
-          visitors.delete(id);
-          return { visitors };
-        }),
-
-      updateVisitor: (id, updates) =>
-        set((state) => {
-          const visitors = new Map(state.visitors);
-          const visitor = visitors.get(id);
-          if (visitor) {
-            visitors.set(id, { ...visitor, ...updates });
-          }
-          return { visitors };
-        }),
 
       getTank: (id) => get().tanks.get(id),
 
       getFish: (id) => get().fish.get(id),
 
-      getVisitor: (id) => get().visitors.get(id),
 
       addEntrance: (entrance) =>
         set((state) => {
@@ -257,7 +224,6 @@ export const useGameStore = createSelectors(
           ...initialState,
           tanks: new Map(),
           fish: new Map(),
-          visitors: new Map(),
           entrances: new Map(),
           gameTime: 0,
           accumulators: {

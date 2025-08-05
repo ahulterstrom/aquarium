@@ -80,6 +80,7 @@ export interface Visitor {
   targetPosition: Vector3 | null;
   targetTankId: string | null;
   currentPath: GridPosition[] | null;
+  pathIndex?: number; // Current index in the path array
 
   // Interest & satisfaction system
   interests: VisitorInterests;

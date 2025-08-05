@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { processTick } from "./tickSystem";
-import { spawnVisitors, updateVisitors } from "./visitorSystem";
+import { attemptSpawnVisitors, updateVisitors } from "./visitorSystem";
 import { updateWaterQuality } from "./waterSystem";
 import { TICK_RATES } from "@/lib/constants";
 
@@ -33,7 +33,6 @@ export function GameSystems() {
     accumulator.current.tick += dt;
     if (accumulator.current.tick >= TICK_RATES.tick) {
       console.log("Processing fast tick...");
-      processTick();
       accumulator.current.tick %= TICK_RATES.tick;
     }
 
@@ -48,8 +47,8 @@ export function GameSystems() {
     // Visitor spawning (10s)
     accumulator.current.visitors += dt;
     if (accumulator.current.visitors >= TICK_RATES.visitors) {
-      console.log("Spawning visitors...");
-      spawnVisitors();
+      console.log("Attempting to spawn visitors...");
+      attemptSpawnVisitors();
       accumulator.current.visitors %= TICK_RATES.visitors;
     }
 

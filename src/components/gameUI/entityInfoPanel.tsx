@@ -28,42 +28,24 @@ import {
 } from "@/components/ui/sheet";
 
 export const EntityInfoPanel = () => {
-  const {
-    tanks,
-    entrances,
-    visitors,
-    money,
-    spendMoney,
-    addFish,
-    updateTank,
-    removeTank,
-    addEntrance,
-    gameSpeed,
-    setGameSpeed,
-    isPaused,
-    setPaused,
-    day,
-  } = useGameStore();
-  const {
-    showFishShop,
-    setShowFishShop,
-    showSellConfirmation,
-    setShowSellConfirmation,
-    placementMode,
-    setPlacementMode,
-    selectedTankId,
-    selectedVisitorId,
-    selectedEntranceId,
-    selectedEntityType,
-    selectTank,
-    clearSelection,
-  } = useUIStore();
+  const tanks = useGameStore.use.tanks();
+  const entrances = useGameStore.use.entrances();
+
+  const showFishShop = useUIStore.use.showFishShop();
+  const setShowFishShop = useUIStore.use.setShowFishShop();
+  const showSellConfirmation = useUIStore.use.showSellConfirmation();
+  const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
+  const placementMode = useUIStore.use.placementMode();
+  const setPlacementMode = useUIStore.use.setPlacementMode();
+  const selectedTankId = useUIStore.use.selectedTankId();
+  const selectedVisitorId = useUIStore.use.selectedVisitorId();
+  const selectedEntranceId = useUIStore.use.selectedEntranceId();
+  const selectedEntityType = useUIStore.use.selectedEntityType();
+  const selectTank = useUIStore.use.selectTank();
+  const clearSelection = useUIStore.use.clearSelection();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
-  const selectedVisitor = selectedVisitorId
-    ? visitors.get(selectedVisitorId)
-    : null;
   const selectedEntrance = selectedEntranceId
     ? entrances.get(selectedEntranceId)
     : null;
@@ -76,15 +58,6 @@ export const EntityInfoPanel = () => {
       setLastSelectedTank(selectedTank);
     }
   }, [selectedTank]);
-
-  const [lastSelectedVisitor, setLastSelectedVisitor] = useState(
-    selectedVisitor || null,
-  );
-  useEffect(() => {
-    if (selectedVisitor) {
-      setLastSelectedVisitor(selectedVisitor);
-    }
-  }, [selectedVisitor]);
 
   const [lastSelectedEntrance, setLastSelectedEntrance] = useState(
     selectedEntrance || null,
@@ -241,121 +214,6 @@ export const EntityInfoPanel = () => {
           </div>
         )}
 
-        {/* Visitor Panel */}
-        {lastSelectedVisitor && lastSelectedEntityType === "visitor" && (
-          <div className="space-y-4">
-            {/* Visitor Name */}
-            <div className="rounded-lg bg-green-50 p-3 text-center">
-              <p className="text-xl font-bold text-green-800">
-                {lastSelectedVisitor.name}
-              </p>
-              <p className="text-sm text-green-600">Aquarium Visitor</p>
-            </div>
-
-            {/* Visitor State */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Current State
-                </label>
-                <p className="text-lg font-semibold capitalize">
-                  {lastSelectedVisitor.state}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">
-                  Visit Time
-                </label>
-                <p className="text-lg font-semibold">
-                  {Math.round(lastSelectedVisitor.totalVisitTime / 1000)}s
-                </p>
-              </div>
-            </div>
-
-            {/* Satisfaction */}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="flex items-center gap-1 text-sm font-medium text-gray-600">
-                  <Smile className="h-4 w-4" />
-                  Satisfaction
-                </label>
-                <span className="text-sm font-semibold">
-                  {Math.round(lastSelectedVisitor.satisfaction)}/
-                  {lastSelectedVisitor.maxSatisfaction}
-                </span>
-              </div>
-              <Progress
-                value={
-                  (lastSelectedVisitor.satisfaction /
-                    lastSelectedVisitor.maxSatisfaction) *
-                  100
-                }
-                className="h-2"
-              />
-            </div>
-
-            {/* Happiness & Money */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 rounded-lg bg-pink-50 p-2">
-                <Heart className="h-4 w-4 text-pink-600" />
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Happiness
-                  </label>
-                  <p className="text-lg font-semibold">
-                    {Math.round(lastSelectedVisitor.happiness)}%
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-lg bg-green-50 p-2">
-                <DollarSign className="h-4 w-4 text-green-600" />
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Money Left
-                  </label>
-                  <p className="text-lg font-semibold">
-                    $
-                    {Math.round(
-                      lastSelectedVisitor.money -
-                        lastSelectedVisitor.moneySpent,
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Interests */}
-            <div>
-              <label className="mb-2 text-sm font-medium text-gray-600">
-                Interested in:
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {lastSelectedVisitor.interests.fishTypes.map((fishType) => (
-                  <Badge key={fishType} variant="outline" className="text-xs">
-                    {fishType.replace("_", " ")}
-                  </Badge>
-                ))}
-                {lastSelectedVisitor.interests.tankSizes.map((size) => (
-                  <Badge key={size} variant="outline" className="text-xs">
-                    {size} tanks
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* Tanks Visited */}
-            <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
-              <span className="flex items-center gap-1 text-sm font-medium text-blue-700">
-                <Eye className="h-4 w-4" />
-                Tanks Visited:
-              </span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                {lastSelectedVisitor.tanksVisited.length}
-              </Badge>
-            </div>
-          </div>
-        )}
-
         {/* Entrance Panel */}
         {lastSelectedEntrance && lastSelectedEntityType === "entrance" && (
           <div className="space-y-4">
@@ -408,12 +266,7 @@ export const EntityInfoPanel = () => {
                 Visitor Traffic:
               </span>
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                {
-                  Array.from(visitors.values()).filter(
-                    (v) => v.entryEntranceId === lastSelectedEntrance.id,
-                  ).length
-                }{" "}
-                active
+                0 active
               </Badge>
             </div>
           </div>
