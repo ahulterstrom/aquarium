@@ -22,6 +22,8 @@ const VisitorMesh = ({
         return 0x00ff00; // Green - just arrived
       case "exploring":
         return 0xffff00; // Yellow - looking around
+      case "thinking":
+        return 0x800080; // Purple - deciding what to do
       case "viewing":
         return 0x0000ff; // Blue - engaged with content
       case "satisfied":

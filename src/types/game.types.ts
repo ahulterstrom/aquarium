@@ -52,6 +52,7 @@ export interface FishSpecies {
 export type VisitorState =
   | "entering"
   | "exploring"
+  | "thinking"
   | "viewing"
   | "satisfied"
   | "leaving";
@@ -78,7 +79,7 @@ export interface Visitor {
   // State management
   state: VisitorState;
   targetPosition: Vector3 | null;
-  targetTankId: string | null;
+  targetPOIId: string | null; // Which POI they're heading to
   currentPath: GridPosition[] | null;
   pathIndex?: number; // Current index in the path array
 

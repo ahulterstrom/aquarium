@@ -10,7 +10,7 @@ import {
   GridCell,
 } from "../types/game.types";
 import { generateVisitorName } from "../utils/nameGenerator";
-import { WaypointSystem } from "../utils/waypointSystem";
+import { POISystem } from "../utils/poiSystem";
 import { nanoid } from "nanoid";
 import { GridStore as GridStoreInterface } from "../stores/gridStore";
 
@@ -19,18 +19,14 @@ export class VisitorSystem {
   private tanks: Map<string, Tank>;
   private entrances: Map<string, Entrance>;
   private gridStore: GridStoreInterface;
-  private waypointSystem: WaypointSystem;
-  private currentWaypoints: Map<string, string> = new Map(); // visitorId -> waypointId
+  private poiSystem: POISystem;
 
   constructor(gridStore: GridStoreInterface) {
     this.visitors = new Map();
     this.tanks = new Map();
     this.entrances = new Map();
     this.gridStore = gridStore;
-    this.waypointSystem = new WaypointSystem(
-      { width: gridStore.gridSize.width, depth: gridStore.gridSize.depth },
-      gridStore,
-    );
+    this.poiSystem = new POISystem(gridStore);
   }
 
   // Update references from game state
@@ -38,8 +34,8 @@ export class VisitorSystem {
     this.tanks = tanks;
     this.entrances = entrances;
 
-    // Regenerate waypoints when tanks change
-    this.waypointSystem.generateWaypoints(tanks);
+    // Update POIs when tanks change
+    this.poiSystem.updatePOIs(tanks);
   }
 
   // Create a new visitor with random interests
@@ -81,7 +77,7 @@ export class VisitorSystem {
 
       state: "entering",
       targetPosition: null,
-      targetTankId: null,
+      targetPOIId: null,
       currentPath: null,
       pathIndex: 0,
 
@@ -131,6 +127,9 @@ export class VisitorSystem {
       case "exploring":
         this.handleExploringState(visitor, deltaTime);
         break;
+      case "thinking":
+        this.handleThinkingState(visitor, deltaTime);
+        break;
       case "viewing":
         this.handleViewingState(visitor, deltaTime);
         break;
@@ -146,93 +145,31 @@ export class VisitorSystem {
   private handleEnteringState(visitor: Visitor, deltaTime: number) {
     // Move away from entrance into the aquarium
     if (!visitor.targetPosition) {
-      // Find a central exploration waypoint to move to
-      const waypoint = this.waypointSystem.findBestWaypoint(
-        visitor.position,
-        visitor.interests,
-        visitor.tanksVisited,
-        "exploration",
-      );
-
-      if (waypoint) {
-        visitor.targetPosition = waypoint.position.clone();
-        this.currentWaypoints.set(visitor.id, waypoint.id);
-      } else {
-        // Fallback to center
-        visitor.targetPosition = new THREE.Vector3(
-          ((this.gridStore.gridSize.width - 1) * 2) / 2,
-          0.5,
-          ((this.gridStore.gridSize.depth - 1) * 2) / 2,
-        );
-      }
+      // Get a random exploration position to move to
+      visitor.targetPosition = this.poiSystem.getRandomExplorationPosition();
     }
 
     this.updateVisitorMovement(visitor, deltaTime);
 
     // Check if close to target or enough time has passed
     if (this.isAtTarget(visitor) || visitor.stateTimer > 3000) {
-      this.transitionToState(visitor, "exploring");
+      this.transitionToState(visitor, "thinking");
     }
   }
 
   private handleExploringState(visitor: Visitor, deltaTime: number) {
-    // Look for interesting waypoints or continue to current target
+    // Navigate to target position
     if (!visitor.targetPosition) {
-      // First try to find a viewing waypoint for tanks we haven't seen
-      let waypoint = this.waypointSystem.findBestWaypoint(
-        visitor.position,
-        visitor.interests,
-        visitor.tanksVisited,
-        "viewing",
-      );
-
-      // If no interesting viewing spots, find exploration waypoint
-      if (!waypoint) {
-        waypoint = this.waypointSystem.findBestWaypoint(
-          visitor.position,
-          visitor.interests,
-          visitor.tanksVisited,
-          "exploration",
-        );
-      }
-
-      if (waypoint) {
-        visitor.targetPosition = waypoint.position.clone();
-        this.currentWaypoints.set(visitor.id, waypoint.id);
-
-        // If it's a viewing waypoint, prepare to transition to viewing
-        if (waypoint.type === "viewing" && waypoint.associatedTankId) {
-          visitor.targetTankId = waypoint.associatedTankId;
-        }
-      } else {
-        // Transition to leaving
-        visitor.thoughts.push("I couldn't find anything interesting...");
-        this.transitionToState(visitor, "leaving");
-      }
+      // Get a random exploration position
+      visitor.targetPosition = this.poiSystem.getRandomExplorationPosition();
     }
 
-    // Use steering behaviors for movement
     this.updateVisitorMovement(visitor, deltaTime);
 
-    // Check if we've reached our waypoint
+    // Check if we've reached our target
     if (this.isAtTarget(visitor)) {
-      const waypointId = this.currentWaypoints.get(visitor.id);
-      if (waypointId) {
-        const waypoint = this.waypointSystem.getWaypoint(waypointId);
-        if (waypoint) {
-          this.waypointSystem.markWaypointVisited(waypointId);
-
-          // If this is a viewing waypoint, transition to viewing
-          if (waypoint.type === "viewing" && waypoint.associatedTankId) {
-            this.transitionToState(visitor, "viewing");
-            return;
-          }
-        }
-      }
-
-      // Clear target to find a new one
-      visitor.targetPosition = null;
-      this.currentWaypoints.delete(visitor.id);
+      // Enter thinking state to decide what to do next
+      this.transitionToState(visitor, "thinking");
     }
 
     // If we've been exploring too long or reached satisfaction, time to leave
@@ -244,42 +181,90 @@ export class VisitorSystem {
     }
   }
 
-  private handleViewingState(visitor: Visitor, deltaTime: number) {
-    // Stop moving and look at the tank
+  private handleThinkingState(visitor: Visitor, deltaTime: number) {
+    // Stop moving and think for 1-2 seconds
     visitor.velocity.set(0, 0, 0);
 
-    const tank = visitor.targetTankId
-      ? this.tanks.get(visitor.targetTankId)
-      : null;
-    if (tank) {
-      // Calculate satisfaction gain from this tank
-      const satisfactionGain = this.calculateSatisfactionGain(
-        visitor,
-        tank,
-        deltaTime,
-      );
-      visitor.satisfaction = Math.min(
-        visitor.satisfaction + satisfactionGain,
-        visitor.maxSatisfaction,
-      );
-
-      // Add to visited tanks
-      if (!visitor.tanksVisited.includes(tank.id)) {
-        visitor.tanksVisited.push(tank.id);
+    // After thinking time, decide what to do next
+    if (visitor.stateTimer > 1000 + Math.random() * 1000) { // 1-2 seconds
+      // Random choice between exploring and viewing a POI
+      if (Math.random() < 0.5) {
+        // Choose to explore
+        this.transitionToState(visitor, "exploring");
+      } else {
+        // Choose to view a POI
+        const poi = this.poiSystem.getRandomPOI();
+        if (poi) {
+          // Calculate viewing position for this POI
+          const viewingPosition = this.poiSystem.calculateViewingPosition(poi);
+          if (viewingPosition) {
+            visitor.targetPosition = viewingPosition;
+            visitor.targetPOIId = poi.id;
+            this.transitionToState(visitor, "viewing");
+          } else {
+            // If no valid viewing position, go explore instead
+            this.transitionToState(visitor, "exploring");
+          }
+        } else {
+          // No POIs available, go explore
+          this.transitionToState(visitor, "exploring");
+        }
       }
     }
+  }
 
-    // After viewing for a while, go back to exploring or leave if satisfied
-    const viewingTime = visitor.preferences.viewingTime;
-    const minViewTime =
-      viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
+  private handleViewingState(visitor: Visitor, deltaTime: number) {
+    // If we have a target position, navigate to it first
+    if (visitor.targetPosition && !this.isAtTarget(visitor)) {
+      this.updateVisitorMovement(visitor, deltaTime);
+      return;
+    }
 
-    if (visitor.stateTimer > minViewTime) {
-      if (visitor.satisfaction >= visitor.maxSatisfaction) {
-        this.transitionToState(visitor, "satisfied");
+    // If we have a target POI, check if we're close enough to view it
+    if (visitor.targetPOIId) {
+      const poi = this.poiSystem.getPOIs().find(p => p.id === visitor.targetPOIId);
+      if (poi && this.poiSystem.isWithinViewingDistance(visitor.position, poi)) {
+        // Stop moving and look at the POI
+        visitor.velocity.set(0, 0, 0);
+
+        if (poi.type === "tank") {
+          const tank = poi.object as Tank;
+          // Calculate satisfaction gain from this tank
+          const satisfactionGain = this.calculateSatisfactionGain(
+            visitor,
+            tank,
+            deltaTime,
+          );
+          visitor.satisfaction = Math.min(
+            visitor.satisfaction + satisfactionGain,
+            visitor.maxSatisfaction,
+          );
+
+          // Add to visited tanks
+          if (!visitor.tanksVisited.includes(tank.id)) {
+            visitor.tanksVisited.push(tank.id);
+          }
+        }
+
+        // After viewing for a while, go back to thinking
+        const viewingTime = visitor.preferences.viewingTime;
+        const minViewTime =
+          viewingTime.min + Math.random() * (viewingTime.max - viewingTime.min);
+
+        if (visitor.stateTimer > minViewTime) {
+          if (visitor.satisfaction >= visitor.maxSatisfaction) {
+            this.transitionToState(visitor, "satisfied");
+          } else {
+            this.transitionToState(visitor, "thinking");
+          }
+        }
       } else {
-        this.transitionToState(visitor, "exploring");
+        // Not close enough to POI, go back to thinking
+        this.transitionToState(visitor, "thinking");
       }
+    } else {
+      // No target POI, go back to thinking
+      this.transitionToState(visitor, "thinking");
     }
   }
 
@@ -351,6 +336,13 @@ export class VisitorSystem {
     // Convert current position to grid coordinates
     const currentGridPos = this.worldToGrid(visitor.position);
     const targetGridPos = this.worldToGrid(visitor.targetPosition);
+
+    // Check if we're already at the target grid position - no pathfinding needed
+    if (currentGridPos.x === targetGridPos.x && currentGridPos.z === targetGridPos.z) {
+      // Move directly to the exact target position
+      this.moveDirectlyToTarget(visitor, deltaTime);
+      return;
+    }
 
     // Check if we need to calculate or recalculate the path
     const needsNewPath =
@@ -505,14 +497,14 @@ export class VisitorSystem {
       visitor.targetPosition = previousTarget;
     }
 
-    visitor.targetTankId = null;
+    // Clear POI reference unless transitioning to viewing state
+    if (newState !== "viewing") {
+      visitor.targetPOIId = null;
+    }
 
     // Clear pathfinding data when changing states
     visitor.currentPath = null;
     visitor.pathIndex = 0;
-
-    // Clean up waypoint tracking
-    this.currentWaypoints.delete(visitor.id);
   }
 
   private calculateSatisfactionGain(
