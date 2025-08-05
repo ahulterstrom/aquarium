@@ -81,7 +81,8 @@ export interface Visitor {
   targetPosition: Vector3 | null;
   targetPOIId: string | null; // Which POI they're heading to
   currentPath: GridPosition[] | null;
-  pathIndex?: number; // Current index in the path array
+  smoothPath: Vector3[] | null; // Smoothed world positions for movement
+  pathIndex?: number; // Current index in the smoothed path array
 
   // Interest & satisfaction system
   interests: VisitorInterests;

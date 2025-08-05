@@ -174,6 +174,10 @@ export const useGridStore = createSelectors(
           { x: 1, z: 0 }, // East
           { x: 0, z: -1 }, // South
           { x: -1, z: 0 }, // West
+          { x: 1, z: 1 }, // Northeast
+          { x: 1, z: -1 }, // Southeast
+          { x: -1, z: -1 }, // Southwest
+          { x: -1, z: 1 }, // Northwest
         ];
 
         for (const dir of directions) {
@@ -309,7 +313,8 @@ export const useGridStore = createSelectors(
 );
 
 function heuristic(a: GridPosition, b: GridPosition): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.z - b.z);
+  // Use Chebyshev distance for 8-directional movement (including diagonals)
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.z - b.z));
 }
 
 function reconstructPath(

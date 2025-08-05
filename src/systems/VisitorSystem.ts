@@ -11,6 +11,7 @@ import {
 } from "../types/game.types";
 import { generateVisitorName } from "../utils/nameGenerator";
 import { POISystem } from "../utils/poiSystem";
+import { PathSmoother } from "../utils/pathSmoothing";
 import { nanoid } from "nanoid";
 import { GridStore as GridStoreInterface } from "../stores/gridStore";
 
@@ -20,6 +21,7 @@ export class VisitorSystem {
   private entrances: Map<string, Entrance>;
   private gridStore: GridStoreInterface;
   private poiSystem: POISystem;
+  private pathSmoother: PathSmoother;
 
   constructor(gridStore: GridStoreInterface) {
     this.visitors = new Map();
@@ -27,6 +29,7 @@ export class VisitorSystem {
     this.entrances = new Map();
     this.gridStore = gridStore;
     this.poiSystem = new POISystem(gridStore);
+    this.pathSmoother = new PathSmoother(gridStore);
   }
 
   // Update references from game state
@@ -79,6 +82,7 @@ export class VisitorSystem {
       targetPosition: null,
       targetPOIId: null,
       currentPath: null,
+      smoothPath: null,
       pathIndex: 0,
 
       interests,
@@ -186,7 +190,8 @@ export class VisitorSystem {
     visitor.velocity.set(0, 0, 0);
 
     // After thinking time, decide what to do next
-    if (visitor.stateTimer > 1000 + Math.random() * 1000) { // 1-2 seconds
+    if (visitor.stateTimer > 1000 + Math.random() * 1000) {
+      // 1-2 seconds
       // Random choice between exploring and viewing a POI
       if (Math.random() < 0.5) {
         // Choose to explore
@@ -222,8 +227,13 @@ export class VisitorSystem {
 
     // If we have a target POI, check if we're close enough to view it
     if (visitor.targetPOIId) {
-      const poi = this.poiSystem.getPOIs().find(p => p.id === visitor.targetPOIId);
-      if (poi && this.poiSystem.isWithinViewingDistance(visitor.position, poi)) {
+      const poi = this.poiSystem
+        .getPOIs()
+        .find((p) => p.id === visitor.targetPOIId);
+      if (
+        poi &&
+        this.poiSystem.isWithinViewingDistance(visitor.position, poi)
+      ) {
         // Stop moving and look at the POI
         visitor.velocity.set(0, 0, 0);
 
@@ -338,7 +348,10 @@ export class VisitorSystem {
     const targetGridPos = this.worldToGrid(visitor.targetPosition);
 
     // Check if we're already at the target grid position - no pathfinding needed
-    if (currentGridPos.x === targetGridPos.x && currentGridPos.z === targetGridPos.z) {
+    if (
+      currentGridPos.x === targetGridPos.x &&
+      currentGridPos.z === targetGridPos.z
+    ) {
       // Move directly to the exact target position
       this.moveDirectlyToTarget(visitor, deltaTime);
       return;
@@ -346,41 +359,49 @@ export class VisitorSystem {
 
     // Check if we need to calculate or recalculate the path
     const needsNewPath =
-      !visitor.currentPath ||
-      visitor.currentPath.length === 0 ||
+      !visitor.smoothPath ||
+      visitor.smoothPath.length === 0 ||
       visitor.pathIndex === undefined ||
-      visitor.pathIndex >= visitor.currentPath.length;
+      visitor.pathIndex >= visitor.smoothPath.length;
 
     if (needsNewPath) {
       // Check if both positions are valid before pathfinding
-      const startWalkable = this.gridStore.isWalkable(currentGridPos.x, currentGridPos.y, currentGridPos.z);
-      const endWalkable = this.gridStore.isWalkable(targetGridPos.x, targetGridPos.y, targetGridPos.z);
-      
-      console.log(`Pathfinding for visitor ${visitor.id}:`);
-      console.log(`  From: ${JSON.stringify(currentGridPos)} (walkable: ${startWalkable})`);
-      console.log(`  To: ${JSON.stringify(targetGridPos)} (walkable: ${endWalkable})`);
-      
+      const startWalkable = this.gridStore.isWalkable(
+        currentGridPos.x,
+        currentGridPos.y,
+        currentGridPos.z,
+      );
+      const endWalkable = this.gridStore.isWalkable(
+        targetGridPos.x,
+        targetGridPos.y,
+        targetGridPos.z,
+      );
+
       if (!startWalkable || !endWalkable) {
         console.warn(`Cannot pathfind - start or end position not walkable`);
         // Fall back to direct movement
         this.moveDirectlyToTarget(visitor, deltaTime);
         return;
       }
-      
+
       // Calculate A* path to target with timeout protection
       try {
         const startTime = Date.now();
         const path = this.gridStore.findPath(currentGridPos, targetGridPos);
         const endTime = Date.now();
-        
+
         if (endTime - startTime > 100) {
           console.warn(`Pathfinding took ${endTime - startTime}ms - too long!`);
         }
-        
+
         if (path && path.length > 0) {
           visitor.currentPath = path;
+          // Generate smoothed path from grid path
+          visitor.smoothPath = this.pathSmoother.smoothPath(path);
           visitor.pathIndex = 0;
-          console.log(`Generated path: ${path.length} nodes`);
+          console.log(
+            `Generated path: ${path.length} grid nodes, ${visitor.smoothPath.length} smooth points`,
+          );
         } else {
           console.warn(`No path found - using direct movement`);
           this.moveDirectlyToTarget(visitor, deltaTime);
@@ -398,48 +419,39 @@ export class VisitorSystem {
   }
 
   private followPath(visitor: Visitor, deltaTime: number) {
-    if (!visitor.currentPath || visitor.currentPath.length === 0) return;
+    if (!visitor.smoothPath || visitor.smoothPath.length === 0) return;
 
     // Initialize path index if needed
     if (visitor.pathIndex === undefined) visitor.pathIndex = 0;
 
-    // Get current target node from path
-    const currentTargetNode = visitor.currentPath[visitor.pathIndex];
-    if (!currentTargetNode) return;
+    // Get current target point from smoothed path
+    const currentTargetPoint = visitor.smoothPath[visitor.pathIndex];
+    if (!currentTargetPoint) return;
 
-    // Convert grid position to world position
-    const targetWorldPos = this.gridToWorld(currentTargetNode);
-    const distance = visitor.position.distanceTo(targetWorldPos);
+    const distance = visitor.position.distanceTo(currentTargetPoint);
 
-    // Check if we've reached the current node
-    if (distance < 0.3) {
+    // Check if we've reached the current point (smaller threshold for smoother movement)
+    if (distance < 0.2) {
       visitor.pathIndex++;
 
       // Check if we've reached the end of the path
-      if (visitor.pathIndex >= visitor.currentPath.length) {
+      if (visitor.pathIndex >= visitor.smoothPath.length) {
+        visitor.smoothPath = null;
         visitor.currentPath = null;
         visitor.pathIndex = 0;
         visitor.velocity.set(0, 0, 0);
         return;
       }
-
-      // Move to next node
-      const nextNode = visitor.currentPath[visitor.pathIndex];
-      const nextWorldPos = this.gridToWorld(nextNode);
-      const direction = nextWorldPos.clone().sub(visitor.position).normalize();
-      visitor.velocity = direction.multiplyScalar(
-        visitor.preferences.walkingSpeed,
-      );
-    } else {
-      // Move toward current target node
-      const direction = targetWorldPos
-        .clone()
-        .sub(visitor.position)
-        .normalize();
-      visitor.velocity = direction.multiplyScalar(
-        visitor.preferences.walkingSpeed,
-      );
     }
+
+    // Move toward current target point
+    const direction = currentTargetPoint
+      .clone()
+      .sub(visitor.position)
+      .normalize();
+    visitor.velocity = direction.multiplyScalar(
+      visitor.preferences.walkingSpeed,
+    );
 
     // Apply movement
     visitor.position.add(
@@ -504,6 +516,7 @@ export class VisitorSystem {
 
     // Clear pathfinding data when changing states
     visitor.currentPath = null;
+    visitor.smoothPath = null;
     visitor.pathIndex = 0;
   }
 
