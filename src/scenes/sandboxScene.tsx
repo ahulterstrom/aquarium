@@ -1,215 +1,15 @@
+import { Entrances } from "@/components/entrances";
+import { Tanks } from "@/components/tanks";
+import { Visitors } from "@/components/visitors";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import { MapControls, OrthographicCamera } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
-import { GameSystems } from "../components/systems/GameSystems";
+import { useEffect, useState } from "react";
 import { Grid } from "../components/game/Grid";
+import { GameSystems } from "../components/systems/GameSystems";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
-import { Entrance, Tank as TankType, Visitor } from "../types/game.types";
-import { Visitors } from "@/components/visitors";
-
-const TankMesh = ({
-  tank,
-  isSelected,
-  onClick,
-}: {
-  tank: TankType;
-  isSelected: boolean;
-  onClick: (tank: TankType) => void;
-}) => {
-  const groupRef = useRef<THREE.Group>(null);
-
-  const getDimensions = () => {
-    switch (tank.size) {
-      case "small":
-        return [1.5, 1.2, 1.5];
-      case "medium":
-        return [1.8, 1.5, 1.8];
-      case "large":
-        return [2, 2, 2];
-      default:
-        return [1.5, 1.2, 1.5];
-    }
-  };
-
-  const [width, height, depth] = getDimensions();
-
-  return (
-    <group
-      ref={groupRef}
-      position={[tank.position.x * 2, height / 2, tank.position.z * 2]}
-      onClick={(e) => {
-        e.stopPropagation();
-        console.log("Tank clicked:", tank.id);
-        onClick(tank);
-      }}
-      onPointerEnter={(e) => {
-        e.stopPropagation();
-        document.body.style.cursor = "pointer";
-      }}
-      onPointerLeave={() => {
-        document.body.style.cursor = "default";
-      }}
-    >
-      {/* Glass */}
-      <mesh>
-        <boxGeometry args={[width, height, depth]} />
-        <meshPhysicalMaterial
-          color={0xffffff}
-          metalness={0}
-          roughness={0}
-          transmission={0.95}
-          thickness={0.1}
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {/* Water */}
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[width - 0.1, height - 0.2, depth - 0.1]} />
-        <meshPhysicalMaterial
-          color={0x006994}
-          metalness={0}
-          roughness={0.1}
-          transmission={0.9}
-          thickness={1}
-          transparent
-          opacity={0.7}
-        />
-      </mesh>
-
-      {/* Selection Highlight */}
-      {isSelected && (
-        <mesh position={[0, -0.5, 0]}>
-          <ringGeometry args={[width * 0.7, width * 0.8, 16]} />
-          <meshBasicMaterial
-            color={0x00ff00}
-            transparent
-            opacity={0.8}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-    </group>
-  );
-};
-
-const EntranceMesh = ({
-  entrance,
-  onClick,
-}: {
-  entrance: Entrance;
-  onClick: (entrance: Entrance) => void;
-}) => {
-  const groupRef = useRef<THREE.Group>(null);
-
-  // Calculate position offset and rotation based on edge
-  const getPositionAndRotation = () => {
-    const baseX = entrance.position.x * 2;
-    const baseZ = entrance.position.z * 2;
-    let offsetX = 0;
-    let offsetZ = 0;
-    let rotationY = 0;
-
-    switch (entrance.edge) {
-      case "north": // Top edge, door faces south
-        offsetZ = -1; // Move to north edge of tile
-        rotationY = 0;
-        break;
-      case "south": // Bottom edge, door faces north
-        offsetZ = 1; // Move to south edge of tile
-        rotationY = Math.PI;
-        break;
-      case "east": // Right edge, door faces west
-        offsetX = 1; // Move to east edge of tile
-        rotationY = Math.PI / 2;
-        break;
-      case "west": // Left edge, door faces east
-        offsetX = -1; // Move to west edge of tile
-        rotationY = -Math.PI / 2;
-        break;
-    }
-
-    return {
-      position: [baseX + offsetX, 0, baseZ + offsetZ] as [
-        number,
-        number,
-        number,
-      ],
-      rotation: [0, rotationY, 0] as [number, number, number],
-    };
-  };
-
-  const { position, rotation } = getPositionAndRotation();
-
-  return (
-    <group
-      ref={groupRef}
-      position={position}
-      rotation={rotation}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(entrance);
-      }}
-      onPointerEnter={(e) => {
-        e.stopPropagation();
-        document.body.style.cursor = "pointer";
-      }}
-      onPointerLeave={() => {
-        document.body.style.cursor = "default";
-      }}
-    >
-      {/* Door frame */}
-      <mesh position={[0, 1.5, 0]}>
-        <boxGeometry args={[2, 3, 0.2]} />
-        <meshLambertMaterial color={0x8b4513} />
-      </mesh>
-
-      {/* Left door panel */}
-      <mesh position={[-0.5, 1.25, 0.05]}>
-        <boxGeometry args={[0.9, 2.5, 0.15]} />
-        <meshLambertMaterial color={0x654321} />
-      </mesh>
-
-      {/* Right door panel */}
-      <mesh position={[0.5, 1.25, 0.05]}>
-        <boxGeometry args={[0.9, 2.5, 0.15]} />
-        <meshLambertMaterial color={0x654321} />
-      </mesh>
-
-      {/* Left handle */}
-      <mesh position={[-0.2, 1.25, 0.2]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.2]} />
-        <meshLambertMaterial color={0xffd700} />
-      </mesh>
-
-      {/* Right handle */}
-      <mesh position={[0.2, 1.25, 0.2]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.2]} />
-        <meshLambertMaterial color={0xffd700} />
-      </mesh>
-
-      {/* Welcome sign (if main entrance) */}
-      {entrance.isMainEntrance && (
-        <>
-          <mesh position={[0, 3.2, 0.1]}>
-            <boxGeometry args={[1.5, 0.4, 0.1]} />
-            <meshLambertMaterial color={0x4169e1} />
-          </mesh>
-          <mesh position={[0, 3.2, 0.16]}>
-            <boxGeometry args={[1.2, 0.2, 0.02]} />
-            <meshLambertMaterial color={0xffffff} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-};
+import { Entrance, Tank as TankType } from "../types/game.types";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -219,7 +19,6 @@ export const SandboxScene = () => {
     z: number;
   } | null>(null);
 
-  const tanks = useGameStore.use.tanks();
   const entrances = useGameStore.use.entrances();
   const addTank = useGameStore.use.addTank();
   const addEntrance = useGameStore.use.addEntrance();
@@ -233,13 +32,8 @@ export const SandboxScene = () => {
   const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
 
   const placementMode = useUIStore.use.placementMode();
-  const selectedTankId = useUIStore.use.selectedTankId();
-  const selectTank = useUIStore.use.selectTank();
-  const selectEntrance = useUIStore.use.selectEntrance();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
-
-  console.log("cells:", cells);
 
   useEffect(() => {
     initializeGrid(3, 1, 3);
@@ -291,14 +85,6 @@ export const SandboxScene = () => {
       // Clear all selections when clicking on empty space
       clearSelection();
     }
-  };
-
-  const handleTankClick = (tank: TankType) => {
-    selectTank(tank.id);
-  };
-
-  const handleEntranceClick = (entrance: Entrance) => {
-    selectEntrance(entrance.id);
   };
 
   return (
@@ -376,26 +162,8 @@ export const SandboxScene = () => {
         </group>
       )}
 
-      {/* Tanks */}
-      {Array.from(tanks.values()).map((tank) => (
-        <TankMesh
-          key={tank.id}
-          tank={tank}
-          isSelected={selectedTankId === tank.id}
-          onClick={handleTankClick}
-        />
-      ))}
-
-      {/* Entrances */}
-      {Array.from(entrances.values()).map((entrance) => (
-        <EntranceMesh
-          key={entrance.id}
-          entrance={entrance}
-          onClick={handleEntranceClick}
-        />
-      ))}
-
-      {/* Visitors */}
+      <Tanks />
+      <Entrances />
       <Visitors />
     </>
   );

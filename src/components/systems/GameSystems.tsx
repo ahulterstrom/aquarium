@@ -2,7 +2,6 @@ import { processDayEnd } from "@/components/systems/daySystem";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import { processTick } from "./tickSystem";
 import { attemptSpawnVisitors, updateVisitors } from "./visitorSystem";
 import { updateWaterQuality } from "./waterSystem";
 import { TICK_RATES } from "@/lib/constants";
@@ -15,7 +14,9 @@ export function GameSystems() {
     daily: 0,
   });
 
-  const { gameSpeed, isPaused, updateGameTime } = useGameStore();
+  const gameSpeed = useGameStore.use.gameSpeed();
+  const isPaused = useGameStore.use.isPaused();
+  const updateGameTime = useGameStore.use.updateGameTime();
 
   useFrame((state, delta) => {
     if (isPaused) return;
