@@ -14,6 +14,7 @@ import { POISystem } from "../utils/poiSystem";
 import { PathSmoother } from "../utils/pathSmoothing";
 import { nanoid } from "nanoid";
 import { GridStore as GridStoreInterface } from "../stores/gridStore";
+import { CoinSystem } from "./CoinSystem";
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;
@@ -22,14 +23,16 @@ export class VisitorSystem {
   private gridStore: GridStoreInterface;
   private poiSystem: POISystem;
   private pathSmoother: PathSmoother;
+  private coinSystem: CoinSystem;
 
-  constructor(gridStore: GridStoreInterface) {
+  constructor(gridStore: GridStoreInterface, coinSystem: CoinSystem) {
     this.visitors = new Map();
     this.tanks = new Map();
     this.entrances = new Map();
     this.gridStore = gridStore;
     this.poiSystem = new POISystem(gridStore);
     this.pathSmoother = new PathSmoother(gridStore);
+    this.coinSystem = coinSystem;
   }
 
   // Update references from game state
@@ -113,6 +116,9 @@ export class VisitorSystem {
     for (const visitor of Array.from(this.visitors.values())) {
       this.updateVisitor(visitor, deltaTime);
     }
+    
+    // Update coin system for auto-despawn
+    this.coinSystem.update(Date.now());
   }
 
   private updateVisitor(visitor: Visitor, deltaTime: number) {
@@ -495,7 +501,17 @@ export class VisitorSystem {
         visitor.smoothPath = null;
         visitor.currentPath = null;
         visitor.pathIndex = 0;
-        visitor.velocity.set(0, 0, 0);
+        
+        // Gradually stop instead of instant stop
+        const deceleration = 4.0; // Units per second²
+        const maxVelocityChange = deceleration * (deltaTime / 1000);
+        
+        if (visitor.velocity.length() > maxVelocityChange) {
+          const stopDirection = visitor.velocity.clone().normalize().multiplyScalar(-maxVelocityChange);
+          visitor.velocity.add(stopDirection);
+        } else {
+          visitor.velocity.set(0, 0, 0);
+        }
         return;
       }
     }
@@ -505,9 +521,20 @@ export class VisitorSystem {
       .clone()
       .sub(visitor.position)
       .normalize();
-    visitor.velocity = direction.multiplyScalar(
+    const targetVelocity = direction.multiplyScalar(
       visitor.preferences.walkingSpeed,
     );
+
+    // Smooth acceleration/deceleration
+    const acceleration = 3.0; // Units per second²
+    const maxVelocityChange = acceleration * (deltaTime / 1000);
+    
+    const velocityDiff = targetVelocity.clone().sub(visitor.velocity);
+    if (velocityDiff.length() > maxVelocityChange) {
+      velocityDiff.normalize().multiplyScalar(maxVelocityChange);
+    }
+    
+    visitor.velocity.add(velocityDiff);
 
     // Apply movement
     visitor.position.add(
@@ -523,14 +550,35 @@ export class VisitorSystem {
 
     if (distance > 0.1) {
       direction.normalize();
-      visitor.velocity = direction.multiplyScalar(
+      const targetVelocity = direction.multiplyScalar(
         visitor.preferences.walkingSpeed,
       );
+
+      // Smooth acceleration/deceleration
+      const acceleration = 3.0; // Units per second²
+      const maxVelocityChange = acceleration * (deltaTime / 1000);
+      
+      const velocityDiff = targetVelocity.clone().sub(visitor.velocity);
+      if (velocityDiff.length() > maxVelocityChange) {
+        velocityDiff.normalize().multiplyScalar(maxVelocityChange);
+      }
+      
+      visitor.velocity.add(velocityDiff);
+
       visitor.position.add(
         visitor.velocity.clone().multiplyScalar(deltaTime / 1000),
       );
     } else {
-      visitor.velocity.set(0, 0, 0);
+      // Gradually stop when close to target
+      const deceleration = 4.0; // Units per second² (faster deceleration)
+      const maxVelocityChange = deceleration * (deltaTime / 1000);
+      
+      if (visitor.velocity.length() > maxVelocityChange) {
+        const stopDirection = visitor.velocity.clone().normalize().multiplyScalar(-maxVelocityChange);
+        visitor.velocity.add(stopDirection);
+      } else {
+        visitor.velocity.set(0, 0, 0);
+      }
     }
   }
 
@@ -552,7 +600,13 @@ export class VisitorSystem {
   }
 
   private transitionToState(visitor: Visitor, newState: VisitorState) {
+    const previousState = visitor.state;
     const previousTarget = visitor.targetPosition;
+
+    // Drop coin when leaving viewing state
+    if (previousState === "viewing" && newState !== "viewing") {
+      this.coinSystem.dropCoin(visitor.position, 1, visitor.id);
+    }
 
     visitor.state = newState;
     visitor.stateTimer = 0;
@@ -665,7 +719,6 @@ export class VisitorSystem {
 
   removeVisitor(visitorId: string) {
     this.visitors.delete(visitorId);
-    this.currentWaypoints.delete(visitorId);
   }
 
   getVisitors(): Visitor[] {
@@ -674,5 +727,9 @@ export class VisitorSystem {
 
   getVisitorCount(): number {
     return this.visitors.size;
+  }
+
+  getPOI(id: string) {
+    return this.poiSystem.getPOIs().find(poi => poi.id === id);
   }
 }

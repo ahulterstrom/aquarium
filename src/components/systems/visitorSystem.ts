@@ -1,6 +1,7 @@
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { VisitorSystem } from "../../systems/VisitorSystem";
+import { getCoinSystem } from "./coinSystem";
 
 // Global visitor system instance
 let visitorSystem: VisitorSystem | null = null;
@@ -8,7 +9,8 @@ let visitorSystem: VisitorSystem | null = null;
 export function getVisitorSystem(): VisitorSystem {
   if (!visitorSystem) {
     const gridStore = useGridStore.getState();
-    visitorSystem = new VisitorSystem(gridStore);
+    const coinSystem = getCoinSystem();
+    visitorSystem = new VisitorSystem(gridStore, coinSystem);
   }
   return visitorSystem;
 }

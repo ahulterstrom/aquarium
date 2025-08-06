@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
-import { GameState, Tank, Fish, Entrance } from "../types/game.types";
+import { GameState, Tank, Fish, Entrance, Coin } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
   fish: Map<string, Fish>;
   entrances: Map<string, Entrance>;
+  coins: Map<string, Coin>;
 
   // Time tracking
   gameTime: number; // Total game time in ms
@@ -42,10 +43,14 @@ interface GameStore extends GameState {
   removeEntrance: (id: string) => void;
   updateEntrance: (id: string, updates: Partial<Entrance>) => void;
 
+  addCoin: (coin: Coin) => void;
+  removeCoin: (id: string) => void;
+
   // Queries
   getTank: (id: string) => Tank | undefined;
   getFish: (id: string) => Fish | undefined;
   getEntrance: (id: string) => Entrance | undefined;
+  getCoin: (id: string) => Coin | undefined;
   getFishInTank: (tankId: string) => Fish[];
 
   // Game state
@@ -68,6 +73,7 @@ export const useGameStore = createSelectors(
       tanks: new Map(),
       fish: new Map(),
       entrances: new Map(),
+      coins: new Map(),
       gameTime: 0,
       accumulators: {
         tick: 0,
@@ -204,7 +210,22 @@ export const useGameStore = createSelectors(
           return { entrances };
         }),
 
+      addCoin: (coin) =>
+        set((state) => {
+          const coins = new Map(state.coins);
+          coins.set(coin.id, coin);
+          return { coins };
+        }),
+
+      removeCoin: (id) =>
+        set((state) => {
+          const coins = new Map(state.coins);
+          coins.delete(id);
+          return { coins };
+        }),
+
       getEntrance: (id) => get().entrances.get(id),
+      getCoin: (id) => get().coins.get(id),
 
       getFishInTank: (tankId) => {
         const state = get();

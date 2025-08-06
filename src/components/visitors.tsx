@@ -4,6 +4,26 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
 
+// Helper function to interpolate angles smoothly
+function lerpAngle(from: number, to: number, factor: number): number {
+  // Normalize angles to [-π, π]
+  const normalizeAngle = (angle: number) => {
+    while (angle > Math.PI) angle -= 2 * Math.PI;
+    while (angle < -Math.PI) angle += 2 * Math.PI;
+    return angle;
+  };
+
+  from = normalizeAngle(from);
+  to = normalizeAngle(to);
+
+  // Find the shortest path between angles
+  let diff = to - from;
+  if (diff > Math.PI) diff -= 2 * Math.PI;
+  if (diff < -Math.PI) diff += 2 * Math.PI;
+
+  return from + diff * factor;
+}
+
 const VisitorMesh = ({
   visitorId,
   onClick,
@@ -13,6 +33,8 @@ const VisitorMesh = ({
 }) => {
   const meshRef = useRef<THREE.Group>(null);
   const bodyMaterialRef = useRef<THREE.MeshLambertMaterial>(null);
+  const leftArmMaterialRef = useRef<THREE.MeshLambertMaterial>(null);
+  const rightArmMaterialRef = useRef<THREE.MeshLambertMaterial>(null);
   const orbMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
 
   // Get color based on visitor state
@@ -40,23 +62,61 @@ const VisitorMesh = ({
   // Update position and color imperatively every frame
   useFrame(() => {
     if (!meshRef.current) return;
-    
+
     const visitorSystem = getVisitorSystem();
-    const visitor = visitorSystem.getVisitors().find(v => v.id === visitorId);
-    
+    const visitor = visitorSystem.getVisitors().find((v) => v.id === visitorId);
+
     if (!visitor) return;
 
     // Update position directly
     meshRef.current.position.set(
       visitor.position.x,
       visitor.position.y,
-      visitor.position.z
+      visitor.position.z,
     );
+
+    // Update rotation to face movement direction or POI
+    let targetAngle: number | null = null;
+
+    if (visitor.state === "viewing" && visitor.targetPOIId) {
+      // Face the POI when viewing
+      const visitorSystem = getVisitorSystem();
+      const poi = visitorSystem.getPOI(visitor.targetPOIId);
+      if (poi) {
+        const direction = poi.position.clone().sub(visitor.position);
+        if (direction.length() > 0.01) {
+          targetAngle = Math.atan2(direction.x, direction.z);
+        }
+      }
+    } else if (visitor.velocity.length() > 0.01) {
+      // Face movement direction when moving
+      targetAngle = Math.atan2(visitor.velocity.x, visitor.velocity.z);
+    }
+
+    if (targetAngle !== null) {
+      const currentAngle = meshRef.current.rotation.y;
+
+      let rotationSpeed; // Default rotation speed
+      if (visitor.velocity.length() <= 0.05) {
+        // Smooth rotation when stationary
+        rotationSpeed = 3.3; // Radians per second
+      } else {
+        rotationSpeed = 6.6; // Radians per second
+      }
+      const factor = Math.min(1.0, rotationSpeed * (1 / 60)); // Assuming 60fps
+      meshRef.current.rotation.y = lerpAngle(currentAngle, targetAngle, factor);
+    }
 
     // Update material colors based on state
     const color = getVisitorColor(visitor.state);
     if (bodyMaterialRef.current) {
       bodyMaterialRef.current.color.setHex(color);
+    }
+    if (leftArmMaterialRef.current) {
+      leftArmMaterialRef.current.color.setHex(color);
+    }
+    if (rightArmMaterialRef.current) {
+      rightArmMaterialRef.current.color.setHex(color);
     }
     if (orbMaterialRef.current) {
       orbMaterialRef.current.color.setHex(color);
@@ -80,7 +140,7 @@ const VisitorMesh = ({
     >
       {/* Body */}
       <mesh>
-        <boxGeometry args={[0.3, 0.6, 0.3]} />
+        <boxGeometry args={[0.3, 0.6, 0.2]} />
         <meshLambertMaterial ref={bodyMaterialRef} color={0x888888} />
       </mesh>
 
@@ -90,15 +150,30 @@ const VisitorMesh = ({
         <meshLambertMaterial color={0xfdbcb4} />
       </mesh>
 
+      {/* Eyes */}
+      <mesh position={[-0.04, 0.45, 0.09]}>
+        <sphereGeometry args={[0.03, 6, 6]} />
+        <meshLambertMaterial color={0x000000} />
+      </mesh>
+      <mesh position={[0.04, 0.45, 0.09]}>
+        <sphereGeometry args={[0.03, 6, 6]} />
+        <meshLambertMaterial color={0x000000} />
+      </mesh>
+
+      {/* Arms */}
+      <mesh position={[-0.18, 0.13, 0]} rotation={[0, 0, -Math.PI]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.25, 6]} />
+        <meshLambertMaterial ref={leftArmMaterialRef} color={0x888888} />
+      </mesh>
+      <mesh position={[0.18, 0.13, 0]} rotation={[0, 0, Math.PI]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.25, 6]} />
+        <meshLambertMaterial ref={rightArmMaterialRef} color={0x888888} />
+      </mesh>
+
       {/* State indicator (small floating orb) */}
       <mesh position={[0, 0.8, 0]}>
         <sphereGeometry args={[0.05, 6, 6]} />
-        <meshBasicMaterial
-          ref={orbMaterialRef}
-          color={0x888888}
-          transparent
-          opacity={0.7}
-        />
+        <meshBasicMaterial ref={orbMaterialRef} color={0x888888} />
       </mesh>
     </group>
   );
@@ -107,22 +182,28 @@ const VisitorMesh = ({
 export const Visitors = () => {
   const selectVisitor = useUIStore.use.selectVisitor();
   const [visitorIds, setVisitorIds] = useState<string[]>([]);
-  
-  const handleVisitorClick = useCallback((visitorId: string) => {
-    selectVisitor(visitorId);
-  }, [selectVisitor]);
+
+  const handleVisitorClick = useCallback(
+    (visitorId: string) => {
+      selectVisitor(visitorId);
+    },
+    [selectVisitor],
+  );
 
   // Only update the visitor list when visitors are added/removed (not every frame)
   useFrame((state, delta) => {
     const frameCount = state.clock.elapsedTime;
-    if (frameCount % 1 < delta) { // Check for new/removed visitors every 1 second
+    if (frameCount % 1 < delta) {
+      // Check for new/removed visitors every 1 second
       const visitorSystem = getVisitorSystem();
       const currentVisitors = visitorSystem.getVisitors();
-      const currentIds = currentVisitors.map(v => v.id);
-      
+      const currentIds = currentVisitors.map((v) => v.id);
+
       // Only update React state if the visitor list changed
-      if (currentIds.length !== visitorIds.length || 
-          !currentIds.every(id => visitorIds.includes(id))) {
+      if (
+        currentIds.length !== visitorIds.length ||
+        !currentIds.every((id) => visitorIds.includes(id))
+      ) {
         setVisitorIds(currentIds);
       }
     }

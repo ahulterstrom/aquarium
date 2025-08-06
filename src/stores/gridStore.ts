@@ -200,28 +200,17 @@ export const useGridStore = createSelectors(
           console.log(`No cell at ${x},${y},${z}`);
           return false;
         }
-        
+
         // First check basic walkability
-        if (cell.occupied || (cell.type !== "path" && cell.type !== "empty")) {
+        if (
+          (cell.occupied && cell.type !== "entrance") ||
+          (cell.type !== "path" &&
+            cell.type !== "empty" &&
+            cell.type !== "entrance")
+        ) {
           return false;
         }
-        
-        // Then check distance to nearby tanks (1.2 tile buffer)
-        const checkRadius = 1; // Check cells within 1 tile
-        for (let dx = -checkRadius; dx <= checkRadius; dx++) {
-          for (let dz = -checkRadius; dz <= checkRadius; dz++) {
-            if (dx === 0 && dz === 0) continue; // Skip self
-            
-            const nearbyCell = get().getCell(x + dx, y, z + dz);
-            if (nearbyCell && nearbyCell.type === "tank") {
-              // For diagonal neighbors, prevent movement (prevents corner cutting)
-              if (Math.abs(dx) === 1 && Math.abs(dz) === 1) {
-                return false;
-              }
-            }
-          }
-        }
-        
+
         return true;
       },
 

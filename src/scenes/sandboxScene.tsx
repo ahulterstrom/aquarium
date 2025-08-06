@@ -1,11 +1,13 @@
 import { Entrances } from "@/components/entrances";
 import { Tanks } from "@/components/tanks";
 import { Visitors } from "@/components/visitors";
+import { Coins } from "@/components/coins";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import { MapControls, OrthographicCamera } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import { Grid } from "../components/game/Grid";
 import { GameSystems } from "../components/systems/GameSystems";
+import { initializeCoinSystem } from "../components/systems/coinSystem";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
@@ -34,10 +36,13 @@ export const SandboxScene = () => {
   const placementMode = useUIStore.use.placementMode();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
+  const addMoney = useGameStore.use.addMoney();
 
   useEffect(() => {
     initializeGrid(3, 1, 3);
-  }, [initializeGrid]);
+
+    initializeCoinSystem();
+  }, [initializeGrid, addMoney]);
 
   const handleCellClick = (x: number, z: number) => {
     if (placementMode === "tank") {
@@ -107,7 +112,10 @@ export const SandboxScene = () => {
         minDistance={5}
         maxDistance={15}
       /> */}
-      <MapControls makeDefault enableZoom={false} />
+      <MapControls
+        makeDefault
+        enableZoom={process.env.NODE_ENV === "development"}
+      />
 
       {/* Lighting */}
       <ambientLight intensity={0.6} />
@@ -165,6 +173,7 @@ export const SandboxScene = () => {
       <Tanks />
       <Entrances />
       <Visitors />
+      <Coins />
     </>
   );
 };

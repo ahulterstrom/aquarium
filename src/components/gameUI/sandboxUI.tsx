@@ -43,6 +43,7 @@ import { useMemo, useState } from "react";
 
 // Import game stores and types
 import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
+import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
 import {
   Sheet,
   SheetContent,
@@ -270,10 +271,7 @@ export const SandboxUI = () => {
         {/* Game Speed Controls - Top Center */}
         <Card className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 border-white/20 bg-white/20 p-2 shadow-sm backdrop-blur-sm">
           <CardContent className="flex items-center justify-center gap-2">
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="font-semibold text-green-700">{money}</span>
-            </div>
+            <MoneyDisplay />
             <Separator orientation="vertical" className="h-10" />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Day {day}</span>
@@ -392,6 +390,17 @@ export const SandboxUI = () => {
                     onClick={() => spawnVisitor()}
                   >
                     Debug Spawn Visitor
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      for (let i = 0; i < 10; i++) {
+                        spawnVisitor();
+                      }
+                    }}
+                  >
+                    Debug Spawn 10 Visitors
                   </Button>
                 </div>
               )}

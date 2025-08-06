@@ -115,6 +115,14 @@ export interface TankDecoration {
   scale: number;
 }
 
+export interface Coin {
+  id: string;
+  position: Vector3;
+  value: number;
+  createdAt: number; // Timestamp for auto-despawn
+  droppedByVisitorId: string;
+}
+
 export interface GameState {
   money: number;
   reputation: number;
