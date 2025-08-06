@@ -26,6 +26,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { VisitorInfo } from "@/components/gameUI/visitorInfo";
 
 export const EntityInfoPanel = () => {
   const tanks = useGameStore.use.tanks();
@@ -271,6 +272,8 @@ export const EntityInfoPanel = () => {
             </div>
           </div>
         )}
+
+        <VisitorInfo />
       </SheetContent>
     </Sheet>
   );

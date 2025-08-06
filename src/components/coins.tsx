@@ -28,9 +28,6 @@ const CoinMesh = ({
     initialized: false,
   });
 
-  // Debug visualizer ref
-  const debugRef = useRef<THREE.Mesh>(null);
-
   const handleHover = useCallback(
     (e: THREE.Event<PointerEvent>) => {
       if (animationState.current.isCollected) return;
@@ -105,12 +102,6 @@ const CoinMesh = ({
           targetPosition,
           easedProgress,
         );
-
-        // Update debug visualizer
-        if (debugRef.current) {
-          debugRef.current.position.copy(targetPosition);
-          debugRef.current.visible = true;
-        }
       }
 
       // Update scale and opacity
@@ -152,12 +143,6 @@ const CoinMesh = ({
           <meshLambertMaterial color={0xffd700} />
         </mesh>
       </group>
-
-      {/* Debug target visualizer */}
-      <mesh ref={debugRef} visible={true}>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshBasicMaterial color={0xff0000} wireframe />
-      </mesh>
     </>
   );
 };
