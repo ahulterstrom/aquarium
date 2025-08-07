@@ -237,6 +237,7 @@ export const TileExpansionPanel = () => {
               <Button
                 onClick={handleStartPlacement}
                 disabled={!hasAvailableTiles || !hasValidPositions}
+                variant={hasAvailableTiles && hasValidPositions ? "glow" : "default"}
                 className="w-full"
               >
                 <Grid3X3 className="mr-2 h-4 w-4" />
