@@ -10,6 +10,7 @@ import {
   EXPANSION_PACK_COST,
   TILES_PER_EXPANSION_PACK,
 } from "../lib/constants";
+import { useGridStore } from "./gridStore";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
@@ -19,7 +20,6 @@ interface GameStore extends GameState {
 
   // Expansion system
   expansionTiles: number; // Available tiles in inventory
-  placedExpansionTiles: Set<string>; // Placed expansion tiles (stored as "x,z" strings)
 
   // Time tracking
   gameTime: number; // Total game time in ms
@@ -92,7 +92,6 @@ export const useGameStore = createSelectors(
       entrances: new Map(),
       coins: new Map(),
       expansionTiles: 0,
-      placedExpansionTiles: new Set(),
       gameTime: 0,
       accumulators: {
         tick: 0,
@@ -286,17 +285,17 @@ export const useGameStore = createSelectors(
         return false;
       },
 
-      placeExpansionTiles: (positions) =>
-        set((state) => {
-          const newPlacedTiles = new Set(state.placedExpansionTiles);
-          for (const pos of positions) {
-            newPlacedTiles.add(`${pos.x},${pos.z}`);
-          }
-          return {
-            placedExpansionTiles: newPlacedTiles,
-            expansionTiles: state.expansionTiles - positions.length,
-          };
-        }),
+      placeExpansionTiles: (positions) => {
+        const state = get();
+        
+        // Create expansion cells in gridStore
+        useGridStore.getState().createExpansionCells(positions);
+        
+        // Update available tiles count
+        set({
+          expansionTiles: state.expansionTiles - positions.length,
+        });
+      },
 
       getAvailableExpansionPositions: (includingSelected) => {
         const state = get();
@@ -321,18 +320,17 @@ export const useGameStore = createSelectors(
 
       isValidExpansionPosition: (x, z, includingSelected) => {
         const state = get();
+        const gridState = useGridStore.getState();
         const posKey = `${x},${z}`;
-
-        // Can't place on already placed expansion tiles
-        if (state.placedExpansionTiles.has(posKey)) return false;
+        
+        // Can't place on existing cells (already part of grid)
+        const existingCell = gridState.getCell(x, 0, z);
+        if (existingCell) return false;
 
         // Can't place on selected tiles (during placement mode)
         if (includingSelected && includingSelected.has(posKey)) return false;
 
-        // Can't place on original grid (0,0 to 2,2)
-        if (x >= 0 && x <= 2 && z >= 0 && z <= 2) return false;
-
-        // Rule A: Must share a side with existing tile (original grid, placed expansion, or selected)
+        // Rule A: Must share a side with existing tile (grid cell or selected)
         const adjacentPositions = [
           { x: x - 1, z },
           { x: x + 1, z },
@@ -344,14 +342,9 @@ export const useGameStore = createSelectors(
         for (const adj of adjacentPositions) {
           const adjKey = `${adj.x},${adj.z}`;
           
-          // Check if adjacent to original grid
-          if (adj.x >= 0 && adj.x <= 2 && adj.z >= 0 && adj.z <= 2) {
-            hasAdjacentTile = true;
-            break;
-          }
-          
-          // Check if adjacent to placed expansion tile
-          if (state.placedExpansionTiles.has(adjKey)) {
+          // Check if adjacent to existing grid cell
+          const adjCell = gridState.getCell(adj.x, 0, adj.z);
+          if (adjCell) {
             hasAdjacentTile = true;
             break;
           }
@@ -395,7 +388,6 @@ export const useGameStore = createSelectors(
           entrances: new Map(),
           coins: new Map(),
           expansionTiles: 0,
-          placedExpansionTiles: new Set(),
           gameTime: 0,
           accumulators: {
             tick: 0,

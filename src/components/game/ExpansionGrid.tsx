@@ -1,51 +1,38 @@
 import { useGameStore } from "@/stores/gameStore";
+import { useGridStore } from "@/stores/gridStore";
 import { useUIStore } from "@/stores/uiStore";
 import { Torus } from "@react-three/drei";
 import { useState } from "react";
 
-interface ExpansionGridProps {
-  onTileClick: (x: number, z: number) => void;
-  selectedTiles: Set<string>;
-}
-
-export const ExpansionGrid = ({
-  onTileClick,
-  selectedTiles,
-}: ExpansionGridProps) => {
+export const ExpansionGrid = () => {
   const [hoveredTile, setHoveredTile] = useState<string | null>(null);
+
+  const expansionSelectedTiles = useUIStore.use.expansionSelectedTiles();
+
+  const toggleExpansionTileSelection =
+    useUIStore.use.toggleExpansionTileSelection();
+
+  const handleExpansionTileClick = (x: number, z: number) => {
+    toggleExpansionTileSelection(x, z, expansionTiles);
+  };
 
   const getAvailableExpansionPositions =
     useGameStore.use.getAvailableExpansionPositions();
-  const placedExpansionTiles = useGameStore.use.placedExpansionTiles();
   const expansionTiles = useGameStore.use.expansionTiles();
 
   // Recalculate available positions considering selected tiles
-  const availablePositions = getAvailableExpansionPositions(selectedTiles);
+  const availablePositions = getAvailableExpansionPositions(
+    expansionSelectedTiles,
+  );
 
   return (
     <group>
-      {/* Render placed expansion tiles */}
-      {Array.from(placedExpansionTiles).map((posKey) => {
-        const [x, z] = posKey.split(",").map(Number);
-        return (
-          <>
-            <mesh key={`placed-${posKey}`} position={[x * 2, 0.01, z * 2]}>
-              <planeGeometry args={[1.95, 1.95]} />
-              <meshStandardMaterial color="#4ade80" transparent opacity={0.7} />
-            </mesh>
-            <Torus position={[x * 2, 0.01, z * 2]} args={[0.5, 0.2, 16, 100]}>
-              <meshStandardMaterial color="#4ade80" transparent opacity={0.7} />
-            </Torus>
-          </>
-        );
-      })}
-
       {/* Render available positions for placement */}
       {availablePositions.map((pos) => {
         const posKey = `${pos.x},${pos.z}`;
-        const isSelected = selectedTiles.has(posKey);
+        const isSelected = expansionSelectedTiles.has(posKey);
         const isHovered = hoveredTile === posKey;
-        const canSelect = selectedTiles.size < expansionTiles;
+        const canSelect = expansionSelectedTiles.size < expansionTiles;
 
         // Color based on state
         let color = "#6b7280"; // Default gray
@@ -69,7 +56,7 @@ export const ExpansionGrid = ({
             position={[pos.x * 2, 0.005, pos.z * 2]}
             onClick={(e) => {
               e.stopPropagation();
-              onTileClick(pos.x, pos.z);
+              handleExpansionTileClick(pos.x, pos.z);
             }}
             onPointerEnter={(e) => {
               e.stopPropagation();
@@ -91,7 +78,7 @@ export const ExpansionGrid = ({
       })}
 
       {/* Render selection indicators */}
-      {Array.from(selectedTiles).map((posKey) => {
+      {Array.from(expansionSelectedTiles).map((posKey) => {
         const [x, z] = posKey.split(",").map(Number);
         return (
           <mesh

@@ -140,8 +140,10 @@ export const SandboxUI = () => {
   const setShowFishShop = useUIStore.use.setShowFishShop();
   const showSellConfirmation = useUIStore.use.showSellConfirmation();
   const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
+  const showTileExpansion = useUIStore.use.showTileExpansion();
   const setShowTileExpansion = useUIStore.use.setShowTileExpansion();
   const placementMode = useUIStore.use.placementMode();
+  const isInPlacementMode = placementMode === "expansion";
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
@@ -336,7 +338,7 @@ export const SandboxUI = () => {
           </CardContent>
         </Card>
 
-        <Sheet open={true}>
+        <Sheet open={!showTileExpansion && !isInPlacementMode}>
           <SheetContent
             withOverlay={false}
             withCloseButton={false}
@@ -428,6 +430,16 @@ export const SandboxUI = () => {
                     }}
                   >
                     Debug Spawn 10 Visitors
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      const cells = useGridStore.getState().cells;
+                      console.log("Grid Cells:", Array.from(cells.entries()));
+                    }}
+                  >
+                    Log Cells
                   </Button>
                 </div>
               )}

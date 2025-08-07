@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { GridCell, GridPosition } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
-import { useGameStore } from "./gameStore";
 
 export interface GridStore {
   gridSize: { width: number; height: number; depth: number };
@@ -12,6 +11,7 @@ export interface GridStore {
   initializeGrid: (width: number, height: number, depth: number) => void;
   getCell: (x: number, y: number, z: number) => GridCell | undefined;
   setCell: (cell: GridCell) => void;
+  createExpansionCells: (positions: { x: number; z: number }[]) => void;
 
   // Placement validation
   canPlaceAt: (position: GridPosition, width: number, depth: number) => boolean;
@@ -80,31 +80,34 @@ export const useGridStore = createSelectors(
           return { cells };
         }),
 
+      createExpansionCells: (positions) =>
+        set((state) => {
+          const cells = new Map(state.cells);
+
+          for (const pos of positions) {
+            const key = `${pos.x},0,${pos.z}`;
+            const newCell = {
+              x: pos.x,
+              y: 0,
+              z: pos.z,
+              occupied: false,
+              type: "empty" as const,
+            };
+            cells.set(key, newCell);
+          }
+
+          return { cells };
+        }),
+
       canPlaceAt: (position, width, depth) => {
         const state = get();
-        
-        // Check if position is within expansion tiles (if placed)
-        const gameState = useGameStore.getState();
-        const placedExpansionTiles = gameState.placedExpansionTiles;
 
         for (let x = position.x; x < position.x + width; x++) {
           for (let z = position.z; z < position.z + depth; z++) {
             const cell = state.getCell(x, position.y, z);
-            const isExpansionTile = placedExpansionTiles.has(`${x},${z}`);
-            
-            // Can place if either:
-            // 1. Cell exists and is not occupied (original grid)
-            // 2. Position is a placed expansion tile and not occupied by the cell system
-            if (cell) {
-              // Original grid cell - check if occupied
-              if (cell.occupied) {
-                return false;
-              }
-            } else if (isExpansionTile) {
-              // Expansion tile - it's valid placement even without a cell
-              continue;
-            } else {
-              // Neither original grid nor expansion tile
+
+            // Can place only if cell exists and is not occupied
+            if (!cell || cell.occupied) {
               return false;
             }
           }
@@ -140,30 +143,16 @@ export const useGridStore = createSelectors(
         }
 
         const cells = new Map(state.cells);
-        const gameState = useGameStore.getState();
-        const placedExpansionTiles = gameState.placedExpansionTiles;
 
         for (let x = position.x; x < position.x + width; x++) {
           for (let z = position.z; z < position.z + depth; z++) {
             const key = `${x},${position.y},${z}`;
             const cell = cells.get(key);
-            const isExpansionTile = placedExpansionTiles.has(`${x},${z}`);
-            
+
             if (cell) {
               // Update existing grid cell
               cells.set(key, {
                 ...cell,
-                occupied: true,
-                type,
-                tankId: type === "tank" ? id : undefined,
-                entranceId: type === "entrance" ? id : undefined,
-              });
-            } else if (isExpansionTile) {
-              // Create new virtual cell for expansion tile
-              cells.set(key, {
-                x,
-                y: position.y,
-                z,
                 occupied: true,
                 type,
                 tankId: type === "tank" ? id : undefined,

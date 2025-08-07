@@ -154,7 +154,7 @@ export interface GridCell {
   occupied: boolean;
   tankId?: string;
   entranceId?: string;
-  type: "empty" | "tank" | "path" | "decoration" | "facility" | "entrance";
+  type: "empty" | "tank" | "path" | "decoration" | "facility" | "entrance" | "expansion";
 }
 
 export interface Revenue {

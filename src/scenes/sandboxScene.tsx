@@ -24,13 +24,11 @@ export const SandboxScene = () => {
     z: number;
   } | null>(null);
 
-
   const entrances = useGameStore.use.entrances();
   const addTank = useGameStore.use.addTank();
   const addEntrance = useGameStore.use.addEntrance();
   const spendMoney = useGameStore.use.spendMoney();
   const expansionTiles = useGameStore.use.expansionTiles();
-  const placedExpansionTiles = useGameStore.use.placedExpansionTiles();
 
   const cells = useGridStore.use.cells();
   const initializeGrid = useGridStore.use.initializeGrid();
@@ -42,8 +40,6 @@ export const SandboxScene = () => {
   const placementMode = useUIStore.use.placementMode();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
-  const expansionSelectedTiles = useUIStore.use.expansionSelectedTiles();
-  const toggleExpansionTileSelection = useUIStore.use.toggleExpansionTileSelection();
   const addMoney = useGameStore.use.addMoney();
 
   useEffect(() => {
@@ -52,10 +48,6 @@ export const SandboxScene = () => {
     initializeCoinSystem();
     initializeFishSystem();
   }, [initializeGrid, addMoney]);
-
-  const handleExpansionTileClick = (x: number, z: number) => {
-    toggleExpansionTileSelection(x, z, expansionTiles);
-  };
 
   const handleCellClick = (x: number, z: number) => {
     if (placementMode === "tank") {
@@ -164,28 +156,6 @@ export const SandboxScene = () => {
         );
       })}
 
-      {/* Ground tiles for placed expansion tiles */}
-      {Array.from(placedExpansionTiles).map((posKey) => {
-        const [x, z] = posKey.split(',').map(Number);
-        return (
-          <mesh
-            key={`expansion-ground-${posKey}`}
-            position={[x * 2, -0.01, z * 2]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            receiveShadow
-            onClick={(e) => {
-              e.stopPropagation();
-              if (placementMode !== "tank" && placementMode !== "entrance") {
-                clearSelection();
-              }
-            }}
-          >
-            <planeGeometry args={[1.95, 1.95]} />
-            <meshStandardMaterial color={0x8b4513} />
-          </mesh>
-        );
-      })}
-
       {/* Grid - includes both original and expansion tiles */}
       {(placementMode === "tank" || placementMode === "entrance") && (
         <group
@@ -194,33 +164,23 @@ export const SandboxScene = () => {
               const point = e.point;
               const gridX = Math.floor((point.x + 1) / 2);
               const gridZ = Math.floor((point.z + 1) / 2);
-              
-              // Check if position is valid (original grid or expansion tile)
+
+              // Check if position is valid grid cell
               const cell = cells.get(`${gridX},0,${gridZ}`);
-              const isExpansionTile = placedExpansionTiles.has(`${gridX},${gridZ}`);
-              
-              if (cell || isExpansionTile) {
+
+              if (cell) {
                 setHoveredCell({ x: gridX, y: 0, z: gridZ });
               }
             }
           }}
           onPointerLeave={() => setHoveredCell(null)}
         >
-          <Grid 
-            hoveredCell={hoveredCell} 
-            onCellClick={handleCellClick}
-            expansionTiles={placedExpansionTiles}
-          />
+          <Grid hoveredCell={hoveredCell} onCellClick={handleCellClick} />
         </group>
       )}
 
       {/* Expansion Grid - render when in expansion placement mode */}
-      {placementMode === "expansion" && (
-        <ExpansionGrid
-          onTileClick={handleExpansionTileClick}
-          selectedTiles={expansionSelectedTiles}
-        />
-      )}
+      {placementMode === "expansion" && <ExpansionGrid />}
 
       <Tanks />
       <Entrances />
