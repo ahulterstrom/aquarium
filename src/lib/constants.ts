@@ -8,3 +8,5 @@ export const TICK_RATES = {
 
 export const TANK_COST = 6;
 export const ENTRANCE_COST = 0;
+export const EXPANSION_PACK_COST = 15;
+export const TILES_PER_EXPANSION_PACK = 9;

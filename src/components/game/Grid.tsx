@@ -6,21 +6,35 @@ import { GridPosition } from '../../types/game.types';
 interface GridProps {
   hoveredCell: GridPosition | null;
   onCellClick: (x: number, z: number) => void;
+  expansionTiles?: Set<string>;
 }
 
-export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
+export const Grid = ({ hoveredCell, onCellClick, expansionTiles = new Set() }: GridProps) => {
   const cells = useGridStore.use.cells();
   const canPlaceAt = useGridStore.use.canPlaceAt();
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
   const placementMode = useUIStore.use.placementMode();
 
+  // Combine original cells and expansion tiles
+  const allPositions = new Set<string>();
+  
+  // Add original grid cells
+  Array.from(cells.values()).forEach(cell => {
+    if (cell.y === 0) { // Only ground level
+      allPositions.add(`${cell.x},${cell.z}`);
+    }
+  });
+  
+  // Add expansion tiles
+  expansionTiles.forEach(posKey => {
+    allPositions.add(posKey);
+  });
+
   return (
     <>
-      {Array.from(cells.values()).map((cell) => {
-        const { x, y, z } = cell;
-        
-        // Skip if not on ground level (y !== 0)
-        if (y !== 0) return null;
+      {Array.from(allPositions).map((posKey) => {
+        const [x, z] = posKey.split(',').map(Number);
+        const y = 0; // Always ground level
         
         const isHighlighted =
           hoveredCell?.x === x &&
@@ -39,7 +53,7 @@ export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
 
         return (
           <GridCell
-            key={`${x}-${y}-${z}`}
+            key={`grid-${x}-${z}`}
             x={x}
             z={z}
             onClick={onCellClick}

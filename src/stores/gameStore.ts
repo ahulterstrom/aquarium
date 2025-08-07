@@ -2,12 +2,24 @@ import { create } from "zustand";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { GameState, Tank, Fish, Entrance, Coin } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
+import {
+  addFishToSystem,
+  removeFishFromSystem,
+} from "../components/systems/fishSystem";
+import {
+  EXPANSION_PACK_COST,
+  TILES_PER_EXPANSION_PACK,
+} from "../lib/constants";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
   fish: Map<string, Fish>;
   entrances: Map<string, Entrance>;
   coins: Map<string, Coin>;
+
+  // Expansion system
+  expansionTiles: number; // Available tiles in inventory
+  placedExpansionTiles: Set<string>; // Placed expansion tiles (stored as "x,z" strings)
 
   // Time tracking
   gameTime: number; // Total game time in ms
@@ -38,13 +50,18 @@ interface GameStore extends GameState {
   removeFish: (id: string) => void;
   updateFish: (id: string, updates: Partial<Fish>) => void;
 
-
   addEntrance: (entrance: Entrance) => void;
   removeEntrance: (id: string) => void;
   updateEntrance: (id: string, updates: Partial<Entrance>) => void;
 
   addCoin: (coin: Coin) => void;
   removeCoin: (id: string) => void;
+
+  // Expansion actions
+  buyExpansionPack: () => boolean;
+  placeExpansionTiles: (positions: { x: number; z: number }[]) => void;
+  getAvailableExpansionPositions: (includingSelected?: Set<string>) => { x: number; z: number }[];
+  isValidExpansionPosition: (x: number, z: number, includingSelected?: Set<string>) => boolean;
 
   // Queries
   getTank: (id: string) => Tank | undefined;
@@ -58,7 +75,7 @@ interface GameStore extends GameState {
 }
 
 const initialState: GameState = {
-  money: 10,
+  money: 100,
   reputation: 50,
   visitorCount: 0,
   day: 1,
@@ -74,6 +91,8 @@ export const useGameStore = createSelectors(
       fish: new Map(),
       entrances: new Map(),
       coins: new Map(),
+      expansionTiles: 0,
+      placedExpansionTiles: new Set(),
       gameTime: 0,
       accumulators: {
         tick: 0,
@@ -160,6 +179,17 @@ export const useGameStore = createSelectors(
         set((state) => {
           const fishMap = new Map(state.fish);
           fishMap.set(fish.id, fish);
+
+          // Also add to fish system
+          try {
+            addFishToSystem(fish);
+          } catch (error) {
+            console.warn(
+              "Fish system not initialized when adding fish:",
+              error,
+            );
+          }
+
           return { fish: fishMap };
         }),
 
@@ -167,6 +197,17 @@ export const useGameStore = createSelectors(
         set((state) => {
           const fishMap = new Map(state.fish);
           fishMap.delete(id);
+
+          // Also remove from fish system
+          try {
+            removeFishFromSystem(id);
+          } catch (error) {
+            console.warn(
+              "Fish system not initialized when removing fish:",
+              error,
+            );
+          }
+
           return { fish: fishMap };
         }),
 
@@ -180,11 +221,9 @@ export const useGameStore = createSelectors(
           return { fish: fishMap };
         }),
 
-
       getTank: (id) => get().tanks.get(id),
 
       getFish: (id) => get().fish.get(id),
-
 
       addEntrance: (entrance) =>
         set((state) => {
@@ -234,6 +273,114 @@ export const useGameStore = createSelectors(
         );
       },
 
+      // Expansion system implementations
+      buyExpansionPack: () => {
+        const state = get();
+        if (state.money >= EXPANSION_PACK_COST) {
+          set((state) => ({
+            money: state.money - EXPANSION_PACK_COST,
+            expansionTiles: state.expansionTiles + TILES_PER_EXPANSION_PACK,
+          }));
+          return true;
+        }
+        return false;
+      },
+
+      placeExpansionTiles: (positions) =>
+        set((state) => {
+          const newPlacedTiles = new Set(state.placedExpansionTiles);
+          for (const pos of positions) {
+            newPlacedTiles.add(`${pos.x},${pos.z}`);
+          }
+          return {
+            placedExpansionTiles: newPlacedTiles,
+            expansionTiles: state.expansionTiles - positions.length,
+          };
+        }),
+
+      getAvailableExpansionPositions: (includingSelected) => {
+        const state = get();
+        const validPositions: { x: number; z: number }[] = [];
+
+        // Get current grid bounds (initially 3x3)
+        const minX = -2; // Allow expansion in all directions
+        const maxX = 4;
+        const minZ = -2;
+        const maxZ = 4;
+
+        for (let x = minX; x <= maxX; x++) {
+          for (let z = minZ; z <= maxZ; z++) {
+            if (get().isValidExpansionPosition(x, z, includingSelected)) {
+              validPositions.push({ x, z });
+            }
+          }
+        }
+
+        return validPositions;
+      },
+
+      isValidExpansionPosition: (x, z, includingSelected) => {
+        const state = get();
+        const posKey = `${x},${z}`;
+
+        // Can't place on already placed expansion tiles
+        if (state.placedExpansionTiles.has(posKey)) return false;
+
+        // Can't place on selected tiles (during placement mode)
+        if (includingSelected && includingSelected.has(posKey)) return false;
+
+        // Can't place on original grid (0,0 to 2,2)
+        if (x >= 0 && x <= 2 && z >= 0 && z <= 2) return false;
+
+        // Rule A: Must share a side with existing tile (original grid, placed expansion, or selected)
+        const adjacentPositions = [
+          { x: x - 1, z },
+          { x: x + 1, z },
+          { x, z: z - 1 },
+          { x, z: z + 1 },
+        ];
+
+        let hasAdjacentTile = false;
+        for (const adj of adjacentPositions) {
+          const adjKey = `${adj.x},${adj.z}`;
+          
+          // Check if adjacent to original grid
+          if (adj.x >= 0 && adj.x <= 2 && adj.z >= 0 && adj.z <= 2) {
+            hasAdjacentTile = true;
+            break;
+          }
+          
+          // Check if adjacent to placed expansion tile
+          if (state.placedExpansionTiles.has(adjKey)) {
+            hasAdjacentTile = true;
+            break;
+          }
+          
+          // Check if adjacent to selected tile (during placement)
+          if (includingSelected && includingSelected.has(adjKey)) {
+            hasAdjacentTile = true;
+            break;
+          }
+        }
+
+        if (!hasAdjacentTile) return false;
+
+        // Rule B: Cannot border a tile that contains an entrance
+        for (const adj of adjacentPositions) {
+          // Check if adjacent position has an entrance
+          for (const entrance of state.entrances.values()) {
+            if (
+              entrance.position.x === adj.x &&
+              entrance.position.z === adj.z
+            ) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      },
+
       // Tick system implementations
       updateGameTime: (delta) =>
         set((state) => ({
@@ -246,6 +393,9 @@ export const useGameStore = createSelectors(
           tanks: new Map(),
           fish: new Map(),
           entrances: new Map(),
+          coins: new Map(),
+          expansionTiles: 0,
+          placedExpansionTiles: new Set(),
           gameTime: 0,
           accumulators: {
             tick: 0,

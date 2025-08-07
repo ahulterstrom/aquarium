@@ -9,7 +9,7 @@ type UIModal =
   | "stats"
   | "settings"
   | "tutorial";
-type PlacementMode = "none" | "tank" | "decoration" | "path" | "entrance";
+type PlacementMode = "none" | "tank" | "decoration" | "path" | "entrance" | "expansion";
 
 type SelectedEntityType = "tank" | "visitor" | "entrance" | null;
 
@@ -32,6 +32,9 @@ interface UIStore {
     type: string;
     size?: "small" | "medium" | "large";
   } | null;
+  
+  // Expansion placement
+  expansionSelectedTiles: Set<string>;
 
   // UI state
   showGrid: boolean;
@@ -41,6 +44,7 @@ interface UIStore {
 
   showFishShop: boolean;
   showSellConfirmation: boolean;
+  showTileExpansion: boolean;
 
   // Actions
   selectTank: (id: string | null) => void;
@@ -55,9 +59,15 @@ interface UIStore {
 
   setShowFishShop: (show: boolean) => void;
   setShowSellConfirmation: (show: boolean) => void;
+  setShowTileExpansion: (show: boolean) => void;
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
+  
+  // Expansion tile selection actions
+  setExpansionSelectedTiles: (tiles: Set<string>) => void;
+  toggleExpansionTileSelection: (x: number, z: number, maxTiles: number) => void;
+  clearExpansionSelection: () => void;
 
   toggleGrid: () => void;
   toggleStats: () => void;
@@ -91,12 +101,14 @@ export const useUIStore = createSelectors(
 
       showFishShop: false,
       showSellConfirmation: false,
+      showTileExpansion: false,
 
       activeModal: "none",
       modalData: null,
 
       placementMode: "none",
       placementPreview: null,
+      expansionSelectedTiles: new Set(),
 
       showGrid: true,
       showStats: false,
@@ -164,11 +176,16 @@ export const useUIStore = createSelectors(
 
       setShowFishShop: (show) => set({ showFishShop: show }),
       setShowSellConfirmation: (show) => set({ showSellConfirmation: show }),
+      setShowTileExpansion: (show) => set({ showTileExpansion: show }),
 
       setPlacementMode: (mode, preview) =>
         set((state) => ({
           placementMode: mode,
           placementPreview: preview,
+          // Clear expansion selection when exiting expansion mode
+          ...(state.placementMode === "expansion" && mode !== "expansion"
+            ? { expansionSelectedTiles: new Set() }
+            : {}),
           // Only clear selections when entering placement mode, not when exiting
           ...(mode !== "none"
             ? {
@@ -185,7 +202,28 @@ export const useUIStore = createSelectors(
         set({
           placementMode: "none",
           placementPreview: null,
+          expansionSelectedTiles: new Set(),
         }),
+
+      setExpansionSelectedTiles: (tiles) =>
+        set({ expansionSelectedTiles: tiles }),
+
+      toggleExpansionTileSelection: (x, z, maxTiles) =>
+        set((state) => {
+          const posKey = `${x},${z}`;
+          const newSelection = new Set(state.expansionSelectedTiles);
+          
+          if (newSelection.has(posKey)) {
+            newSelection.delete(posKey);
+          } else if (newSelection.size < maxTiles) {
+            newSelection.add(posKey);
+          }
+          
+          return { expansionSelectedTiles: newSelection };
+        }),
+
+      clearExpansionSelection: () =>
+        set({ expansionSelectedTiles: new Set() }),
 
       toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
       toggleStats: () => set((state) => ({ showStats: !state.showStats })),

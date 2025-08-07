@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import { attemptSpawnVisitors, updateVisitors } from "./visitorSystem";
 import { updateWaterQuality } from "./waterSystem";
+import { getFishSystem, updateFishSystemReferences } from "./fishSystem";
 import { TICK_RATES } from "@/lib/constants";
 
 export function GameSystems() {
@@ -29,6 +30,15 @@ export function GameSystems() {
 
     // Update visitors every frame
     updateVisitors(dt);
+
+    // Update fish every frame
+    try {
+      const fishSystem = getFishSystem();
+      updateFishSystemReferences(); // Keep references up to date
+      fishSystem.update(dt);
+    } catch (error) {
+      // Fish system not initialized yet, ignore
+    }
 
     // Fast tick (1s) - Money and UI updates
     accumulator.current.tick += dt;

@@ -35,7 +35,22 @@ export interface Fish {
   position: Vector3;
   velocity: Vector3;
   hunger: number;
+  
+  // Movement and behavior properties
+  targetPosition: Vector3 | null;
+  behaviorState: FishBehaviorState;
+  behaviorTimer: number;
+  swimSpeed: number;
+  schoolingTarget: string | null; // ID of fish to follow for schooling
+  lastFedTime: number;
 }
+
+export type FishBehaviorState = 
+  | "idle"
+  | "swimming"
+  | "feeding" 
+  | "schooling"
+  | "resting";
 
 export interface FishSpecies {
   id: string;

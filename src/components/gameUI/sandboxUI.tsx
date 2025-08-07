@@ -23,6 +23,7 @@ import {
   DollarSign,
   DoorOpen,
   Droplets,
+  Expand,
   Eye,
   Fish,
   Heart,
@@ -62,6 +63,7 @@ import {
   Entrance,
 } from "../../types/game.types";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
+import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
 import { useGame } from "@/stores/useGame";
 import {
   getVisitorSystem,
@@ -138,6 +140,7 @@ export const SandboxUI = () => {
   const setShowFishShop = useUIStore.use.setShowFishShop();
   const showSellConfirmation = useUIStore.use.showSellConfirmation();
   const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
+  const setShowTileExpansion = useUIStore.use.setShowTileExpansion();
   const placementMode = useUIStore.use.placementMode();
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
@@ -227,6 +230,19 @@ export const SandboxUI = () => {
       ),
       velocity: new THREE.Vector3(0, 0, 0),
       hunger: 0.3,
+
+      // Initialize behavior properties
+      targetPosition: null,
+      behaviorState: "swimming",
+      behaviorTimer: 0,
+      swimSpeed:
+        species.id === "neon_tetra"
+          ? 0.8
+          : species.id === "angelfish"
+            ? 0.6
+            : 0.5,
+      schoolingTarget: null,
+      lastFedTime: Date.now(),
     };
 
     // Add fish to game store
@@ -370,6 +386,16 @@ export const SandboxUI = () => {
                 </Button>
               )}
 
+              {/* Tile Expansion Button */}
+              <Button
+                onClick={() => setShowTileExpansion(true)}
+                className="w-full"
+                variant="outline"
+              >
+                <Expand className="mr-2 h-4 w-4" />
+                Expand Aquarium
+              </Button>
+
               {/* Tank Count */}
               <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
                 <span className="text-sm font-medium text-blue-700">
@@ -382,6 +408,7 @@ export const SandboxUI = () => {
                   {tanks.size}/9
                 </Badge>
               </div>
+
               {isDebugging && (
                 <div>
                   <Button
@@ -650,6 +677,9 @@ export const SandboxUI = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Tile Expansion Panel */}
+        <TileExpansionPanel />
       </div>
     </div>
   );
