@@ -299,13 +299,38 @@ export const useGameStore = createSelectors(
 
       getAvailableExpansionPositions: (includingSelected) => {
         const state = get();
+        const gridState = useGridStore.getState();
         const validPositions: { x: number; z: number }[] = [];
 
-        // Get current grid bounds (initially 3x3)
-        const minX = -2; // Allow expansion in all directions
-        const maxX = 4;
-        const minZ = -2;
-        const maxZ = 4;
+        // Calculate dynamic bounds based on existing cells and selected tiles
+        let minX = 0, maxX = 2, minZ = 0, maxZ = 2; // Start with original 3x3 bounds
+        
+        // Expand bounds based on existing grid cells
+        for (const cell of gridState.cells.values()) {
+          if (cell.y === 0) { // Only consider ground level cells
+            minX = Math.min(minX, cell.x);
+            maxX = Math.max(maxX, cell.x);
+            minZ = Math.min(minZ, cell.z);
+            maxZ = Math.max(maxZ, cell.z);
+          }
+        }
+
+        // Also expand bounds based on selected tiles during placement
+        if (includingSelected) {
+          for (const posKey of includingSelected) {
+            const [x, z] = posKey.split(",").map(Number);
+            minX = Math.min(minX, x);
+            maxX = Math.max(maxX, x);
+            minZ = Math.min(minZ, z);
+            maxZ = Math.max(maxZ, z);
+          }
+        }
+
+        // Expand search area by 1 in each direction to find adjacent positions
+        minX -= 1;
+        maxX += 1;
+        minZ -= 1;
+        maxZ += 1;
 
         for (let x = minX; x <= maxX; x++) {
           for (let z = minZ; z <= maxZ; z++) {
