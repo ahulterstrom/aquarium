@@ -1,5 +1,7 @@
 {
-  "name": "aquarium-tycoon",
+  "name": "aquatopia",
+  "description": "A 3D aquarium tycoon game built with React Three Fiber.",
+  "author": "Andrew Hulterstrom",
   "private": true,
   "version": "0.0.5",
   "type": "module",
