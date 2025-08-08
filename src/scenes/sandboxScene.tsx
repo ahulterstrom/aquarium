@@ -4,6 +4,7 @@ import { Visitors } from "@/components/visitors";
 import { Coins } from "@/components/coins";
 import { FishRenderer } from "@/components/fish";
 import { ExpansionGrid } from "@/components/game/ExpansionGrid";
+import { Walls } from "@/components/game/Walls";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import { MapControls, OrthographicCamera } from "@react-three/drei";
 import { useEffect, useState } from "react";
@@ -15,6 +16,15 @@ import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
+
+// Define floor style configurations
+const FLOOR_STYLES = {
+  sand: { color: 0xf4e4c1 },
+  tile: { color: 0xe0e0e0 },
+  wood: { color: 0x8b4513 },
+  marble: { color: 0xffffff },
+  stone: { color: 0x696969 },
+};
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -28,11 +38,11 @@ export const SandboxScene = () => {
   const addTank = useGameStore.use.addTank();
   const addEntrance = useGameStore.use.addEntrance();
   const spendMoney = useGameStore.use.spendMoney();
-  const expansionTiles = useGameStore.use.expansionTiles();
 
   const cells = useGridStore.use.cells();
   const initializeGrid = useGridStore.use.initializeGrid();
   const canPlaceAt = useGridStore.use.canPlaceAt();
+  const floorStyle = useGameStore.use.floorStyle();
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
   const placeObject = useGridStore.use.placeObject();
   const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
@@ -151,10 +161,13 @@ export const SandboxScene = () => {
             }}
           >
             <planeGeometry args={[1.95, 1.95]} />
-            <meshStandardMaterial color={0x8b4513} />
+            <meshStandardMaterial color={FLOOR_STYLES[floorStyle as keyof typeof FLOOR_STYLES]?.color || 0x8b4513} />
           </mesh>
         );
       })}
+
+      {/* Walls */}
+      <Walls />
 
       {/* Grid - includes both original and expansion tiles */}
       {(placementMode === "tank" || placementMode === "entrance") && (

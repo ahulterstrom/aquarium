@@ -21,6 +21,10 @@ interface GameStore extends GameState {
   // Expansion system
   expansionTiles: number; // Available tiles in inventory
 
+  // Customization
+  wallStyle: string;
+  floorStyle: string;
+
   // Time tracking
   gameTime: number; // Total game time in ms
   accumulators: {
@@ -70,6 +74,10 @@ interface GameStore extends GameState {
   getCoin: (id: string) => Coin | undefined;
   getFishInTank: (tankId: string) => Fish[];
 
+  // Customization actions
+  setWallStyle: (style: string) => void;
+  setFloorStyle: (style: string) => void;
+
   // Game state
   reset: () => void;
 }
@@ -92,6 +100,8 @@ export const useGameStore = createSelectors(
       entrances: new Map(),
       coins: new Map(),
       expansionTiles: 0,
+      wallStyle: "concrete",
+      floorStyle: "wood",
       gameTime: 0,
       accumulators: {
         tick: 0,
@@ -405,6 +415,10 @@ export const useGameStore = createSelectors(
           gameTime: state.gameTime + delta,
         })),
 
+      // Customization implementations
+      setWallStyle: (style) => set({ wallStyle: style }),
+      setFloorStyle: (style) => set({ floorStyle: style }),
+
       reset: () =>
         set({
           ...initialState,
@@ -413,6 +427,8 @@ export const useGameStore = createSelectors(
           entrances: new Map(),
           coins: new Map(),
           expansionTiles: 0,
+          wallStyle: "concrete",
+          floorStyle: "wood",
           gameTime: 0,
           accumulators: {
             tick: 0,

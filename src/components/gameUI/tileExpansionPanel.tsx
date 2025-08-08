@@ -205,7 +205,9 @@ export const TileExpansionPanel = () => {
             </div>
 
             {/* Place Tiles */}
-            <div className={`rounded-lg border p-4 ${hasAvailableTiles ? 'border-blue-300 bg-blue-50 shadow-sm' : ''}`}>
+            <div
+              className={`rounded-lg border p-4 ${hasAvailableTiles ? "border-blue-300 bg-blue-50 shadow-sm" : ""}`}
+            >
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold">Place Available Tiles</h3>
@@ -237,7 +239,9 @@ export const TileExpansionPanel = () => {
               <Button
                 onClick={handleStartPlacement}
                 disabled={!hasAvailableTiles || !hasValidPositions}
-                variant={hasAvailableTiles && hasValidPositions ? "glow" : "default"}
+                variant={
+                  hasAvailableTiles && hasValidPositions ? "glow" : "default"
+                }
                 className="w-full"
               >
                 <Grid3X3 className="mr-2 h-4 w-4" />

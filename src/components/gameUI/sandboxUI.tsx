@@ -12,12 +12,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   AlertTriangle,
   Clock,
   DollarSign,
@@ -26,8 +20,10 @@ import {
   Expand,
   Eye,
   Fish,
+  Hammer,
   Heart,
   MapPin,
+  Paintbrush,
   Pause,
   Play,
   Plus,
@@ -45,6 +41,8 @@ import { useMemo, useState } from "react";
 // Import game stores and types
 import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
 import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
+import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
+import { BuildPanel } from "@/components/gameUI/buildPanel";
 import {
   Sheet,
   SheetContent,
@@ -123,7 +121,6 @@ export const SandboxUI = () => {
 
   const isDebugging = useGame.use.isDebugging();
   const tanks = useGameStore.use.tanks();
-  const entrances = useGameStore.use.entrances();
   const money = useGameStore.use.money();
   const spendMoney = useGameStore.use.spendMoney();
   const addFish = useGameStore.use.addFish();
@@ -134,6 +131,7 @@ export const SandboxUI = () => {
   const isPaused = useGameStore.use.isPaused();
   const setPaused = useGameStore.use.setPaused();
   const day = useGameStore.use.day();
+  const entrances = useGameStore.use.entrances();
 
   const removeObject = useGridStore.use.removeObject();
   const showFishShop = useUIStore.use.showFishShop();
@@ -142,46 +140,18 @@ export const SandboxUI = () => {
   const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
   const showTileExpansion = useUIStore.use.showTileExpansion();
   const setShowTileExpansion = useUIStore.use.setShowTileExpansion();
+  const showCustomization = useUIStore.use.showCustomization();
+  const setShowCustomization = useUIStore.use.setShowCustomization();
+  const showBuild = useUIStore.use.showBuild();
+  const setShowBuild = useUIStore.use.setShowBuild();
   const placementMode = useUIStore.use.placementMode();
-  const isInPlacementMode = placementMode === "expansion";
+  const isInPlacementMode = placementMode !== "none";
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
-
-  const handlePlaceTank = () => {
-    if (money < TANK_COST) {
-      setContextMessage("Not enough money to place a tank.");
-      setTimeout(() => setContextMessage(""), 3000);
-      return;
-    }
-
-    if (placementMode === "tank") {
-      setPlacementMode("none");
-      setContextMessage("");
-    } else {
-      setPlacementMode("tank");
-      setContextMessage("");
-    }
-  };
-
-  const handlePlaceEntrance = () => {
-    if (money < ENTRANCE_COST) {
-      setContextMessage("Not enough money to place an entrance.");
-      setTimeout(() => setContextMessage(""), 3000);
-      return;
-    }
-
-    if (placementMode === "entrance") {
-      setPlacementMode("none");
-      setContextMessage("");
-    } else {
-      setPlacementMode("entrance");
-      setContextMessage("Place entrance on the edge of the map");
-    }
-  };
 
   const handleSellTank = () => {
     if (!selectedTank) return;
@@ -338,81 +308,60 @@ export const SandboxUI = () => {
           </CardContent>
         </Card>
 
-        <Sheet open={!showTileExpansion && !isInPlacementMode}>
+        <Sheet
+          open={
+            !showTileExpansion &&
+            !isInPlacementMode &&
+            !showCustomization &&
+            !showBuild
+          }
+          onOpenChange={setShowTileExpansion}
+        >
           <SheetContent
             withOverlay={false}
             withCloseButton={false}
             side="left"
-            className="pointer-events-auto w-50 bg-white/50 shadow-lg backdrop-blur-sm"
+            style={{
+              pointerEvents: "none",
+            }}
+            className="w-50 border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <div className="space-y-4 p-2">
-              {/* Place Tank Button */}
-              <TooltipProvider>
-                <Tooltip delayDuration={200}>
-                  <TooltipTrigger asChild>
-                    <span className="block w-full">
-                      <Button
-                        onClick={handlePlaceTank}
-                        className={`w-full ${placementMode === "tank" ? "bg-orange-500 hover:bg-orange-600" : ""}`}
-                        disabled={money < TANK_COST && placementMode !== "tank"}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        {placementMode === "tank"
-                          ? "Cancel Placement"
-                          : `Place Tank ($${TANK_COST})`}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {money < TANK_COST && placementMode !== "tank" && (
-                    <TooltipContent>
-                      <p>You need ${TANK_COST - money} more to place a tank</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Place Entrance Button */}
-              {entrances.size === 0 && (
-                <Button
-                  onClick={handlePlaceEntrance}
-                  className={`w-full ${placementMode === "entrance" ? "bg-purple-500 hover:bg-purple-600" : ""}`}
-                  disabled={
-                    money < ENTRANCE_COST && placementMode !== "entrance"
-                  }
-                >
-                  <DoorOpen className="mr-2 h-4 w-4" />
-                  {placementMode === "entrance"
-                    ? "Cancel Placement"
-                    : `Place Entrance ($${ENTRANCE_COST})`}
-                </Button>
-              )}
+            <div className="flex h-full flex-col gap-4 p-2">
+              {/* Build Button */}
+              <Button
+                onClick={() => setShowBuild(true)}
+                className="pointer-events-auto w-full"
+                variant={
+                  entrances.size === 0 || tanks.size === 0 ? "glow" : "outline"
+                }
+              >
+                <Hammer className="mr-2 h-4 w-4" />
+                Build
+              </Button>
 
               {/* Tile Expansion Button */}
               <Button
                 onClick={() => setShowTileExpansion(true)}
-                className="w-full"
+                className="pointer-events-auto w-full"
                 variant="outline"
               >
                 <Expand className="mr-2 h-4 w-4" />
-                Expand Aquarium
+                Expand
               </Button>
 
-              {/* Tank Count */}
-              <div className="flex items-center justify-between rounded-lg bg-blue-50 p-2">
-                <span className="text-sm font-medium text-blue-700">
-                  Tanks Placed:
-                </span>
-                <Badge
-                  variant="secondary"
-                  className="bg-blue-100 text-blue-800"
-                >
-                  {tanks.size}/9
-                </Badge>
-              </div>
+              {/* Customization Button */}
+              <Button
+                onClick={() => setShowCustomization(true)}
+                className="pointer-events-auto w-full"
+                variant="outline"
+              >
+                <Paintbrush className="mr-2 h-4 w-4" />
+                Customize
+              </Button>
 
               {isDebugging && (
-                <div>
+                <div className="pointer-events-auto mt-auto space-y-2">
                   <Button
                     variant="outline"
                     className="w-full"
@@ -692,6 +641,12 @@ export const SandboxUI = () => {
 
         {/* Tile Expansion Panel */}
         <TileExpansionPanel />
+
+        {/* Customization Panel */}
+        <CustomizationPanel />
+
+        {/* Build Panel */}
+        <BuildPanel />
       </div>
     </div>
   );

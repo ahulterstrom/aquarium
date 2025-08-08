@@ -45,6 +45,8 @@ interface UIStore {
   showFishShop: boolean;
   showSellConfirmation: boolean;
   showTileExpansion: boolean;
+  showCustomization: boolean;
+  showBuild: boolean;
 
   // Actions
   selectTank: (id: string | null) => void;
@@ -60,6 +62,8 @@ interface UIStore {
   setShowFishShop: (show: boolean) => void;
   setShowSellConfirmation: (show: boolean) => void;
   setShowTileExpansion: (show: boolean) => void;
+  setShowCustomization: (show: boolean) => void;
+  setShowBuild: (show: boolean) => void;
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
@@ -102,6 +106,8 @@ export const useUIStore = createSelectors(
       showFishShop: false,
       showSellConfirmation: false,
       showTileExpansion: false,
+      showCustomization: false,
+      showBuild: false,
 
       activeModal: "none",
       modalData: null,
@@ -177,6 +183,8 @@ export const useUIStore = createSelectors(
       setShowFishShop: (show) => set({ showFishShop: show }),
       setShowSellConfirmation: (show) => set({ showSellConfirmation: show }),
       setShowTileExpansion: (show) => set({ showTileExpansion: show }),
+      setShowCustomization: (show) => set({ showCustomization: show }),
+      setShowBuild: (show) => set({ showBuild: show }),
 
       setPlacementMode: (mode, preview) =>
         set((state) => ({
