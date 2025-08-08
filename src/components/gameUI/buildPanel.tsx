@@ -23,7 +23,7 @@ export const BuildPanel = () => {
 
   const canAffordEntrance = money >= ENTRANCE_COST;
 
-  const handlePlaceTank = (tankSize: "small" | "medium" | "large") => {
+  const handlePlaceTank = (tankSize: "medium" | "large" | "huge") => {
     if (placementMode === "tank") {
       setPlacementMode("none");
     } else {

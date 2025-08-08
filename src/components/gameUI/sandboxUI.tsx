@@ -49,6 +49,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
@@ -67,6 +68,12 @@ import {
   getVisitorSystem,
   spawnVisitor,
 } from "@/components/systems/visitorSystem";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -76,7 +83,7 @@ const FISH_SPECIES: FishSpecies[] = [
     price: 2,
     rarity: "common",
     preferredTemperature: { min: 18, max: 26 },
-    size: "small",
+    size: "medium",
     schooling: false,
     aggressiveness: 0.2,
     feedingInterval: 8,
@@ -87,7 +94,7 @@ const FISH_SPECIES: FishSpecies[] = [
     price: 3,
     rarity: "common",
     preferredTemperature: { min: 20, max: 26 },
-    size: "small",
+    size: "medium",
     schooling: true,
     aggressiveness: 0.1,
     feedingInterval: 6,
@@ -109,7 +116,7 @@ const FISH_SPECIES: FishSpecies[] = [
     price: 4,
     rarity: "uncommon",
     preferredTemperature: { min: 24, max: 27 },
-    size: "small",
+    size: "medium",
     schooling: false,
     aggressiveness: 0.3,
     feedingInterval: 8,
@@ -188,6 +195,20 @@ export const SandboxUI = () => {
 
     // Create new fish
     const fishId = `fish_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    // Calculate spawn position within tank bounds (same logic as FishSystem)
+    const baseX = selectedTank.position.x * 2;
+    const baseZ = selectedTank.position.z * 2;
+    const gridWidth = selectedTank.gridWidth || 1;
+    const gridDepth = selectedTank.gridDepth || 1;
+
+    // Calculate the center of the tank (same logic as visual positioning)
+    const tankCenterX = baseX + (gridWidth > 1 ? gridWidth - 1 : 0);
+    const tankCenterZ = baseZ + (gridDepth > 1 ? gridDepth - 1 : 0);
+
+    const xRange = gridWidth * 1.4;
+    const zRange = gridDepth * 1.4;
+
     const newFish: FishType = {
       id: fishId,
       species: species,
@@ -196,9 +217,9 @@ export const SandboxUI = () => {
       happiness: 0.8,
       age: 0,
       position: new THREE.Vector3(
-        selectedTank.position.x * 2 + (Math.random() - 0.5) * 1.5,
+        tankCenterX + (Math.random() - 0.5) * xRange,
         selectedTank.position.y + 0.5 + Math.random() * 0.5,
-        selectedTank.position.z * 2 + (Math.random() - 0.5) * 1.5,
+        tankCenterZ + (Math.random() - 0.5) * zRange,
       ),
       velocity: new THREE.Vector3(0, 0, 0),
       hunger: 0.3,
@@ -327,71 +348,67 @@ export const SandboxUI = () => {
             className="w-50 border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <div className="flex h-full flex-col gap-4 p-2">
+            <div className="pointer-events-auto flex h-full w-30 flex-col justify-center gap-4 p-2">
               {/* Build Button */}
-              <Button
-                onClick={() => setShowBuild(true)}
-                className="pointer-events-auto w-full"
-                variant={
-                  entrances.size === 0 || tanks.size === 0 ? "glow" : "outline"
-                }
-              >
-                <Hammer className="mr-2 h-4 w-4" />
-                Build
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => setShowBuild(true)}
+                      className="w-full"
+                      variant={
+                        entrances.size === 0 || tanks.size === 0
+                          ? "glow"
+                          : "outline"
+                      }
+                      size="default"
+                    >
+                      <Hammer className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Build</p>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Tile Expansion Button */}
-              <Button
-                onClick={() => setShowTileExpansion(true)}
-                className="pointer-events-auto w-full"
-                variant="outline"
-              >
-                <Expand className="mr-2 h-4 w-4" />
-                Expand
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => setShowTileExpansion(true)}
+                      className="w-full"
+                      variant="outline"
+                      size="default"
+                    >
+                      <Expand className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Expand</p>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Customization Button */}
-              <Button
-                onClick={() => setShowCustomization(true)}
-                className="pointer-events-auto w-full"
-                variant="outline"
-              >
-                <Paintbrush className="mr-2 h-4 w-4" />
-                Customize
-              </Button>
-
-              {isDebugging && (
-                <div className="pointer-events-auto mt-auto space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => spawnVisitor()}
-                  >
-                    Debug Spawn Visitor
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      for (let i = 0; i < 10; i++) {
-                        spawnVisitor();
-                      }
-                    }}
-                  >
-                    Debug Spawn 10 Visitors
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      const cells = useGridStore.getState().cells;
-                      console.log("Grid Cells:", Array.from(cells.entries()));
-                    }}
-                  >
-                    Log Cells
-                  </Button>
-                </div>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button
+                      onClick={() => setShowCustomization(true)}
+                      className="w-full"
+                      variant="outline"
+                      size="default"
+                    >
+                      <Paintbrush className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Customize</p>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Context Message Area */}
               {contextMessage && (
@@ -431,6 +448,42 @@ export const SandboxUI = () => {
             </div>
           </SheetContent>
         </Sheet>
+
+        {isDebugging && (
+          <div className="pointer-events-auto absolute bottom-0 left-0 w-30 space-y-2 bg-orange-400/50 p-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => spawnVisitor()}
+            >
+              1 Visitor
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                for (let i = 0; i < 10; i++) {
+                  spawnVisitor();
+                }
+              }}
+            >
+              10 Visitors
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                const cells = useGridStore.getState().cells;
+                console.log("Grid Cells:", Array.from(cells.entries()));
+              }}
+            >
+              Log Cells
+            </Button>
+          </div>
+        )}
 
         {/* Entity Info Panel - Right Side */}
         <EntityInfoPanel />

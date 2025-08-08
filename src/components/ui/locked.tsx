@@ -55,14 +55,12 @@ export const LockOverlay = ({
   // If there's a reason, wrap with tooltip
   if (reason) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{overlay}</TooltipTrigger>
-          <TooltipContent>
-            <p>{reason}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{overlay}</TooltipTrigger>
+        <TooltipContent>
+          <p>{reason}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -142,14 +140,12 @@ export const LockedButton = ({
   // If locked and has reason, wrap with tooltip
   if (isLocked && lockReason) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
-          <TooltipContent>
-            <p>{lockReason}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent>
+          <p>{lockReason}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 

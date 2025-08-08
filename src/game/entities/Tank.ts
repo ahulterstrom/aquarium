@@ -24,14 +24,14 @@ export class Tank {
   
   private getDimensions(): THREE.Vector3 {
     switch (this.data.size) {
-      case 'small':
-        return new THREE.Vector3(4, 3, 4);
       case 'medium':
         return new THREE.Vector3(6, 4, 6);
       case 'large':
         return new THREE.Vector3(10, 5, 8);
+      case 'huge':
+        return new THREE.Vector3(12, 6, 12);
       default:
-        return new THREE.Vector3(4, 3, 4);
+        return new THREE.Vector3(6, 4, 6);
     }
   }
   

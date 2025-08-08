@@ -13,6 +13,7 @@ import { SceneProvider } from "@/contexts/scene/sceneContextProvider";
 import { SceneManager } from "@/managers/sceneManager";
 import { UIManager } from "@/managers/uiManager";
 import { useUIStore } from "@/stores/uiStore";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./App.css";
 
 function App() {
@@ -41,7 +42,7 @@ function App() {
               <Suspense fallback={null}>
                 <DebugControls />
                 {/* <PerspectiveCamera makeDefault position={[0, 0, 5]} />
-                <CustomCameraControls /> */}
+                  <CustomCameraControls /> */}
                 <SceneManager />
               </Suspense>
             </Canvas>

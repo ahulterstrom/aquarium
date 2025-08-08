@@ -201,10 +201,23 @@ export class FishSystem {
     // Stay near bottom and move slowly
     const tank = this.tanks.get(fish.tankId);
     if (tank && !fish.targetPosition) {
+      // Use the same center-based position generation as other behaviors
+      const baseX = tank.position.x * 2;
+      const baseZ = tank.position.z * 2;
+      const gridWidth = tank.gridWidth || 1;
+      const gridDepth = tank.gridDepth || 1;
+      
+      // Calculate the center of the tank
+      const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
+      const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+      
+      const xRange = gridWidth * 1.4;
+      const zRange = gridDepth * 1.4;
+      
       fish.targetPosition = new THREE.Vector3(
-        tank.position.x * 2 + (Math.random() - 0.5) * 1.5,
+        tankCenterX + (Math.random() - 0.5) * xRange,
         tank.position.y + 0.2, // Near bottom
-        tank.position.z * 2 + (Math.random() - 0.5) * 1.5
+        tankCenterZ + (Math.random() - 0.5) * zRange
       );
     }
 
@@ -270,15 +283,22 @@ export class FishSystem {
     const baseX = tank.position.x * 2;
     const baseZ = tank.position.z * 2;
     
-    // Scale random range based on tank grid dimensions
     // Handle legacy tanks that don't have grid dimensions
-    const xRange = (tank.gridWidth || 1) * 1.4; // 1.4 units per grid cell
-    const zRange = (tank.gridDepth || 1) * 1.4;
+    const gridWidth = tank.gridWidth || 1;
+    const gridDepth = tank.gridDepth || 1;
+    
+    // Calculate the center of the tank (same logic as tank visual positioning)
+    const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
+    const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+    
+    // Scale random range based on tank grid dimensions
+    const xRange = gridWidth * 1.4; // 1.4 units per grid cell
+    const zRange = gridDepth * 1.4;
     
     return new THREE.Vector3(
-      baseX + (Math.random() - 0.5) * xRange,
+      tankCenterX + (Math.random() - 0.5) * xRange,
       tank.position.y + 0.3 + Math.random() * 0.6, // Mid-water
-      baseZ + (Math.random() - 0.5) * zRange
+      tankCenterZ + (Math.random() - 0.5) * zRange
     );
   }
 
@@ -287,18 +307,25 @@ export class FishSystem {
     const baseX = tank.position.x * 2;
     const baseZ = tank.position.z * 2;
     
-    // For multi-cell tanks, adjust bounds to cover all grid cells
     // Handle legacy tanks that don't have grid dimensions
     const gridWidth = tank.gridWidth || 1;
     const gridDepth = tank.gridDepth || 1;
     
+    // Calculate the center of the tank (same logic as visual positioning)
+    const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
+    const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+    
+    // Create bounds centered around the tank center
+    const halfRangeX = (gridWidth * 1.4) / 2;
+    const halfRangeZ = (gridDepth * 1.4) / 2;
+    
     const tankBounds = {
-      minX: baseX - 0.7,
-      maxX: baseX + (gridWidth * 2) - 1.3, // Account for grid width
+      minX: tankCenterX - halfRangeX,
+      maxX: tankCenterX + halfRangeX,
       minY: tank.position.y + 0.1,
       maxY: tank.position.y + 0.9,
-      minZ: baseZ - 0.7,
-      maxZ: baseZ + (gridDepth * 2) - 1.3, // Account for grid depth
+      minZ: tankCenterZ - halfRangeZ,
+      maxZ: tankCenterZ + halfRangeZ,
     };
 
     // Constrain position

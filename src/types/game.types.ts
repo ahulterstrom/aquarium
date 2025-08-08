@@ -9,7 +9,7 @@ export interface GridPosition {
 export interface Tank {
   id: string;
   position: GridPosition;
-  size: "small" | "medium" | "large";
+  size: "medium" | "large" | "huge";
   gridWidth: number; // Number of grid cells wide (X-axis)
   gridDepth: number; // Number of grid cells deep (Z-axis)
   waterQuality: number;
@@ -77,7 +77,7 @@ export type VisitorState =
 
 export interface VisitorInterests {
   fishTypes: string[]; // Preferred fish species
-  tankSizes: ("small" | "medium" | "large")[];
+  tankSizes: ("medium" | "large" | "huge")[];
   decorationTypes: string[]; // Future: coral, plants, etc.
 }
 

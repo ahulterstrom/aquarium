@@ -26,8 +26,6 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
   // Get fish scale based on size
   const getFishScale = (size: string) => {
     switch (size) {
-      case "small":
-        return 0.8;
       case "medium":
         return 1.0;
       case "large":

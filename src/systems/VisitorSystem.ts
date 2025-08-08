@@ -692,15 +692,15 @@ export class VisitorSystem {
     return interests;
   }
 
-  private generateRandomSizePreferences(): ("small" | "medium" | "large")[] {
-    const sizes: ("small" | "medium" | "large")[] = [
-      "small",
+  private generateRandomSizePreferences(): ("medium" | "large" | "huge")[] {
+    const sizes: ("medium" | "large" | "huge")[] = [
       "medium",
       "large",
+      "huge",
     ];
     const preferenceCount = 1 + Math.floor(Math.random() * 2); // 1-2 size preferences
 
-    const result: ("small" | "medium" | "large")[] = [];
+    const result: ("medium" | "large" | "huge")[] = [];
     for (let i = 0; i < preferenceCount; i++) {
       const size = sizes[Math.floor(Math.random() * sizes.length)];
       if (!result.includes(size)) {

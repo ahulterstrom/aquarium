@@ -32,14 +32,15 @@ const TankMesh = ({
     const baseX = tank.position.x * 2;
     const baseZ = tank.position.z * 2;
     
-    // For 2x1 tanks, offset by 1 unit to center on both grid cells
-    // Handle legacy tanks that don't have gridWidth property
+    // Handle legacy tanks that don't have grid dimensions
     const gridWidth = tank.gridWidth || 1;
-    if (gridWidth > 1) {
-      return [baseX + 1, height / 2, baseZ];
-    }
+    const gridDepth = tank.gridDepth || 1;
     
-    return [baseX, height / 2, baseZ];
+    // Center the tank on all occupied grid cells
+    const offsetX = gridWidth > 1 ? (gridWidth - 1) : 0;
+    const offsetZ = gridDepth > 1 ? (gridDepth - 1) : 0;
+    
+    return [baseX + offsetX, height / 2, baseZ + offsetZ];
   };
 
   return (

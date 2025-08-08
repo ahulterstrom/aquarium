@@ -30,7 +30,7 @@ interface UIStore {
   placementMode: PlacementMode;
   placementPreview: {
     type: string;
-    size?: "small" | "medium" | "large";
+    size?: "medium" | "large" | "huge";
   } | null;
   
   // Expansion placement

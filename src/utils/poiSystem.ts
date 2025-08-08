@@ -27,13 +27,21 @@ export class POISystem {
 
     // Add tank POIs
     for (const tank of tanks.values()) {
+      // For multi-cell tanks, create POI at center of all occupied cells
+      const gridWidth = tank.gridWidth || 1;
+      const gridDepth = tank.gridDepth || 1;
+      
+      // Calculate center position for multi-cell tanks
+      const centerX = tank.position.x + (gridWidth - 1) * 0.5;
+      const centerZ = tank.position.z + (gridDepth - 1) * 0.5;
+      
       const poi: POI = {
         id: `tank_${tank.id}`,
         type: "tank",
         position: new THREE.Vector3(
-          tank.position.x * 2,
+          centerX * 2,
           0.5,
-          tank.position.z * 2,
+          centerZ * 2,
         ),
         object: tank,
       };
@@ -63,37 +71,54 @@ export class POISystem {
   /**
    * Calculate a viewing position around a POI (tank)
    * Returns a position within viewing distance in one of the 4 cardinal directions
+   * For multi-cell tanks, considers all occupied cells when finding viewing positions
    */
   calculateViewingPosition(poi: POI): THREE.Vector3 | null {
     if (poi.type !== "tank") return null;
 
-    const tankPos = poi.position;
+    const tank = poi.object;
+    const gridWidth = tank.gridWidth || 1;
+    const gridDepth = tank.gridDepth || 1;
 
-    // Convert tank position to grid coordinates
-    const tankGridPos = {
-      x: Math.round(tankPos.x / 2),
-      y: 0,
-      z: Math.round(tankPos.z / 2),
-    };
+    // Get all potential viewing positions around the multi-cell tank
+    const viewingCandidates: Array<{ position: GridPosition, direction: { x: number, z: number } }> = [];
 
-    // 4 cardinal directions in grid coordinates: North, East, South, West
-    const directions = [
-      { x: 0, z: -1 }, // North
-      { x: 1, z: 0 }, // East
-      { x: 0, z: 1 }, // South
-      { x: -1, z: 0 }, // West
-    ];
+    // Generate viewing positions around the tank's perimeter
+    for (let x = tank.position.x; x < tank.position.x + gridWidth; x++) {
+      for (let z = tank.position.z; z < tank.position.z + gridDepth; z++) {
+        // 4 cardinal directions for each occupied cell
+        const directions = [
+          { x: 0, z: -1 }, // North
+          { x: 1, z: 0 }, // East
+          { x: 0, z: 1 }, // South
+          { x: -1, z: 0 }, // West
+        ];
 
-    // Shuffle directions to get random viewing positions
-    const shuffledDirections = [...directions].sort(() => Math.random() - 0.5);
+        for (const direction of directions) {
+          const viewingGridPos: GridPosition = {
+            x: x + direction.x,
+            y: 0,
+            z: z + direction.z,
+          };
 
-    for (const direction of shuffledDirections) {
-      // Calculate grid position for viewing
-      const viewingGridPos: GridPosition = {
-        x: tankGridPos.x + direction.x,
-        y: 0,
-        z: tankGridPos.z + direction.z,
-      };
+          // Only add positions that are outside the tank's footprint
+          const isOutsideTank = viewingGridPos.x < tank.position.x ||
+                               viewingGridPos.x >= tank.position.x + gridWidth ||
+                               viewingGridPos.z < tank.position.z ||
+                               viewingGridPos.z >= tank.position.z + gridDepth;
+
+          if (isOutsideTank) {
+            viewingCandidates.push({ position: viewingGridPos, direction });
+          }
+        }
+      }
+    }
+
+    // Shuffle candidates to get random viewing positions
+    const shuffledCandidates = [...viewingCandidates].sort(() => Math.random() - 0.5);
+
+    for (const candidate of shuffledCandidates) {
+      const { position: viewingGridPos, direction } = candidate;
 
       // Check if position is walkable
       if (
@@ -133,7 +158,7 @@ export class POISystem {
     }
 
     console.error(
-      `No valid viewing position found for tank at grid (${tankGridPos.x}, ${tankGridPos.z})`,
+      `No valid viewing position found for tank at grid (${tank.position.x}, ${tank.position.z})`,
     );
     return null;
   }
