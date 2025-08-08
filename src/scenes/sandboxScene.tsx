@@ -5,7 +5,7 @@ import { Coins } from "@/components/coins";
 import { FishRenderer } from "@/components/fish";
 import { ExpansionGrid } from "@/components/game/ExpansionGrid";
 import { Walls } from "@/components/game/Walls";
-import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
+import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
 import { MapControls, OrthographicCamera } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import { Grid } from "../components/game/Grid";
@@ -48,6 +48,7 @@ export const SandboxScene = () => {
   const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
 
   const placementMode = useUIStore.use.placementMode();
+  const placementPreview = useUIStore.use.placementPreview();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const addMoney = useGameStore.use.addMoney();
@@ -60,24 +61,29 @@ export const SandboxScene = () => {
   }, [initializeGrid, addMoney]);
 
   const handleCellClick = (x: number, z: number) => {
-    if (placementMode === "tank") {
-      if (canPlaceAt({ x, y: 0, z }, 1, 1)) {
-        if (spendMoney(TANK_COST)) {
+    if (placementMode === "tank" && placementPreview) {
+      const tankSize = placementPreview.size || "medium";
+      const specs = TANK_SPECS[tankSize];
+      
+      if (canPlaceAt({ x, y: 0, z }, specs.gridWidth, specs.gridDepth)) {
+        if (spendMoney(specs.cost)) {
           const tankId = `tank_${Date.now()}`;
           const newTank: TankType = {
             id: tankId,
             position: { x, y: 0, z },
-            size: "medium",
+            size: tankSize,
+            gridWidth: specs.gridWidth,
+            gridDepth: specs.gridDepth,
             waterQuality: 1,
             temperature: 25,
-            capacity: 5,
+            capacity: specs.capacity,
             fishIds: [],
             decorations: [],
             maintenanceLevel: 1,
           };
 
           addTank(newTank);
-          placeObject({ x, y: 0, z }, 1, 1, "tank", tankId);
+          placeObject({ x, y: 0, z }, specs.gridWidth, specs.gridDepth, "tank", tankId);
           setPlacementMode("none");
         }
       }

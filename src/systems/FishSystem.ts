@@ -266,21 +266,39 @@ export class FishSystem {
   }
 
   private getRandomPositionInTank(tank: Tank): THREE.Vector3 {
+    // Calculate random position within tank bounds
+    const baseX = tank.position.x * 2;
+    const baseZ = tank.position.z * 2;
+    
+    // Scale random range based on tank grid dimensions
+    // Handle legacy tanks that don't have grid dimensions
+    const xRange = (tank.gridWidth || 1) * 1.4; // 1.4 units per grid cell
+    const zRange = (tank.gridDepth || 1) * 1.4;
+    
     return new THREE.Vector3(
-      tank.position.x * 2 + (Math.random() - 0.5) * 1.5,
+      baseX + (Math.random() - 0.5) * xRange,
       tank.position.y + 0.3 + Math.random() * 0.6, // Mid-water
-      tank.position.z * 2 + (Math.random() - 0.5) * 1.5
+      baseZ + (Math.random() - 0.5) * zRange
     );
   }
 
   private constrainToTank(fish: Fish, tank: Tank): void {
+    // Calculate bounds based on tank grid dimensions
+    const baseX = tank.position.x * 2;
+    const baseZ = tank.position.z * 2;
+    
+    // For multi-cell tanks, adjust bounds to cover all grid cells
+    // Handle legacy tanks that don't have grid dimensions
+    const gridWidth = tank.gridWidth || 1;
+    const gridDepth = tank.gridDepth || 1;
+    
     const tankBounds = {
-      minX: tank.position.x * 2 - 0.7,
-      maxX: tank.position.x * 2 + 0.7,
+      minX: baseX - 0.7,
+      maxX: baseX + (gridWidth * 2) - 1.3, // Account for grid width
       minY: tank.position.y + 0.1,
       maxY: tank.position.y + 0.9,
-      minZ: tank.position.z * 2 - 0.7,
-      maxZ: tank.position.z * 2 + 0.7,
+      minZ: baseZ - 0.7,
+      maxZ: baseZ + (gridDepth * 2) - 1.3, // Account for grid depth
     };
 
     // Constrain position

@@ -2,6 +2,7 @@ import { GridCell } from './GridCell';
 import { useGridStore } from '../../stores/gridStore';
 import { useUIStore } from '../../stores/uiStore';
 import { GridPosition } from '../../types/game.types';
+import { TANK_SPECS } from '../../lib/constants';
 
 interface GridProps {
   hoveredCell: GridPosition | null;
@@ -13,6 +14,7 @@ export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
   const canPlaceAt = useGridStore.use.canPlaceAt();
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
   const placementMode = useUIStore.use.placementMode();
+  const placementPreview = useUIStore.use.placementPreview();
 
   return (
     <>
@@ -22,18 +24,30 @@ export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
         // Skip if not on ground level (y !== 0)
         if (y !== 0) return null;
         
-        const isHighlighted =
-          hoveredCell?.x === x &&
-          hoveredCell?.z === z &&
-          (placementMode === "tank" || placementMode === "entrance");
-
-        // Check if this is a valid placement position
+        // Multi-cell placement preview logic
+        let isHighlighted = false;
         let isValidPlacement = true;
-        if (isHighlighted) {
-          if (placementMode === "tank") {
-            isValidPlacement = canPlaceAt({ x, y, z }, 1, 1);
+
+        if (hoveredCell && (placementMode === "tank" || placementMode === "entrance")) {
+          if (placementMode === "tank" && placementPreview) {
+            // Get tank dimensions from preview
+            const tankSize = placementPreview.size || "medium";
+            const specs = TANK_SPECS[tankSize];
+            
+            // Check if this cell is part of the multi-cell preview
+            const inXRange = x >= hoveredCell.x && x < hoveredCell.x + specs.gridWidth;
+            const inZRange = z >= hoveredCell.z && z < hoveredCell.z + specs.gridDepth;
+            
+            if (inXRange && inZRange) {
+              isHighlighted = true;
+              // Validate the entire placement from the origin cell
+              isValidPlacement = canPlaceAt(hoveredCell, specs.gridWidth, specs.gridDepth);
+            }
           } else if (placementMode === "entrance") {
-            isValidPlacement = canPlaceEntranceAt({ x, y, z });
+            isHighlighted = hoveredCell.x === x && hoveredCell.z === z;
+            if (isHighlighted) {
+              isValidPlacement = canPlaceEntranceAt({ x, y, z });
+            }
           }
         }
 

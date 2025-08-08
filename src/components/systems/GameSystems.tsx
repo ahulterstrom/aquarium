@@ -13,6 +13,7 @@ export function GameSystems() {
     water: 0,
     visitors: 0,
     daily: 0,
+    fishReferences: 0, // Track when we last updated fish references
   });
 
   const gameSpeed = useGameStore.use.gameSpeed();
@@ -31,10 +32,20 @@ export function GameSystems() {
     // Update visitors every frame
     updateVisitors(dt);
 
+    // Update fish references less frequently (every 100ms) to avoid disruptions
+    accumulator.current.fishReferences += dt;
+    if (accumulator.current.fishReferences >= 100) {
+      try {
+        updateFishSystemReferences();
+        accumulator.current.fishReferences %= 100;
+      } catch (error) {
+        // Fish system not initialized yet, ignore
+      }
+    }
+
     // Update fish every frame
     try {
       const fishSystem = getFishSystem();
-      updateFishSystemReferences(); // Keep references up to date
       fishSystem.update(dt);
     } catch (error) {
       // Fish system not initialized yet, ignore

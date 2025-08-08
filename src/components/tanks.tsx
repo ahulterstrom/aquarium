@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useGameStore } from "../stores/gameStore";
 import { useUIStore } from "../stores/uiStore";
 import { Tank as TankType } from "../types/game.types";
+import { TANK_SPECS } from "../lib/constants";
 
 const TankMesh = ({
   tank,
@@ -16,24 +17,35 @@ const TankMesh = ({
   const groupRef = useRef<THREE.Group>(null);
 
   const getDimensions = () => {
-    switch (tank.size) {
-      case "small":
-        return [1.5, 1.2, 1.5];
-      case "medium":
-        return [1.8, 1.5, 1.8];
-      case "large":
-        return [2, 2, 2];
-      default:
-        return [1.5, 1.2, 1.5];
+    const specs = TANK_SPECS[tank.size];
+    if (specs) {
+      return specs.visualDimensions;
     }
+    // Fallback for unknown sizes
+    return [1.5, 1.2, 1.5];
   };
 
   const [width, height, depth] = getDimensions();
 
+  // Calculate position offset for multi-cell tanks
+  const getPosition = () => {
+    const baseX = tank.position.x * 2;
+    const baseZ = tank.position.z * 2;
+    
+    // For 2x1 tanks, offset by 1 unit to center on both grid cells
+    // Handle legacy tanks that don't have gridWidth property
+    const gridWidth = tank.gridWidth || 1;
+    if (gridWidth > 1) {
+      return [baseX + 1, height / 2, baseZ];
+    }
+    
+    return [baseX, height / 2, baseZ];
+  };
+
   return (
     <group
       ref={groupRef}
-      position={[tank.position.x * 2, height / 2, tank.position.z * 2]}
+      position={getPosition()}
       onClick={(e) => {
         e.stopPropagation();
         console.log("Tank clicked:", tank.id);

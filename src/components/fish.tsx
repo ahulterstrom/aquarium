@@ -1,9 +1,7 @@
-import { useGameStore } from "@/stores/gameStore";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState } from "react";
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import { getFishSystem } from "@/components/systems/fishSystem";
-import { Fish } from "@/types/game.types";
 
 const FishMesh = ({ fishId }: { fishId: string }) => {
   const meshRef = useRef<THREE.Group>(null);
@@ -43,75 +41,86 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
   useFrame(() => {
     if (!meshRef.current) return;
 
-    const fishSystem = getFishSystem();
-    const fish = fishSystem.getFish(fishId);
+    try {
+      const fishSystem = getFishSystem();
+      const fish = fishSystem.getFish(fishId);
 
-    if (!fish) {
-      // Fish doesn't exist, hide the mesh
-      meshRef.current.visible = false;
-      return;
-    }
-
-    // Show the mesh
-    meshRef.current.visible = true;
-
-    // Update position
-    meshRef.current.position.copy(fish.position);
-
-    // Update rotation to face movement direction
-    if (fish.velocity.length() > 0.01) {
-      const direction = fish.velocity.clone().normalize();
-      // Fish model faces +X by default, so we calculate rotation accordingly
-      const targetRotation = Math.atan2(direction.z, direction.x);
-
-      // Smooth rotation interpolation
-      const currentRotation = meshRef.current.rotation.y;
-      let rotationDiff = targetRotation - currentRotation;
-
-      // Handle rotation wrapping
-      if (rotationDiff > Math.PI) rotationDiff -= 2 * Math.PI;
-      if (rotationDiff < -Math.PI) rotationDiff += 2 * Math.PI;
-
-      meshRef.current.rotation.y += rotationDiff * 0.1; // Smooth rotation
-    }
-
-    // Update material color based on species
-    if (bodyMaterialRef.current) {
-      const baseColor = getFishColor(fish.species.id);
-      bodyMaterialRef.current.color.setHex(baseColor);
-
-      // Modify color based on fish state
-      let opacity = 1.0;
-      if (fish.behaviorState === "resting") {
-        opacity = 0.8; // Slightly transparent when resting
+      if (!fish) {
+        // Fish doesn't exist, hide the mesh but don't error
+        meshRef.current.visible = false;
+        return;
       }
-      if (fish.health < 0.5) {
-        // Desaturate color when unhealthy
-        bodyMaterialRef.current.color.lerp(new THREE.Color(0x666666), 0.3);
+
+      // Show the mesh only if we have valid fish data
+      meshRef.current.visible = true;
+
+      // Update position
+      meshRef.current.position.copy(fish.position);
+
+      // Update rotation to face movement direction
+      if (fish.velocity.length() > 0.01) {
+        const direction = fish.velocity.clone().normalize();
+        // Fish model faces +X by default, so we calculate rotation accordingly
+        const targetRotation = Math.atan2(direction.z, direction.x);
+
+        // Smooth rotation interpolation
+        const currentRotation = meshRef.current.rotation.y;
+        let rotationDiff = targetRotation - currentRotation;
+
+        // Handle rotation wrapping
+        if (rotationDiff > Math.PI) rotationDiff -= 2 * Math.PI;
+        if (rotationDiff < -Math.PI) rotationDiff += 2 * Math.PI;
+
+        meshRef.current.rotation.y += rotationDiff * 0.1; // Smooth rotation
       }
-      bodyMaterialRef.current.opacity = opacity;
-      bodyMaterialRef.current.transparent = opacity < 1.0;
+
+      // Update material color based on species
+      if (bodyMaterialRef.current) {
+        const baseColor = getFishColor(fish.species.id);
+        const materialColor = new THREE.Color(baseColor);
+
+        // Modify color based on fish state
+        let opacity = 1.0;
+        if (fish.behaviorState === "resting") {
+          opacity = 0.8; // Slightly transparent when resting
+        }
+        if (fish.health < 0.5) {
+          // Desaturate color when unhealthy - create a new color instead of modifying the original
+          materialColor.lerp(new THREE.Color(0x666666), 0.3);
+        }
+        
+        // Apply the final color to the material
+        bodyMaterialRef.current.color.copy(materialColor);
+        bodyMaterialRef.current.opacity = opacity;
+        bodyMaterialRef.current.transparent = opacity < 1.0;
+      }
+
+      // Scale based on species size and health
+      const baseScale = getFishScale(fish.species.size);
+      const healthScale = 0.7 + fish.health * 0.3; // Scale from 0.7 to 1.0 based on health
+      const finalScale = baseScale * healthScale;
+      meshRef.current.scale.setScalar(finalScale);
+
+      // Add subtle animation based on behavior
+      const time = Date.now() * 0.001;
+      let animationOffset = 0;
+
+      if (fish.behaviorState === "feeding") {
+        // Bob up and down while feeding
+        animationOffset = Math.sin(time * 4) * 0.05;
+      } else if (fish.behaviorState === "schooling") {
+        // Slight side-to-side movement when schooling
+        animationOffset = Math.sin(time * 3) * 0.02;
+      }
+
+      meshRef.current.position.y += animationOffset;
+    } catch (error) {
+      // Handle error gracefully without disrupting rendering
+      console.warn("Error updating fish mesh:", error);
+      if (meshRef.current) {
+        meshRef.current.visible = false;
+      }
     }
-
-    // Scale based on species size and health
-    const baseScale = getFishScale(fish.species.size);
-    const healthScale = 0.7 + fish.health * 0.3; // Scale from 0.7 to 1.0 based on health
-    const finalScale = baseScale * healthScale;
-    meshRef.current.scale.setScalar(finalScale);
-
-    // Add subtle animation based on behavior
-    const time = Date.now() * 0.001;
-    let animationOffset = 0;
-
-    if (fish.behaviorState === "feeding") {
-      // Bob up and down while feeding
-      animationOffset = Math.sin(time * 4) * 0.05;
-    } else if (fish.behaviorState === "schooling") {
-      // Slight side-to-side movement when schooling
-      animationOffset = Math.sin(time * 3) * 0.02;
-    }
-
-    meshRef.current.position.y += animationOffset;
   });
 
   return (
@@ -153,22 +162,36 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
 
 export const FishRenderer = () => {
   const [fishIds, setFishIds] = useState<string[]>([]);
+  const lastUpdateRef = useRef(0);
 
-  // Update fish list periodically
-  useFrame((state, delta) => {
-    const frameCount = state.clock.elapsedTime;
-    if (frameCount % 0.5 < delta) {
-      // Check for new/removed fish every 0.5 seconds
-      const fishSystem = getFishSystem();
-      const currentFish = fishSystem.getAllFish();
-      const currentIds = currentFish.map((f) => f.id);
+  // Update fish list less frequently and more smoothly
+  useFrame((state) => {
+    const currentTime = state.clock.elapsedTime * 1000; // Convert to milliseconds
+    
+    // Only check every 100ms instead of 500ms for smoother updates
+    if (currentTime - lastUpdateRef.current > 100) {
+      lastUpdateRef.current = currentTime;
+      
+      try {
+        const fishSystem = getFishSystem();
+        const currentFish = fishSystem.getAllFish();
+        const currentIds = currentFish.map((f) => f.id);
 
-      // Only update React state if the fish list changed
-      if (
-        currentIds.length !== fishIds.length ||
-        !currentIds.every((id) => fishIds.includes(id))
-      ) {
-        setFishIds(currentIds);
+        // Use Set for more efficient comparison
+        const existingIdsSet = new Set(fishIds);
+        const currentIdsSet = new Set(currentIds);
+        
+        // Only update if there's actually a difference
+        const hasChanges = 
+          existingIdsSet.size !== currentIdsSet.size ||
+          !currentIds.every(id => existingIdsSet.has(id));
+          
+        if (hasChanges) {
+          setFishIds(currentIds);
+        }
+      } catch (error) {
+        // Fish system not ready, keep existing fish list
+        console.warn("Fish system not available:", error);
       }
     }
   });

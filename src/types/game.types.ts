@@ -10,6 +10,8 @@ export interface Tank {
   id: string;
   position: GridPosition;
   size: "small" | "medium" | "large";
+  gridWidth: number; // Number of grid cells wide (X-axis)
+  gridDepth: number; // Number of grid cells deep (Z-axis)
   waterQuality: number;
   temperature: number;
   capacity: number;
