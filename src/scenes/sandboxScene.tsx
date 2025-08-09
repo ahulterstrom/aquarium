@@ -16,6 +16,7 @@ import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
+import { nanoid } from "nanoid";
 
 // Define floor style configurations
 const FLOOR_STYLES = {
@@ -64,10 +65,10 @@ export const SandboxScene = () => {
     if (placementMode === "tank" && placementPreview) {
       const tankSize = placementPreview.size || "medium";
       const specs = TANK_SPECS[tankSize];
-      
+
       if (canPlaceAt({ x, y: 0, z }, specs.gridWidth, specs.gridDepth)) {
         if (spendMoney(specs.cost)) {
-          const tankId = `tank_${Date.now()}`;
+          const tankId = `tank_${nanoid()}`;
           const newTank: TankType = {
             id: tankId,
             position: { x, y: 0, z },
@@ -83,14 +84,20 @@ export const SandboxScene = () => {
           };
 
           addTank(newTank);
-          placeObject({ x, y: 0, z }, specs.gridWidth, specs.gridDepth, "tank", tankId);
+          placeObject(
+            { x, y: 0, z },
+            specs.gridWidth,
+            specs.gridDepth,
+            "tank",
+            tankId,
+          );
           setPlacementMode("none");
         }
       }
     } else if (placementMode === "entrance") {
       if (canPlaceEntranceAt({ x, y: 0, z })) {
         if (spendMoney(ENTRANCE_COST)) {
-          const entranceId = `entrance_${Date.now()}`;
+          const entranceId = `entrance_${nanoid()}`;
           const edge = getEdgeForPosition({ x, y: 0, z });
           const newEntrance: Entrance = {
             id: entranceId,
@@ -167,7 +174,12 @@ export const SandboxScene = () => {
             }}
           >
             <planeGeometry args={[1.95, 1.95]} />
-            <meshStandardMaterial color={FLOOR_STYLES[floorStyle as keyof typeof FLOOR_STYLES]?.color || 0x8b4513} />
+            <meshStandardMaterial
+              color={
+                FLOOR_STYLES[floorStyle as keyof typeof FLOOR_STYLES]?.color ||
+                0x8b4513
+              }
+            />
           </mesh>
         );
       })}

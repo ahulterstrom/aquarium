@@ -24,6 +24,8 @@ export class VisitorSystem {
   private poiSystem: POISystem;
   private pathSmoother: PathSmoother;
   private coinSystem: CoinSystem;
+  private totalVisitorsCreated: number = 0;
+  private satisfiedVisitors: number = 0;
 
   constructor(gridStore: GridStoreInterface, coinSystem: CoinSystem) {
     this.visitors = new Map();
@@ -108,6 +110,7 @@ export class VisitorSystem {
     };
 
     this.visitors.set(visitorId, visitor);
+    this.totalVisitorsCreated++;
     return visitor;
   }
 
@@ -608,6 +611,11 @@ export class VisitorSystem {
       this.coinSystem.dropCoin(visitor.position, 1, visitor.id);
     }
 
+    // Track satisfied visitors
+    if (newState === "satisfied" && previousState !== "satisfied") {
+      this.satisfiedVisitors++;
+    }
+
     visitor.state = newState;
     visitor.stateTimer = 0;
 
@@ -731,5 +739,13 @@ export class VisitorSystem {
 
   getPOI(id: string) {
     return this.poiSystem.getPOIs().find(poi => poi.id === id);
+  }
+
+  getTotalVisitorsCreated(): number {
+    return this.totalVisitorsCreated;
+  }
+
+  getSatisfiedVisitorCount(): number {
+    return this.satisfiedVisitors;
   }
 }

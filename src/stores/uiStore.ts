@@ -47,6 +47,7 @@ interface UIStore {
   showTileExpansion: boolean;
   showCustomization: boolean;
   showBuild: boolean;
+  showObjectives: boolean;
 
   // Actions
   selectTank: (id: string | null) => void;
@@ -64,6 +65,7 @@ interface UIStore {
   setShowTileExpansion: (show: boolean) => void;
   setShowCustomization: (show: boolean) => void;
   setShowBuild: (show: boolean) => void;
+  setShowObjectives: (show: boolean) => void;
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
@@ -108,6 +110,7 @@ export const useUIStore = createSelectors(
       showTileExpansion: false,
       showCustomization: false,
       showBuild: false,
+      showObjectives: false,
 
       activeModal: "none",
       modalData: null,
@@ -185,6 +188,7 @@ export const useUIStore = createSelectors(
       setShowTileExpansion: (show) => set({ showTileExpansion: show }),
       setShowCustomization: (show) => set({ showCustomization: show }),
       setShowBuild: (show) => set({ showBuild: show }),
+      setShowObjectives: (show) => set({ showObjectives: show }),
 
       setPlacementMode: (mode, preview) =>
         set((state) => ({

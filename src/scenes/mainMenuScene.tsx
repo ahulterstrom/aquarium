@@ -128,8 +128,6 @@ export const MainMenuScene = () => {
         castShadow={true}
       />
 
-      <Environment preset="studio" />
-
       <ShaderPlane />
     </>
   );

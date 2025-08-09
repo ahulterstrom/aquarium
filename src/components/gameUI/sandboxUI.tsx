@@ -63,6 +63,10 @@ import {
 } from "../../types/game.types";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
+import { ObjectivesPanel } from "@/components/gameUI/objectivesPanel";
+import { ObjectivesButton } from "@/components/gameUI/objectivesButton";
+import { CompletedObjectiveNotification } from "@/components/gameUI/completedObjectiveNotification";
+import { AllObjectivesModal } from "@/components/gameUI/allObjectivesModal";
 import { useGame } from "@/stores/useGame";
 import {
   getVisitorSystem,
@@ -125,6 +129,7 @@ const FISH_SPECIES: FishSpecies[] = [
 
 export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
+  const [showAllObjectives, setShowAllObjectives] = useState(false);
 
   const isDebugging = useGame.use.isDebugging();
   const tanks = useGameStore.use.tanks();
@@ -139,6 +144,9 @@ export const SandboxUI = () => {
   const setPaused = useGameStore.use.setPaused();
   const day = useGameStore.use.day();
   const entrances = useGameStore.use.entrances();
+  const activeObjectives = useGameStore.use.activeObjectives();
+  const allObjectives = useGameStore.use.allObjectives();
+  const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
 
   const removeObject = useGridStore.use.removeObject();
   const showFishShop = useUIStore.use.showFishShop();
@@ -151,6 +159,8 @@ export const SandboxUI = () => {
   const setShowCustomization = useUIStore.use.setShowCustomization();
   const showBuild = useUIStore.use.showBuild();
   const setShowBuild = useUIStore.use.setShowBuild();
+  const showObjectives = useUIStore.use.showObjectives();
+  const setShowObjectives = useUIStore.use.setShowObjectives();
   const placementMode = useUIStore.use.placementMode();
   const isInPlacementMode = placementMode !== "none";
   const setPlacementMode = useUIStore.use.setPlacementMode();
@@ -287,6 +297,10 @@ export const SandboxUI = () => {
               <GameTimeDisplay />
             </div>
             <Separator orientation="vertical" className="h-10" />
+            <ObjectivesButton
+              objectives={activeObjectives}
+              onClick={() => setShowObjectives(!showObjectives)}
+            />
 
             <Button
               size="sm"
@@ -348,67 +362,43 @@ export const SandboxUI = () => {
             className="w-50 border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <div className="pointer-events-auto flex h-full w-30 flex-col justify-center gap-4 p-2">
+            <div className="pointer-events-auto flex h-full w-35 flex-col justify-center gap-4 p-2">
               {/* Build Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      onClick={() => setShowBuild(true)}
-                      className="w-full"
-                      variant={
-                        entrances.size === 0 || tanks.size === 0
-                          ? "glow"
-                          : "outline"
-                      }
-                      size="default"
-                    >
-                      <Hammer className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Build</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                onClick={() => setShowBuild(true)}
+                className="w-full"
+                variant={
+                  entrances.size === 0 || tanks.size === 0
+                    ? "glow"
+                    : "sidePanel"
+                }
+                size="default"
+              >
+                <Hammer className="h-4 w-4" />
+                <p>Build</p>
+              </Button>
 
               {/* Tile Expansion Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      onClick={() => setShowTileExpansion(true)}
-                      className="w-full"
-                      variant="outline"
-                      size="default"
-                    >
-                      <Expand className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Expand</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                onClick={() => setShowTileExpansion(true)}
+                className="w-full"
+                variant="sidePanel"
+                size="default"
+              >
+                <Expand className="h-4 w-4" />
+                <p>Expand</p>
+              </Button>
 
               {/* Customization Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      onClick={() => setShowCustomization(true)}
-                      className="w-full"
-                      variant="outline"
-                      size="default"
-                    >
-                      <Paintbrush className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  <p>Customize</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                onClick={() => setShowCustomization(true)}
+                className="w-full"
+                variant="sidePanel"
+                size="default"
+              >
+                <Paintbrush className="h-4 w-4" />
+                <p>Customize</p>
+              </Button>
 
               {/* Context Message Area */}
               {contextMessage && (
@@ -484,6 +474,28 @@ export const SandboxUI = () => {
             </Button>
           </div>
         )}
+
+        {/* Collapsible Objectives Panel */}
+        {showObjectives && (
+          <ObjectivesPanel 
+            objectives={activeObjectives}
+            onCollectReward={collectObjectiveReward}
+            onViewAll={() => setShowAllObjectives(true)}
+          />
+        )}
+
+        {/* Persistent Completed Objective Notifications - Top Right */}
+        <div className="pointer-events-none absolute top-4 right-4 flex flex-col gap-2">
+          {activeObjectives
+            .filter(obj => obj.completed && !obj.rewarded)
+            .map(objective => (
+              <CompletedObjectiveNotification
+                key={objective.id}
+                objective={objective}
+                onCollectReward={collectObjectiveReward}
+              />
+            ))}
+        </div>
 
         {/* Entity Info Panel - Right Side */}
         <EntityInfoPanel />
@@ -700,6 +712,14 @@ export const SandboxUI = () => {
 
         {/* Build Panel */}
         <BuildPanel />
+
+        {/* All Objectives Modal */}
+        <AllObjectivesModal
+          open={showAllObjectives}
+          onOpenChange={setShowAllObjectives}
+          allObjectives={allObjectives}
+          onCollectReward={collectObjectiveReward}
+        />
       </div>
     </div>
   );

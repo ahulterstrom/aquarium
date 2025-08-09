@@ -27,6 +27,10 @@ export function updateVisitors(deltaTime: number) {
 
   // Update all visitors (no syncing back to store)
   system.update(deltaTime);
+
+  // Update visitor objectives
+  state.objectiveSystem.updateProgress("attract_visitors", system.getTotalVisitorsCreated());
+  state.objectiveSystem.updateProgress("satisfy_visitors", system.getSatisfiedVisitorCount());
 }
 
 /**

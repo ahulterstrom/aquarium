@@ -173,3 +173,27 @@ export interface Expense {
   utilities: number;
   total: number;
 }
+
+export type ObjectiveType = 
+  | "place_entrance"
+  | "build_first_tank"
+  | "buy_fish"
+  | "earn_money"
+  | "attract_visitors"
+  | "satisfy_visitors"
+  | "expand_aquarium"
+  | "build_multiple_tanks";
+
+export interface Objective {
+  id: string;
+  type: ObjectiveType;
+  title: string;
+  description: string;
+  progress: number;
+  target: number;
+  completed: boolean;
+  rewarded: boolean;
+  moneyReward: number;
+  // For conditional objectives
+  prerequisites?: ObjectiveType[];
+}
