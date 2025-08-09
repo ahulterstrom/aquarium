@@ -10,8 +10,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 
 type GLTFResult = GLTF & {
   nodes: {
-    Curve: THREE.Mesh;
-    Curve001: THREE.Mesh;
+    Border: THREE.Mesh;
+    Text: THREE.Mesh;
   };
   materials: never;
 };
@@ -26,9 +26,9 @@ export function Logo(props: JSX.IntrinsicElements["group"]) {
     if (!groupRef.current) return;
 
     // Calculate tilt based on mouse position (-1 to 1 range)
-    const targetRotationX = Math.PI / 2 - pointer.y * 0.2; // Base rotation + tilt
+    const targetRotationX = Math.PI / 2 - pointer.y * 0.4; // Base rotation + tilt
     const targetRotationY = -pointer.x * 0.02;
-    const targetRotationZ = -pointer.x * 0.1;
+    const targetRotationZ = -pointer.x * 0.15;
 
     // Smooth interpolation
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
@@ -56,21 +56,15 @@ export function Logo(props: JSX.IntrinsicElements["group"]) {
       scale={8}
       rotation={[Math.PI / 2, 0, 0]}
     >
-      <mesh castShadow receiveShadow geometry={nodes.Curve.geometry}>
-        <meshPhongMaterial
-          color="#0A6BB4"
-          specular="#ffffff"
-          shininess={100}
-          reflectivity={0.5}
-        />
+      <mesh castShadow receiveShadow geometry={nodes.Border.geometry}>
+        <meshStandardMaterial color="#0A6BB4" roughness={0.5} />
       </mesh>
-      <mesh castShadow receiveShadow geometry={nodes.Curve001.geometry}>
-        <meshPhongMaterial
+      <mesh castShadow receiveShadow geometry={nodes.Text.geometry}>
+        <meshStandardMaterial
           color="#49D1F1"
-          // specular="#4fc3f7"
-          specular="#ffffff"
-          shininess={80}
-          reflectivity={0.3}
+          roughness={0.5}
+          emissive={"#49D1F1"}
+          emissiveIntensity={0.3}
         />
       </mesh>
     </group>
