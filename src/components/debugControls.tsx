@@ -56,6 +56,11 @@ export const DebugControls = () => {
 
   useEffect(() => {
     const checkHash = () => setIsDebugging(window.location.hash === "#debug");
+    
+    // Check the hash on mount
+    checkHash();
+    
+    // Listen for hash changes
     window.addEventListener("hashchange", checkHash);
     return () => window.removeEventListener("hashchange", checkHash);
   }, [setIsDebugging]);
