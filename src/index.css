@@ -151,6 +151,12 @@ button {
   }
 }
 
+@layer utilities {
+  .glass {
+    @apply rounded-xl border border-white/30 bg-white/30 shadow-lg backdrop-blur-md;
+  }
+}
+
 .dark {
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
