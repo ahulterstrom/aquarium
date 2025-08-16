@@ -9,7 +9,13 @@ type UIModal =
   | "stats"
   | "settings"
   | "tutorial";
-type PlacementMode = "none" | "tank" | "decoration" | "path" | "entrance" | "expansion";
+type PlacementMode =
+  | "none"
+  | "tank"
+  | "decoration"
+  | "path"
+  | "entrance"
+  | "expansion";
 
 type SelectedEntityType = "tank" | "visitor" | "entrance" | null;
 
@@ -32,7 +38,7 @@ interface UIStore {
     type: string;
     size?: "medium" | "large" | "huge";
   } | null;
-  
+
   // Expansion placement
   expansionSelectedTiles: Set<string>;
 
@@ -48,6 +54,7 @@ interface UIStore {
   showCustomization: boolean;
   showBuild: boolean;
   showObjectives: boolean;
+  showAllObjectives: boolean;
 
   // Actions
   selectTank: (id: string | null) => void;
@@ -65,14 +72,19 @@ interface UIStore {
   setShowTileExpansion: (show: boolean) => void;
   setShowCustomization: (show: boolean) => void;
   setShowBuild: (show: boolean) => void;
-  setShowObjectives: (show: boolean) => void;
+  setShowObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
+  setShowAllObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
-  
+
   // Expansion tile selection actions
   setExpansionSelectedTiles: (tiles: Set<string>) => void;
-  toggleExpansionTileSelection: (x: number, z: number, maxTiles: number) => void;
+  toggleExpansionTileSelection: (
+    x: number,
+    z: number,
+    maxTiles: number,
+  ) => void;
   clearExpansionSelection: () => void;
 
   toggleGrid: () => void;
@@ -111,6 +123,7 @@ export const useUIStore = createSelectors(
       showCustomization: false,
       showBuild: false,
       showObjectives: false,
+      showAllObjectives: false,
 
       activeModal: "none",
       modalData: null,
@@ -188,8 +201,16 @@ export const useUIStore = createSelectors(
       setShowTileExpansion: (show) => set({ showTileExpansion: show }),
       setShowCustomization: (show) => set({ showCustomization: show }),
       setShowBuild: (show) => set({ showBuild: show }),
-      setShowObjectives: (show) => set({ showObjectives: show }),
-
+      setShowObjectives: (show) =>
+        set((state) => ({
+          showObjectives:
+            typeof show === "function" ? show(state.showObjectives) : show,
+        })),
+      setShowAllObjectives: (show) =>
+        set((state) => ({
+          showAllObjectives:
+            typeof show === "function" ? show(state.showAllObjectives) : show,
+        })),
       setPlacementMode: (mode, preview) =>
         set((state) => ({
           placementMode: mode,
@@ -224,18 +245,17 @@ export const useUIStore = createSelectors(
         set((state) => {
           const posKey = `${x},${z}`;
           const newSelection = new Set(state.expansionSelectedTiles);
-          
+
           if (newSelection.has(posKey)) {
             newSelection.delete(posKey);
           } else if (newSelection.size < maxTiles) {
             newSelection.add(posKey);
           }
-          
+
           return { expansionSelectedTiles: newSelection };
         }),
 
-      clearExpansionSelection: () =>
-        set({ expansionSelectedTiles: new Set() }),
+      clearExpansionSelection: () => set({ expansionSelectedTiles: new Set() }),
 
       toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
       toggleStats: () => set((state) => ({ showStats: !state.showStats })),

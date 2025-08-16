@@ -2,10 +2,13 @@ import { Objective, ObjectiveType } from "../types/game.types";
 import { nanoid } from "nanoid";
 
 // Define all objectives with their properties
-const OBJECTIVE_DEFINITIONS: Record<ObjectiveType, Omit<Objective, "id" | "progress" | "completed" | "rewarded">> = {
+const OBJECTIVE_DEFINITIONS: Record<
+  ObjectiveType,
+  Omit<Objective, "id" | "progress" | "completed" | "rewarded">
+> = {
   place_entrance: {
     type: "place_entrance",
-    title: "Welcome to Aquarium Tycoon!",
+    title: "Welcome to Aquatopia!",
     description: "Place your aquarium entrance",
     target: 1,
     moneyReward: 10,
@@ -97,14 +100,16 @@ export class ObjectiveSystem {
 
     // Check prerequisites
     if (definition.prerequisites && definition.prerequisites.length > 0) {
-      const allPrereqsMet = definition.prerequisites.every(prereq => 
-        this.completedObjectiveTypes.has(prereq)
+      const allPrereqsMet = definition.prerequisites.every((prereq) =>
+        this.completedObjectiveTypes.has(prereq),
       );
       if (!allPrereqsMet) return;
     }
 
     // Don't add if already exists
-    const existingObjective = Array.from(this.objectives.values()).find(obj => obj.type === type);
+    const existingObjective = Array.from(this.objectives.values()).find(
+      (obj) => obj.type === type,
+    );
     if (existingObjective) return;
 
     const objective: Objective = {
@@ -130,7 +135,7 @@ export class ObjectiveSystem {
     if (objective.progress >= objective.target && !objective.completed) {
       objective.completed = true;
       this.completedObjectiveTypes.add(objective.type);
-      
+
       // Trigger completion callback
       if (this.onObjectiveCompleteCallback) {
         this.onObjectiveCompleteCallback(objective);
@@ -147,7 +152,7 @@ export class ObjectiveSystem {
   incrementProgress(type: ObjectiveType, amount: number = 1): void {
     const objective = this.getObjectiveByType(type);
     if (!objective) return;
-    
+
     this.updateProgress(type, objective.progress + amount);
   }
 
@@ -159,7 +164,9 @@ export class ObjectiveSystem {
   }
 
   private getObjectiveByType(type: ObjectiveType): Objective | undefined {
-    return Array.from(this.objectives.values()).find(obj => obj.type === type);
+    return Array.from(this.objectives.values()).find(
+      (obj) => obj.type === type,
+    );
   }
 
   // Collect reward for a completed objective
@@ -170,7 +177,7 @@ export class ObjectiveSystem {
     }
 
     objective.rewarded = true;
-    
+
     // Give reward
     if (this.onRewardCallback) {
       this.onRewardCallback(objective.moneyReward, objective);
@@ -182,9 +189,9 @@ export class ObjectiveSystem {
   // Get all active objectives (not rewarded yet)
   getActiveObjectives(): Objective[] {
     return this.activeObjectives
-      .map(id => this.objectives.get(id))
+      .map((id) => this.objectives.get(id))
       .filter((obj): obj is Objective => obj !== undefined)
-      .filter(obj => !obj.rewarded) // Show until rewarded
+      .filter((obj) => !obj.rewarded) // Show until rewarded
       .slice(-3); // Show only the 3 most recent
   }
 

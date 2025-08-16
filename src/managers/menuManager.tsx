@@ -56,7 +56,6 @@ export const MenuManager = () => {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <GameOverlay />
       {transitions((style, menuKey) => {
         return menuKey ? (
           <animated.div

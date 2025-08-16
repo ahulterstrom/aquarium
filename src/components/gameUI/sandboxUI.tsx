@@ -9,75 +9,46 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertTriangle,
-  Clock,
   DollarSign,
-  DoorOpen,
-  Droplets,
   Expand,
-  Eye,
   Fish,
   Hammer,
-  Heart,
-  MapPin,
+  Lock,
   Paintbrush,
   Pause,
   Play,
-  Plus,
-  ShoppingCart,
-  Smile,
-  Star,
-  Thermometer,
   Trash2,
-  Users,
-  Wrench,
-  X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 // Import game stores and types
+import { AllObjectivesModal } from "@/components/gameUI/allObjectivesModal";
+import { BuildPanel } from "@/components/gameUI/buildPanel";
+import { CompletedObjectiveNotification } from "@/components/gameUI/completedObjectiveNotification";
+import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
+import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
 import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
-import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
-import { BuildPanel } from "@/components/gameUI/buildPanel";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { ObjectivesButton } from "@/components/gameUI/objectivesButton";
+import { ObjectivesPanel } from "@/components/gameUI/objectivesPanel";
+import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
+import { spawnVisitor } from "@/components/systems/visitorSystem";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { useGame } from "@/stores/useGame";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
-import {
-  FishSpecies,
-  Fish as FishType,
-  Visitor,
-  Entrance,
-} from "../../types/game.types";
-import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
-import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
-import { ObjectivesPanel } from "@/components/gameUI/objectivesPanel";
-import { ObjectivesButton } from "@/components/gameUI/objectivesButton";
-import { CompletedObjectiveNotification } from "@/components/gameUI/completedObjectiveNotification";
-import { AllObjectivesModal } from "@/components/gameUI/allObjectivesModal";
-import { useGame } from "@/stores/useGame";
-import {
-  getVisitorSystem,
-  spawnVisitor,
-} from "@/components/systems/visitorSystem";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { FishSpecies, Fish as FishType } from "../../types/game.types";
+import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
+import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
+import { toast } from "@/components/ui/sonner";
+import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesPanel";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -129,8 +100,9 @@ const FISH_SPECIES: FishSpecies[] = [
 
 export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
-  const [showAllObjectives, setShowAllObjectives] = useState(false);
 
+  const showAllObjectives = useUIStore.use.showAllObjectives();
+  const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const isDebugging = useGame.use.isDebugging();
   const tanks = useGameStore.use.tanks();
   const money = useGameStore.use.money();
@@ -147,6 +119,8 @@ export const SandboxUI = () => {
   const activeObjectives = useGameStore.use.activeObjectives();
   const allObjectives = useGameStore.use.allObjectives();
   const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
+  const isUnlocked = useGameStore.use.isUnlocked();
+  const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
 
   const removeObject = useGridStore.use.removeObject();
   const showFishShop = useUIStore.use.showFishShop();
@@ -163,7 +137,6 @@ export const SandboxUI = () => {
   const setShowObjectives = useUIStore.use.setShowObjectives();
   const placementMode = useUIStore.use.placementMode();
   const isInPlacementMode = placementMode !== "none";
-  const setPlacementMode = useUIStore.use.setPlacementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
 
@@ -265,6 +238,12 @@ export const SandboxUI = () => {
     if (!selectedTank) return false;
     if (money < species.price) return false;
     if (selectedTank.fishIds.length >= selectedTank.capacity) return false;
+    // Check if species is unlocked
+    const isSpeciesUnlocked =
+      species.id === "goldfish" ||
+      species.id === "neon_tetra" ||
+      isUnlocked(`fish_${species.id}`);
+    if (!isSpeciesUnlocked) return false;
     return true;
   };
 
@@ -283,24 +262,25 @@ export const SandboxUI = () => {
     }
   };
 
+  const shouldShowMenus =
+    !showTileExpansion &&
+    !isInPlacementMode &&
+    !showCustomization &&
+    !showBuild;
+
   return (
     <div className="fixed inset-0">
       {/* Main UI Overlay */}
       <div className="relative h-full p-4">
-        {/* Game Speed Controls - Top Center */}
-        <Card className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 border-white/20 bg-white/20 p-2 shadow-sm backdrop-blur-sm">
-          <CardContent className="flex items-center justify-center gap-2">
+        {/* Top Center Panel */}
+        <Card className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 p-2">
+          <CardContent className="flex h-8 items-center justify-center gap-4">
             <MoneyDisplay />
-            <Separator orientation="vertical" className="h-10" />
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Day {day}</span>
-              <GameTimeDisplay />
-            </div>
-            <Separator orientation="vertical" className="h-10" />
-            <ObjectivesButton
-              objectives={activeObjectives}
-              onClick={() => setShowObjectives(!showObjectives)}
-            />
+            <Separator orientation="vertical" />
+            <DateTimeDisplay />
+            <Separator orientation="vertical" />
+            <VisitorCountDisplay />
+            <Separator orientation="vertical" />
 
             <Button
               size="sm"
@@ -343,61 +323,58 @@ export const SandboxUI = () => {
           </CardContent>
         </Card>
 
-        <Sheet
-          open={
-            !showTileExpansion &&
-            !isInPlacementMode &&
-            !showCustomization &&
-            !showBuild
-          }
-          onOpenChange={setShowTileExpansion}
-        >
+        <Sheet open={shouldShowMenus} onOpenChange={setShowTileExpansion}>
           <SheetContent
             withOverlay={false}
             withCloseButton={false}
-            side="left"
+            side="bottom"
             style={{
               pointerEvents: "none",
             }}
-            className="w-50 border-none bg-transparent shadow-none"
+            className="border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <div className="pointer-events-auto flex h-full w-35 flex-col justify-center gap-4 p-2">
+            <div className="flex w-full justify-center gap-4 p-2">
               {/* Build Button */}
               <Button
                 onClick={() => setShowBuild(true)}
-                className="w-full"
+                className="pointer-events-auto flex size-16 flex-col"
                 variant={
-                  entrances.size === 0 || tanks.size === 0
+                  activeObjectives.some(
+                    (obj) =>
+                      (obj.type === "place_entrance" ||
+                        obj.type === "build_first_tank") &&
+                      !obj.completed,
+                  )
                     ? "glow"
                     : "sidePanel"
                 }
                 size="default"
               >
-                <Hammer className="h-4 w-4" />
-                <p>Build</p>
+                <Hammer className="size-5" />
+                <p className="text-xs">Build</p>
               </Button>
 
               {/* Tile Expansion Button */}
               <Button
                 onClick={() => setShowTileExpansion(true)}
-                className="w-full"
+                className="pointer-events-auto flex size-16 flex-col"
                 variant="sidePanel"
                 size="default"
               >
-                <Expand className="h-4 w-4" />
-                <p>Expand</p>
+                <Expand className="size-5" />
+                <p className="text-xs">Expand</p>
               </Button>
 
               {/* Customization Button */}
               <Button
                 onClick={() => setShowCustomization(true)}
-                className="w-full"
+                className="pointer-events-auto flex size-16 flex-col"
                 variant="sidePanel"
                 size="default"
               >
-                <Paintbrush className="h-4 w-4" />
-                <p>Customize</p>
+                <Paintbrush className="size-5" />
+                <p className="text-xs">Style</p>
               </Button>
 
               {/* Context Message Area */}
@@ -440,7 +417,7 @@ export const SandboxUI = () => {
         </Sheet>
 
         {isDebugging && (
-          <div className="pointer-events-auto absolute bottom-0 left-0 w-30 space-y-2 bg-orange-400/50 p-2">
+          <div className="pointer-events-auto absolute top-0 left-0 w-30 space-y-2 bg-orange-400/50 p-2">
             <Button
               variant="outline"
               size="sm"
@@ -472,23 +449,67 @@ export const SandboxUI = () => {
             >
               Log Cells
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                toast({
+                  title: "This is a test test toast",
+                  description: "This is a test description for the toast.",
+                });
+              }}
+            >
+              Toast test
+            </Button>
           </div>
         )}
 
-        {/* Collapsible Objectives Panel */}
-        {showObjectives && (
-          <ObjectivesPanel 
-            objectives={activeObjectives}
-            onCollectReward={collectObjectiveReward}
-            onViewAll={() => setShowAllObjectives(true)}
-          />
-        )}
+        <Sheet open={shouldShowMenus}>
+          <SheetContent
+            side="top"
+            withOverlay={false}
+            withCloseButton={false}
+            style={{
+              pointerEvents: "none",
+            }}
+            className={cn(
+              "top-20 mx-auto w-80 border-none bg-transparent shadow-none",
+            )}
+          >
+            <ObjectivesButton />
+          </SheetContent>
+        </Sheet>
 
-        {/* Persistent Completed Objective Notifications - Top Right */}
-        <div className="pointer-events-none absolute top-4 right-4 flex flex-col gap-2">
+        <AnimatedObjectivesPanel />
+
+        {/* Collapsible Objectives Panel */}
+
+        <Sheet open={showObjectives}>
+          <SheetContent
+            side="bottom"
+            withOverlay={false}
+            withCloseButton={false}
+            style={{
+              pointerEvents: "none",
+            }}
+            className={cn(
+              "pointer-events-auto z-10 mx-auto mb-20 w-80 border-none bg-transparent shadow-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            )}
+          >
+            <ObjectivesPanel
+              objectives={activeObjectives}
+              onCollectReward={collectObjectiveReward}
+              onViewAll={() => setShowAllObjectives(true)}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Reward Collection */}
+        <div className="pointer-events-none absolute top-[50%] right-4 flex flex-col gap-2">
           {activeObjectives
-            .filter(obj => obj.completed && !obj.rewarded)
-            .map(objective => (
+            .filter((obj) => obj.completed && !obj.rewarded)
+            .map((objective) => (
               <CompletedObjectiveNotification
                 key={objective.id}
                 objective={objective}
@@ -551,72 +572,91 @@ export const SandboxUI = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Available Fish</h3>
               <div className="grid gap-4">
-                {FISH_SPECIES.map((species) => (
-                  <Card key={species.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
-                          <h4 className="text-lg font-semibold">
-                            {species.name}
-                          </h4>
-                          <Badge className={getRarityColor(species.rarity)}>
-                            {species.rarity}
-                          </Badge>
-                        </div>
+                {FISH_SPECIES.map((species) => {
+                  const isSpeciesUnlocked =
+                    species.id === "goldfish" ||
+                    species.id === "neon_tetra" ||
+                    isUnlocked(`fish_${species.id}`);
 
-                        <div className="mb-3 grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-600">Size:</span>
-                            <span className="ml-2 font-medium capitalize">
-                              {species.size}
+                  return (
+                    <Card
+                      key={species.id}
+                      className={`p-4 ${!isSpeciesUnlocked ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="mb-2 flex items-center gap-3">
+                            <h4 className="text-lg font-semibold">
+                              {species.name}
+                            </h4>
+                            <Badge className={getRarityColor(species.rarity)}>
+                              {species.rarity}
+                            </Badge>
+                          </div>
+
+                          <div className="mb-3 grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600">Size:</span>
+                              <span className="ml-2 font-medium capitalize">
+                                {species.size}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Price:</span>
+                              <span className="ml-2 font-medium text-green-600">
+                                ${species.price}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mb-2">
+                            <span className="text-sm text-gray-600">
+                              Temperature Range:
+                            </span>
+                            <span className="ml-2 text-sm font-medium">
+                              {species.preferredTemperature.min}°C -{" "}
+                              {species.preferredTemperature.max}°C
                             </span>
                           </div>
-                          <div>
-                            <span className="text-gray-600">Price:</span>
-                            <span className="ml-2 font-medium text-green-600">
-                              ${species.price}
-                            </span>
+
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {species.schooling ? "Schooling" : "Solitary"}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {species.size} size
+                            </Badge>
                           </div>
                         </div>
 
-                        <div className="mb-2">
-                          <span className="text-sm text-gray-600">
-                            Temperature Range:
-                          </span>
-                          <span className="ml-2 text-sm font-medium">
-                            {species.preferredTemperature.min}°C -{" "}
-                            {species.preferredTemperature.max}°C
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="text-xs">
-                            {species.schooling ? "Schooling" : "Solitary"}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {species.size} size
-                          </Badge>
+                        <div className="ml-4">
+                          {!isSpeciesUnlocked ? (
+                            <Badge variant="outline" className="text-gray-500">
+                              <Lock className="mr-1 h-3 w-3" />
+                              Locked
+                            </Badge>
+                          ) : (
+                            <Button
+                              onClick={() => handleBuyFishClick(species)}
+                              disabled={!canBuyFish(species)}
+                              className={
+                                canBuyFish(species) ? "" : "opacity-50"
+                              }
+                            >
+                              {money < species.price
+                                ? "Too Expensive"
+                                : selectedTank &&
+                                    selectedTank.fishIds.length >=
+                                      selectedTank.capacity
+                                  ? "Tank Full"
+                                  : "Buy Fish"}
+                            </Button>
+                          )}
                         </div>
                       </div>
-
-                      <div className="ml-4">
-                        <Button
-                          onClick={() => handleBuyFishClick(species)}
-                          disabled={!canBuyFish(species)}
-                          className={canBuyFish(species) ? "" : "opacity-50"}
-                        >
-                          {money < species.price
-                            ? "Too Expensive"
-                            : selectedTank &&
-                                selectedTank.fishIds.length >=
-                                  selectedTank.capacity
-                              ? "Tank Full"
-                              : "Buy Fish"}
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
 

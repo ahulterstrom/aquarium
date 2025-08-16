@@ -13,7 +13,7 @@ import { SceneProvider } from "@/contexts/scene/sceneContextProvider";
 import { SceneManager } from "@/managers/sceneManager";
 import { UIManager } from "@/managers/uiManager";
 import { useUIStore } from "@/stores/uiStore";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import "./App.css";
 
 function App() {
@@ -51,6 +51,7 @@ function App() {
           </MenuProvider>
         </SceneProvider>
       </SoundProvider>
+      <Toaster position="bottom-right" />
     </>
   );
 }

@@ -7,6 +7,8 @@ import {
   Entrance,
   Coin,
   Objective,
+  Unlockable,
+  UnlockCategory,
 } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 import {
@@ -19,6 +21,8 @@ import {
 } from "../lib/constants";
 import { useGridStore } from "./gridStore";
 import { ObjectiveSystem } from "../systems/ObjectiveSystem";
+import { UnlockSystem } from "../systems/UnlockSystem";
+import { toast } from "sonner";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
@@ -31,6 +35,13 @@ interface GameStore extends GameState {
   activeObjectives: Objective[];
   allObjectives: Objective[];
   collectObjectiveReward: (objectiveId: string) => void;
+
+  // Unlock system
+  unlockSystem: UnlockSystem;
+  unlockedItems: Set<string>;
+  isUnlocked: (id: string) => boolean;
+  getUnlockablesByCategory: (category: UnlockCategory) => Unlockable[];
+  checkAndProcessUnlocks: () => void;
 
   // Expansion system
   expansionTiles: number; // Available tiles in inventory
@@ -51,6 +62,7 @@ interface GameStore extends GameState {
   // Actions
   setPaused: (paused: boolean) => void;
   setGameSpeed: (speed: 1 | 2 | 3) => void;
+  setVisitorCount: (count: number) => void;
   addMoney: (amount: number) => void;
   spendMoney: (amount: number) => boolean;
   updateReputation: (delta: number) => void;
@@ -114,6 +126,9 @@ const initialState: GameState = {
 // Create objective system instance
 const objectiveSystem = new ObjectiveSystem();
 
+// Create unlock system instance
+const unlockSystem = new UnlockSystem();
+
 export const useGameStore = createSelectors(
   create<GameStore>()(
     devtools((set, get) => {
@@ -127,6 +142,28 @@ export const useGameStore = createSelectors(
       objectiveSystem.setObjectiveCompleteCallback((objective) => {
         // Update active objectives when one completes
         set({ activeObjectives: objectiveSystem.getActiveObjectives() });
+        // Check for new unlocks when objectives complete
+        get().checkAndProcessUnlocks();
+      });
+
+      // Set up unlock system callbacks
+      unlockSystem.setOnUnlockCallback((unlockable) => {
+        // Show toast notification for unlock
+        toast.success(`🎉 New Unlock: ${unlockable.name}`, {
+          description: unlockable.description,
+          action: {
+            label: "View",
+            onClick: () => {
+              // Could open a modal or scroll to the item
+              console.log("View unlock:", unlockable.id);
+            },
+          },
+        });
+
+        // Update unlocked items
+        set({
+          unlockedItems: unlockSystem.getUnlockedItems(),
+        });
       });
 
       return {
@@ -138,6 +175,8 @@ export const useGameStore = createSelectors(
         objectiveSystem,
         activeObjectives: objectiveSystem.getActiveObjectives(),
         allObjectives: objectiveSystem.getAllObjectives(),
+        unlockSystem,
+        unlockedItems: unlockSystem.getUnlockedItems(),
         expansionTiles: 0,
         wallStyle: "concrete",
         floorStyle: "wood",
@@ -153,12 +192,17 @@ export const useGameStore = createSelectors(
 
         setGameSpeed: (speed) => set({ gameSpeed: speed }),
 
+        setVisitorCount: (count) => set({ visitorCount: count }),
+
         addMoney: (amount) =>
           set((state) => {
             const newMoney = state.money + amount;
 
             // Update objectives
             state.objectiveSystem.updateProgress("earn_money", newMoney);
+
+            // Check for unlocks after money change
+            setTimeout(() => get().checkAndProcessUnlocks(), 0);
 
             return {
               money: newMoney,
@@ -176,14 +220,21 @@ export const useGameStore = createSelectors(
         },
 
         updateReputation: (delta) =>
-          set((state) => ({
-            reputation: Math.max(0, Math.min(100, state.reputation + delta)),
-          })),
+          set((state) => {
+            const newReputation = Math.max(
+              0,
+              Math.min(100, state.reputation + delta),
+            );
+
+            // Check for unlocks after reputation change
+            setTimeout(() => get().checkAndProcessUnlocks(), 0);
+
+            return { reputation: newReputation };
+          }),
 
         nextDay: () =>
           set((state) => ({
             day: state.day + 1,
-            visitorCount: 0,
           })),
 
         addTank: (tank) =>
@@ -515,7 +566,46 @@ export const useGameStore = createSelectors(
           const state = get();
           const collected = state.objectiveSystem.collectReward(objectiveId);
           if (collected) {
-            set({ activeObjectives: state.objectiveSystem.getActiveObjectives() });
+            set({
+              activeObjectives: state.objectiveSystem.getActiveObjectives(),
+            });
+          }
+        },
+
+        // Unlock system implementations
+        isUnlocked: (id) => {
+          const state = get();
+          return state.unlockSystem.isUnlocked(id);
+        },
+
+        getUnlockablesByCategory: (category) => {
+          const state = get();
+          return state.unlockSystem.getUnlockablesByCategory(category);
+        },
+
+        checkAndProcessUnlocks: () => {
+          const state = get();
+          const completedObjectives = new Set(
+            state.allObjectives
+              .filter((obj) => obj.completed)
+              .map((obj) => obj.type),
+          );
+
+          const gameState = {
+            money: state.money,
+            reputation: state.reputation,
+            completedObjectives,
+            tankCount: state.tanks.size,
+            fishCount: state.fish.size,
+            gameTime: state.gameTime,
+          };
+
+          const newUnlocks = state.unlockSystem.processUnlocks(gameState);
+
+          if (newUnlocks.length > 0) {
+            set({
+              unlockedItems: state.unlockSystem.getUnlockedItems(),
+            });
           }
         },
 

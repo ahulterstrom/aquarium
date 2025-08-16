@@ -3,6 +3,7 @@ import { useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
+import { useGameStore } from "@/stores/gameStore";
 
 // Helper function to interpolate angles smoothly
 function lerpAngle(from: number, to: number, factor: number): number {
@@ -181,6 +182,8 @@ const VisitorMesh = ({
 
 export const Visitors = () => {
   const selectVisitor = useUIStore.use.selectVisitor();
+  const setVisitorCount = useGameStore.use.setVisitorCount();
+
   const [visitorIds, setVisitorIds] = useState<string[]>([]);
 
   const handleVisitorClick = useCallback(
@@ -198,6 +201,7 @@ export const Visitors = () => {
       const visitorSystem = getVisitorSystem();
       const currentVisitors = visitorSystem.getVisitors();
       const currentIds = currentVisitors.map((v) => v.id);
+      setVisitorCount(currentIds.length);
 
       // Only update React state if the visitor list changed
       if (

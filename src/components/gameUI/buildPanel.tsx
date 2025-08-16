@@ -16,6 +16,7 @@ export const BuildPanel = () => {
   const setShowBuild = useUIStore.use.setShowBuild();
   const placementMode = useUIStore.use.placementMode();
   const setPlacementMode = useUIStore.use.setPlacementMode();
+  const activeObjectives = useGameStore.use.activeObjectives();
 
   const money = useGameStore.use.money();
   const tanks = useGameStore.use.tanks();
@@ -81,7 +82,13 @@ export const BuildPanel = () => {
                 </div>
                 <Button
                   onClick={handlePlaceEntrance}
-                  variant={entrances.size === 0 ? "glow" : "outline"}
+                  variant={
+                    activeObjectives.some(
+                      (obj) => obj.type === "place_entrance" && !obj.completed,
+                    )
+                      ? "glow"
+                      : "outline"
+                  }
                   disabled={!canAffordEntrance && placementMode !== "entrance"}
                 >
                   <DoorOpen className="mr-2 h-4 w-4" />
@@ -93,60 +100,68 @@ export const BuildPanel = () => {
 
           {/* Tank Options */}
           <div className="space-y-3">
-            <h3 className="flex items-center gap-2 font-semibold text-lg">
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
               <Fish className="h-5 w-5 text-blue-600" />
               Fish Tanks
             </h3>
-            
-            {(Object.keys(TANK_SPECS) as Array<keyof typeof TANK_SPECS>).map((tankSize) => {
-              const specs = TANK_SPECS[tankSize];
-              const canAfford = money >= specs.cost;
-              
-              return (
-                <LockedCard
-                  key={tankSize}
-                  isLocked={entrances.size === 0}
-                  lockReason="You must place an entrance first before adding tanks"
-                  intensity="light"
-                >
-                  <div className="rounded-lg border p-4">
-                    <div className="mb-3">
-                      <h4 className="font-medium capitalize">{tankSize} Tank</h4>
-                      <div className="mt-1 text-sm text-gray-600 space-y-1">
-                        <p>Size: {specs.gridWidth}×{specs.gridDepth} grid cells</p>
-                        <p>Capacity: {specs.capacity} fish</p>
+
+            {(Object.keys(TANK_SPECS) as Array<keyof typeof TANK_SPECS>).map(
+              (tankSize) => {
+                const specs = TANK_SPECS[tankSize];
+                const canAfford = money >= specs.cost;
+
+                return (
+                  <LockedCard
+                    key={tankSize}
+                    isLocked={entrances.size === 0}
+                    lockReason="You must place an entrance first before adding tanks"
+                    intensity="light"
+                  >
+                    <div className="rounded-lg border p-4">
+                      <div className="mb-3">
+                        <h4 className="font-medium capitalize">
+                          {tankSize} Tank
+                        </h4>
+                        <div className="mt-1 space-y-1 text-sm text-gray-600">
+                          <p>
+                            Size: {specs.gridWidth}×{specs.gridDepth} grid cells
+                          </p>
+                          <p>Capacity: {specs.capacity} fish</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <span className="font-medium text-green-600">
-                          ${specs.cost}
-                        </span>
-                        {!canAfford && (
-                          <span className="ml-2 text-red-600">
-                            (Need ${specs.cost - money} more)
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="font-medium text-green-600">
+                            ${specs.cost}
                           </span>
-                        )}
+                          {!canAfford && (
+                            <span className="ml-2 text-red-600">
+                              (Need ${specs.cost - money} more)
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => handlePlaceTank(tankSize)}
+                          variant={
+                            entrances.size > 0 &&
+                            tanks.size === 0 &&
+                            tankSize === "medium"
+                              ? "glow"
+                              : "outline"
+                          }
+                          disabled={!canAfford || entrances.size === 0}
+                          size="sm"
+                        >
+                          <Fish className="mr-2 h-3 w-3" />
+                          Place {tankSize}
+                        </Button>
                       </div>
-                      <Button
-                        onClick={() => handlePlaceTank(tankSize)}
-                        variant={
-                          entrances.size > 0 && tanks.size === 0 && tankSize === "medium" 
-                            ? "glow" 
-                            : "outline"
-                        }
-                        disabled={!canAfford || entrances.size === 0}
-                        size="sm"
-                      >
-                        <Fish className="mr-2 h-3 w-3" />
-                        Place {tankSize}
-                      </Button>
                     </div>
-                  </div>
-                </LockedCard>
-              );
-            })}
-            
+                  </LockedCard>
+                );
+              },
+            )}
+
             <div className="mt-2 text-xs text-gray-500">
               You have {tanks.size} tank{tanks.size !== 1 ? "s" : ""}
             </div>

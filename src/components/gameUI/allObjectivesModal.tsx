@@ -1,14 +1,28 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Lock, Trophy, Gift } from "lucide-react";
 import { Objective, ObjectiveType } from "@/types/game.types";
 import { cn } from "@/lib/utils";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 // Define the full objective progression for preview
-const OBJECTIVE_PREVIEW: Record<ObjectiveType, { title: string; description: string; moneyReward: number; prerequisites?: ObjectiveType[] }> = {
+const OBJECTIVE_PREVIEW: Record<
+  ObjectiveType,
+  {
+    title: string;
+    description: string;
+    moneyReward: number;
+    prerequisites?: ObjectiveType[];
+  }
+> = {
   place_entrance: {
-    title: "Welcome to Aquarium Tycoon!",
+    title: "Welcome to Aquatopia!",
     description: "Place your aquarium entrance",
     moneyReward: 10,
     prerequisites: [],
@@ -59,7 +73,7 @@ const OBJECTIVE_PREVIEW: Record<ObjectiveType, { title: string; description: str
 
 const OBJECTIVE_ORDER: ObjectiveType[] = [
   "place_entrance",
-  "build_first_tank", 
+  "build_first_tank",
   "buy_fish",
   "earn_money",
   "attract_visitors",
@@ -75,15 +89,15 @@ interface AllObjectivesModalProps {
   onCollectReward: (objectiveId: string) => void;
 }
 
-export const AllObjectivesModal = ({ 
-  open, 
-  onOpenChange, 
+export const AllObjectivesModal = ({
+  open,
+  onOpenChange,
   allObjectives,
-  onCollectReward 
+  onCollectReward,
 }: AllObjectivesModalProps) => {
   // Create a map of actual objectives by type for easy lookup
   const objectiveMap = new Map<ObjectiveType, Objective>();
-  allObjectives.forEach(obj => objectiveMap.set(obj.type, obj));
+  allObjectives.forEach((obj) => objectiveMap.set(obj.type, obj));
 
   // Determine objective states
   const getObjectiveState = (type: ObjectiveType) => {
@@ -97,19 +111,22 @@ export const AllObjectivesModal = ({
     // Check if prerequisites are met for locked objectives
     const preview = OBJECTIVE_PREVIEW[type];
     if (preview.prerequisites && preview.prerequisites.length > 0) {
-      const prereqsMet = preview.prerequisites.every(prereq => {
+      const prereqsMet = preview.prerequisites.every((prereq) => {
         const prereqObj = objectiveMap.get(prereq);
         return prereqObj && prereqObj.completed;
       });
       return prereqsMet ? "available" : "locked";
     }
-    
+
     return "available";
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+      <DialogContent
+        showOverlay={false}
+        className="glass flex h-[80vh] min-h-0 max-w-4xl flex-col overflow-hidden"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Trophy className="h-6 w-6 text-yellow-500" />
@@ -117,147 +134,164 @@ export const AllObjectivesModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="text-sm text-gray-600">
-            Track your progress through all aquarium objectives. Complete objectives to unlock new challenges!
-          </div>
+        <ScrollArea className="min-h-0 w-full flex-1" type="always">
+          <div className="px-4">
+            <div className="mb-4 text-sm text-gray-700">
+              Track your progress through all aquarium objectives. Complete
+              objectives to unlock new challenges!
+            </div>
 
-          <div className="space-y-3">
-            {OBJECTIVE_ORDER.map((type, index) => {
-              const preview = OBJECTIVE_PREVIEW[type];
-              const objective = objectiveMap.get(type);
-              const state = getObjectiveState(type);
-              
-              return (
-                <div
-                  key={type}
-                  className={cn(
-                    "rounded-lg border p-4 transition-all duration-300",
-                    state === "completed" && "border-green-500/50 bg-green-500/5",
-                    state === "ready_to_collect" && "border-green-500/50 bg-green-500/10",
-                    state === "active" && "border-blue-500/50 bg-blue-500/5",
-                    state === "available" && "border-white/20 bg-white/5",
-                    state === "locked" && "border-gray-500/30 bg-gray-500/5 opacity-60"
-                  )}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-700 text-white text-sm font-bold flex-shrink-0 mt-1">
-                        {index + 1}
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          {state === "completed" && (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
-                          )}
-                          {state === "ready_to_collect" && (
-                            <CheckCircle2 className="h-5 w-5 text-green-500 animate-pulse" />
-                          )}
-                          {(state === "active" || state === "available") && (
-                            <Circle className="h-5 w-5 text-blue-400" />
-                          )}
-                          {state === "locked" && (
-                            <Lock className="h-5 w-5 text-gray-400" />
-                          )}
-                          
-                          <h3 className={cn(
-                            "font-semibold",
-                            state === "completed" && "text-green-200",
-                            state === "ready_to_collect" && "text-green-200",
-                            state === "active" && "text-blue-200",
-                            (state === "available" || state === "locked") && "text-gray-300"
-                          )}>
-                            {preview.title}
-                          </h3>
-                        </div>
+            <div className="space-y-3">
+              {OBJECTIVE_ORDER.map((type, index) => {
+                const preview = OBJECTIVE_PREVIEW[type];
+                const objective = objectiveMap.get(type);
+                const state = getObjectiveState(type);
 
-                        <p className={cn(
-                          "text-sm mb-2",
-                          state === "completed" && "text-green-300",
-                          state === "ready_to_collect" && "text-green-300",
-                          state === "active" && "text-blue-300", 
-                          (state === "available" || state === "locked") && "text-gray-400"
-                        )}>
-                          {preview.description}
-                        </p>
+                return (
+                  <div
+                    key={type}
+                    className={cn(
+                      "rounded-lg border p-4 backdrop-blur-sm transition-all duration-300",
+                      state === "completed" &&
+                        "border-green-500/50 bg-green-50/50",
+                      state === "ready_to_collect" &&
+                        "border-green-500/50 bg-green-100/50",
+                      state === "active" && "border-blue-500/50 bg-blue-50/50",
+                      state === "available" && "border-gray-300 bg-white/50",
+                      state === "locked" && "border-gray-300 bg-gray-50/50",
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex flex-1 items-start gap-3">
+                        <div className="flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            {state === "completed" && (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            )}
+                            {state === "ready_to_collect" && (
+                              <CheckCircle2 className="h-5 w-5 animate-pulse text-green-500" />
+                            )}
+                            {(state === "active" || state === "available") && (
+                              <Circle className="h-5 w-5 text-blue-400" />
+                            )}
+                            {state === "locked" && (
+                              <Lock className="h-5 w-5 text-gray-400" />
+                            )}
 
-                        {/* Progress bar for active objectives */}
-                        {objective && state === "active" && (
-                          <div className="mb-2">
-                            <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-gray-400">Progress</span>
-                              <span className="text-white">
-                                {objective.progress}/{objective.target}
-                              </span>
+                            <h3
+                              className={cn(
+                                "font-semibold",
+                                state === "completed" && "text-green-700",
+                                state === "ready_to_collect" &&
+                                  "text-green-700",
+                                state === "active" && "text-blue-700",
+                                (state === "available" || state === "locked") &&
+                                  "text-gray-600",
+                              )}
+                            >
+                              {preview.title}
+                            </h3>
+                          </div>
+
+                          <p
+                            className={cn(
+                              "mb-2 text-sm",
+                              state === "completed" && "text-green-600",
+                              state === "ready_to_collect" && "text-green-600",
+                              state === "active" && "text-blue-600",
+                              (state === "available" || state === "locked") &&
+                                "text-gray-500",
+                            )}
+                          >
+                            {preview.description}
+                          </p>
+
+                          {/* Progress bar for active objectives */}
+                          {objective && state === "active" && (
+                            <div className="mb-2">
+                              <div className="mb-1 flex items-center justify-between text-xs">
+                                <span className="text-gray-500">Progress</span>
+                                <span className="font-medium text-gray-700">
+                                  {objective.progress}/{objective.target}
+                                </span>
+                              </div>
+                              <Progress
+                                value={
+                                  (objective.progress / objective.target) * 100
+                                }
+                                className="h-2"
+                              />
                             </div>
-                            <Progress 
-                              value={(objective.progress / objective.target) * 100} 
-                              className="h-2"
-                            />
-                          </div>
-                        )}
+                          )}
 
-                        {/* Prerequisites for locked objectives */}
-                        {state === "locked" && preview.prerequisites && (
-                          <div className="text-xs text-gray-500">
-                            <span>Requires: </span>
-                            {preview.prerequisites.map(prereq => OBJECTIVE_PREVIEW[prereq].title).join(", ")}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="ml-4 flex items-center gap-2 flex-shrink-0">
-                      <div className="text-sm font-medium text-green-400">
-                        +${preview.moneyReward}
-                      </div>
-                      
-                      {state === "ready_to_collect" && objective && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={() => onCollectReward(objective.id)}
-                        >
-                          <Gift className="mr-1 h-3 w-3" />
-                          Collect
-                        </Button>
-                      )}
-
-                      {state === "completed" && (
-                        <div className="flex items-center gap-1 text-green-500 text-sm">
-                          <CheckCircle2 className="h-4 w-4" />
-                          Complete
+                          {/* Prerequisites for locked objectives */}
+                          {state === "locked" && preview.prerequisites && (
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Requires: </span>
+                              {preview.prerequisites
+                                .map(
+                                  (prereq) => OBJECTIVE_PREVIEW[prereq].title,
+                                )
+                                .join(", ")}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
+
+                      <div className="ml-4 flex flex-shrink-0 items-center gap-2">
+                        <div className="text-sm font-medium text-green-600">
+                          +${preview.moneyReward}
+                        </div>
+
+                        {state === "ready_to_collect" && objective && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => onCollectReward(objective.id)}
+                          >
+                            <Gift className="mr-1 h-3 w-3" />
+                            Collect
+                          </Button>
+                        )}
+
+                        {state === "completed" && (
+                          <div className="flex items-center gap-1 text-sm text-green-500">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Complete
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+        </ScrollArea>
 
-          {/* Summary Stats */}
-          <div className="border-t pt-4 mt-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-500">
-                  {allObjectives.filter(obj => obj.rewarded).length}
-                </div>
-                <div className="text-sm text-gray-600">Completed</div>
+        {/* Summary Stats */}
+        <div className="border-t pt-4">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-green-500">
+                {allObjectives.filter((obj) => obj.rewarded).length}
               </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-500">
-                  {allObjectives.filter(obj => obj.completed && !obj.rewarded).length}
-                </div>
-                <div className="text-sm text-gray-600">Ready to Collect</div>
+              <div className="text-sm text-gray-700">Completed</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-yellow-500">
+                {
+                  allObjectives.filter((obj) => obj.completed && !obj.rewarded)
+                    .length
+                }
               </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-500">
-                  {allObjectives.filter(obj => !obj.completed).length}
-                </div>
-                <div className="text-sm text-gray-600">In Progress</div>
+              <div className="text-sm text-gray-700">Ready to Collect</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-500">
+                {allObjectives.filter((obj) => !obj.completed).length}
               </div>
+              <div className="text-sm text-gray-700">In Progress</div>
             </div>
           </div>
         </div>

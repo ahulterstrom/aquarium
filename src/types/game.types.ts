@@ -37,7 +37,7 @@ export interface Fish {
   position: Vector3;
   velocity: Vector3;
   hunger: number;
-  
+
   // Movement and behavior properties
   targetPosition: Vector3 | null;
   behaviorState: FishBehaviorState;
@@ -47,10 +47,10 @@ export interface Fish {
   lastFedTime: number;
 }
 
-export type FishBehaviorState = 
+export type FishBehaviorState =
   | "idle"
   | "swimming"
-  | "feeding" 
+  | "feeding"
   | "schooling"
   | "resting";
 
@@ -156,7 +156,14 @@ export interface GridCell {
   occupied: boolean;
   tankId?: string;
   entranceId?: string;
-  type: "empty" | "tank" | "path" | "decoration" | "facility" | "entrance" | "expansion";
+  type:
+    | "empty"
+    | "tank"
+    | "path"
+    | "decoration"
+    | "facility"
+    | "entrance"
+    | "expansion";
 }
 
 export interface Revenue {
@@ -174,7 +181,7 @@ export interface Expense {
   total: number;
 }
 
-export type ObjectiveType = 
+export type ObjectiveType =
   | "place_entrance"
   | "build_first_tank"
   | "buy_fish"
@@ -196,4 +203,48 @@ export interface Objective {
   moneyReward: number;
   // For conditional objectives
   prerequisites?: ObjectiveType[];
+}
+
+// Unlock System
+export type UnlockCategory =
+  | "fish"
+  | "tanks"
+  | "customization"
+  | "buildings"
+  | "mechanics"
+  | "expansions";
+
+export type UnlockConditionType =
+  | "objective"
+  | "money"
+  | "reputation"
+  | "time"
+  | "count"
+  | "satisfaction";
+
+export interface UnlockCondition {
+  type: UnlockConditionType;
+  target: number | string; // For objective type, this is the objective type name
+  current?: number; // For progress tracking
+  description?: string; // Human-readable description
+}
+
+export interface Unlockable {
+  id: string;
+  category: UnlockCategory;
+  name: string;
+  description: string;
+  icon?: string;
+  conditions: UnlockCondition[];
+  dependencies?: string[]; // Other unlock IDs required first
+  hidden?: boolean; // If true, don't show until dependencies are met
+}
+
+export interface UnlockNotification {
+  id: string;
+  unlockId: string;
+  name: string;
+  category: UnlockCategory;
+  timestamp: number;
+  collected: boolean;
 }

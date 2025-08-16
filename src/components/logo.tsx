@@ -60,6 +60,7 @@ export function Logo(props: JSX.IntrinsicElements["group"]) {
         <meshStandardMaterial color="#0A6BB4" roughness={0.5} />
       </mesh>
       <mesh castShadow receiveShadow geometry={nodes.Text.geometry}>
+        {/* TODO make this a gradient? */}
         <meshStandardMaterial
           color="#49D1F1"
           roughness={0.5}
