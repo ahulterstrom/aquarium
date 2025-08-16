@@ -10,6 +10,8 @@ import { CheckCircle2, Circle, Lock, Trophy, Gift } from "lucide-react";
 import { Objective, ObjectiveType } from "@/types/game.types";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useUIStore } from "@/stores/uiStore";
+import { useGameStore } from "@/stores/gameStore";
 
 // Define the full objective progression for preview
 const OBJECTIVE_PREVIEW: Record<
@@ -82,19 +84,11 @@ const OBJECTIVE_ORDER: ObjectiveType[] = [
   "expand_aquarium",
 ];
 
-interface AllObjectivesModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  allObjectives: Objective[];
-  onCollectReward: (objectiveId: string) => void;
-}
-
-export const AllObjectivesModal = ({
-  open,
-  onOpenChange,
-  allObjectives,
-  onCollectReward,
-}: AllObjectivesModalProps) => {
+export const AllObjectivesModal = () => {
+  const showAllObjectives = useUIStore.use.showAllObjectives();
+  const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
+  const allObjectives = useGameStore.use.allObjectives();
+  const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
   // Create a map of actual objectives by type for easy lookup
   const objectiveMap = new Map<ObjectiveType, Objective>();
   allObjectives.forEach((obj) => objectiveMap.set(obj.type, obj));
@@ -122,7 +116,7 @@ export const AllObjectivesModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={showAllObjectives} onOpenChange={setShowAllObjectives}>
       <DialogContent
         showOverlay={false}
         className="glass flex h-[80vh] min-h-0 max-w-4xl flex-col overflow-hidden"
@@ -247,7 +241,7 @@ export const AllObjectivesModal = ({
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
-                            onClick={() => onCollectReward(objective.id)}
+                            onClick={() => collectObjectiveReward(objective.id)}
                           >
                             <Gift className="mr-1 h-3 w-3" />
                             Collect

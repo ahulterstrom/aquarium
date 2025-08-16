@@ -6,9 +6,11 @@ import {
   useChain,
 } from "@react-spring/web";
 import { cn } from "@/lib/utils";
-import { List, Target, X } from "lucide-react";
+import { List, Target, CheckCircle2, Circle, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useUIStore } from "@/stores/uiStore";
+import { useGameStore } from "@/stores/gameStore";
 
 export const AnimatedObjectivesPanel = () => {
   return (
@@ -33,6 +35,8 @@ export function ChainedBox() {
   const showObjectives = useUIStore.use.showObjectives();
   const setShowObjectives = useUIStore.use.setShowObjectives();
   const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
+  const activeObjectives = useGameStore.use.activeObjectives();
+  const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
 
   const open = showObjectives;
 
@@ -102,6 +106,10 @@ export function ChainedBox() {
     open ? [0, 0.1, 0.52, 0.3, 0.7] : [0, 0.1, 0.1, 0.12, 0.84],
     500,
   );
+
+  if (activeObjectives.length === 0) {
+    return null;
+  }
 
   return (
     <a.div
@@ -173,9 +181,84 @@ export function ChainedBox() {
           style={{
             opacity: contentReveal.opacity,
           }}
-          className="text-sm will-change-[opacity]"
+          className="text-sm will-change-[opacity] space-y-3 overflow-y-auto max-h-48"
         >
-          Hello from the revealed panel 👋
+          {activeObjectives.map((objective) => (
+            <div
+              key={objective.id}
+              className={cn(
+                "rounded-lg border p-3 transition-all duration-300",
+                objective.completed
+                  ? "border-green-500/50 bg-green-500/10"
+                  : "border-gray-300 bg-white/50",
+              )}
+            >
+              <div className="mb-2 flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    {objective.completed ? (
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-500" />
+                    ) : (
+                      <Circle className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                    )}
+                    <h4
+                      className={cn(
+                        "text-sm font-medium",
+                        objective.completed
+                          ? "text-green-700"
+                          : "text-gray-800",
+                      )}
+                    >
+                      {objective.title}
+                    </h4>
+                  </div>
+                  <p
+                    className={cn(
+                      "mt-1 ml-6 text-xs",
+                      objective.completed ? "text-green-600" : "text-gray-600",
+                    )}
+                  >
+                    {objective.description}
+                  </p>
+                </div>
+                <div className="ml-2 flex items-center gap-1">
+                  {objective.completed ? (
+                    <Button
+                      size="sm"
+                      className="h-6 bg-green-600 px-2 text-xs hover:bg-green-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        collectObjectiveReward(objective.id);
+                      }}
+                    >
+                      <Gift className="mr-1 h-3 w-3" />
+                      +${objective.moneyReward}
+                    </Button>
+                  ) : (
+                    <span className="text-sm font-medium text-green-600">
+                      +${objective.moneyReward}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              {!objective.completed && (
+                <div className="mt-2 ml-6">
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Progress</span>
+                    <span className="font-medium text-gray-700">
+                      {objective.progress}/{objective.target}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(objective.progress / objective.target) * 100}
+                    className="h-2"
+                  />
+                </div>
+              )}
+            </div>
+          ))}
         </a.div>
       </a.div>
     </a.div>

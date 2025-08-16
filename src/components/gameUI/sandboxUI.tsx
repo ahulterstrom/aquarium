@@ -101,7 +101,6 @@ const FISH_SPECIES: FishSpecies[] = [
 export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
 
-  const showAllObjectives = useUIStore.use.showAllObjectives();
   const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const isDebugging = useGame.use.isDebugging();
   const tanks = useGameStore.use.tanks();
@@ -117,7 +116,6 @@ export const SandboxUI = () => {
   const day = useGameStore.use.day();
   const entrances = useGameStore.use.entrances();
   const activeObjectives = useGameStore.use.activeObjectives();
-  const allObjectives = useGameStore.use.allObjectives();
   const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
   const isUnlocked = useGameStore.use.isUnlocked();
   const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
@@ -334,7 +332,7 @@ export const SandboxUI = () => {
             className="border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <div className="flex w-full justify-center gap-4 p-2">
+            <div className="flex w-full justify-center gap-4 p-4">
               {/* Build Button */}
               <Button
                 onClick={() => setShowBuild(true)}
@@ -754,12 +752,7 @@ export const SandboxUI = () => {
         <BuildPanel />
 
         {/* All Objectives Modal */}
-        <AllObjectivesModal
-          open={showAllObjectives}
-          onOpenChange={setShowAllObjectives}
-          allObjectives={allObjectives}
-          onCollectReward={collectObjectiveReward}
-        />
+        <AllObjectivesModal />
       </div>
     </div>
   );
