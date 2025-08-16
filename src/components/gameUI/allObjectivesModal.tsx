@@ -13,66 +13,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores/gameStore";
 
-// Define the full objective progression for preview
-const OBJECTIVE_PREVIEW: Record<
-  ObjectiveType,
-  {
-    title: string;
-    description: string;
-    moneyReward: number;
-    prerequisites?: ObjectiveType[];
-  }
-> = {
-  place_entrance: {
-    title: "Welcome to Aquatopia!",
-    description: "Place your aquarium entrance",
-    moneyReward: 10,
-    prerequisites: [],
-  },
-  build_first_tank: {
-    title: "Build Your First Tank",
-    description: "Place a tank to house your fish",
-    moneyReward: 15,
-    prerequisites: ["place_entrance"],
-  },
-  buy_fish: {
-    title: "Stock Your Aquarium",
-    description: "Buy 2 fish for your tanks",
-    moneyReward: 20,
-    prerequisites: ["build_first_tank"],
-  },
-  earn_money: {
-    title: "First Profits",
-    description: "Earn a total of $50",
-    moneyReward: 25,
-    prerequisites: ["buy_fish"],
-  },
-  attract_visitors: {
-    title: "Growing Popularity",
-    description: "Attract 10 visitors to your aquarium",
-    moneyReward: 30,
-    prerequisites: ["buy_fish"],
-  },
-  satisfy_visitors: {
-    title: "Happy Customers",
-    description: "Have 5 visitors leave satisfied",
-    moneyReward: 35,
-    prerequisites: ["attract_visitors"],
-  },
-  build_multiple_tanks: {
-    title: "Expanding the Aquarium",
-    description: "Build a total of 3 tanks",
-    moneyReward: 40,
-    prerequisites: ["earn_money"],
-  },
-  expand_aquarium: {
-    title: "More Space",
-    description: "Expand your aquarium with 5 new tiles",
-    moneyReward: 50,
-    prerequisites: ["build_multiple_tanks"],
-  },
-};
-
+// Define the order of objectives for display
 const OBJECTIVE_ORDER: ObjectiveType[] = [
   "place_entrance",
   "build_first_tank",
@@ -89,30 +30,30 @@ export const AllObjectivesModal = () => {
   const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const allObjectives = useGameStore.use.allObjectives();
   const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
-  // Create a map of actual objectives by type for easy lookup
-  const objectiveMap = new Map<ObjectiveType, Objective>();
-  allObjectives.forEach((obj) => objectiveMap.set(obj.type, obj));
+  
+  // Sort objectives by the defined order
+  const sortedObjectives = [...allObjectives].sort((a, b) => {
+    const aIndex = OBJECTIVE_ORDER.indexOf(a.type);
+    const bIndex = OBJECTIVE_ORDER.indexOf(b.type);
+    return aIndex - bIndex;
+  });
 
-  // Determine objective states
-  const getObjectiveState = (type: ObjectiveType) => {
-    const objective = objectiveMap.get(type);
-    if (objective) {
-      if (objective.rewarded) return "completed";
-      if (objective.completed) return "ready_to_collect";
-      return "active";
+  // Determine objective state
+  const getObjectiveState = (objective: Objective) => {
+    if (objective.rewarded) return "completed";
+    if (objective.completed) return "ready_to_collect";
+    return "active";
+  };
+
+  // Check if prerequisites are met for display purposes
+  const arePrerequisitesMet = (objective: Objective) => {
+    if (!objective.prerequisites || objective.prerequisites.length === 0) {
+      return true;
     }
-
-    // Check if prerequisites are met for locked objectives
-    const preview = OBJECTIVE_PREVIEW[type];
-    if (preview.prerequisites && preview.prerequisites.length > 0) {
-      const prereqsMet = preview.prerequisites.every((prereq) => {
-        const prereqObj = objectiveMap.get(prereq);
-        return prereqObj && prereqObj.completed;
-      });
-      return prereqsMet ? "available" : "locked";
-    }
-
-    return "available";
+    return objective.prerequisites.every((prereq) => {
+      const prereqObj = allObjectives.find((o) => o.type === prereq);
+      return prereqObj && prereqObj.completed;
+    });
   };
 
   return (
@@ -136,23 +77,21 @@ export const AllObjectivesModal = () => {
             </div>
 
             <div className="space-y-3">
-              {OBJECTIVE_ORDER.map((type, index) => {
-                const preview = OBJECTIVE_PREVIEW[type];
-                const objective = objectiveMap.get(type);
-                const state = getObjectiveState(type);
+              {sortedObjectives.map((objective) => {
+                const state = getObjectiveState(objective);
+                const prerequisitesMet = arePrerequisitesMet(objective);
 
                 return (
                   <div
-                    key={type}
+                    key={objective.id}
                     className={cn(
                       "rounded-lg border p-4 backdrop-blur-sm transition-all duration-300",
                       state === "completed" &&
                         "border-green-500/50 bg-green-50/50",
                       state === "ready_to_collect" &&
                         "border-green-500/50 bg-green-100/50",
-                      state === "active" && "border-blue-500/50 bg-blue-50/50",
-                      state === "available" && "border-gray-300 bg-white/50",
-                      state === "locked" && "border-gray-300 bg-gray-50/50",
+                      state === "active" && prerequisitesMet && "border-blue-500/50 bg-blue-50/50",
+                      state === "active" && !prerequisitesMet && "border-gray-300 bg-gray-50/50",
                     )}
                   >
                     <div className="flex items-start justify-between">
@@ -165,10 +104,10 @@ export const AllObjectivesModal = () => {
                             {state === "ready_to_collect" && (
                               <CheckCircle2 className="h-5 w-5 animate-pulse text-green-500" />
                             )}
-                            {(state === "active" || state === "available") && (
+                            {state === "active" && prerequisitesMet && (
                               <Circle className="h-5 w-5 text-blue-400" />
                             )}
-                            {state === "locked" && (
+                            {state === "active" && !prerequisitesMet && (
                               <Lock className="h-5 w-5 text-gray-400" />
                             )}
 
@@ -178,12 +117,11 @@ export const AllObjectivesModal = () => {
                                 state === "completed" && "text-green-700",
                                 state === "ready_to_collect" &&
                                   "text-green-700",
-                                state === "active" && "text-blue-700",
-                                (state === "available" || state === "locked") &&
-                                  "text-gray-600",
+                                state === "active" && prerequisitesMet && "text-blue-700",
+                                state === "active" && !prerequisitesMet && "text-gray-600",
                               )}
                             >
-                              {preview.title}
+                              {objective.title}
                             </h3>
                           </div>
 
@@ -192,16 +130,15 @@ export const AllObjectivesModal = () => {
                               "mb-2 text-sm",
                               state === "completed" && "text-green-600",
                               state === "ready_to_collect" && "text-green-600",
-                              state === "active" && "text-blue-600",
-                              (state === "available" || state === "locked") &&
-                                "text-gray-500",
+                              state === "active" && prerequisitesMet && "text-blue-600",
+                              state === "active" && !prerequisitesMet && "text-gray-500",
                             )}
                           >
-                            {preview.description}
+                            {objective.description}
                           </p>
 
                           {/* Progress bar for active objectives */}
-                          {objective && state === "active" && (
+                          {state === "active" && prerequisitesMet && (
                             <div className="mb-2">
                               <div className="mb-1 flex items-center justify-between text-xs">
                                 <span className="text-gray-500">Progress</span>
@@ -219,13 +156,14 @@ export const AllObjectivesModal = () => {
                           )}
 
                           {/* Prerequisites for locked objectives */}
-                          {state === "locked" && preview.prerequisites && (
+                          {state === "active" && !prerequisitesMet && objective.prerequisites && (
                             <div className="text-xs text-gray-600">
                               <span className="font-medium">Requires: </span>
-                              {preview.prerequisites
-                                .map(
-                                  (prereq) => OBJECTIVE_PREVIEW[prereq].title,
-                                )
+                              {objective.prerequisites
+                                .map((prereq) => {
+                                  const prereqObj = allObjectives.find((o) => o.type === prereq);
+                                  return prereqObj ? prereqObj.title : prereq;
+                                })
                                 .join(", ")}
                             </div>
                           )}
@@ -234,10 +172,10 @@ export const AllObjectivesModal = () => {
 
                       <div className="ml-4 flex flex-shrink-0 items-center gap-2">
                         <div className="text-sm font-medium text-green-600">
-                          +${preview.moneyReward}
+                          +${objective.moneyReward}
                         </div>
 
-                        {state === "ready_to_collect" && objective && (
+                        {state === "ready_to_collect" && (
                           <Button
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"

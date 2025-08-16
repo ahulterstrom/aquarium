@@ -460,61 +460,31 @@ export const SandboxUI = () => {
             >
               Toast test
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                const state = useGameStore.getState();
+                const objectiveSystem = state.objectiveSystem;
+                console.log("Active Objectives:", state.activeObjectives);
+                console.log(
+                  "All Objectives:",
+                  objectiveSystem.getAllObjectives(),
+                );
+                console.log("All objectives", state.allObjectives);
+                console.log(
+                  "Get active objectives:",
+                  objectiveSystem.getActiveObjectives(),
+                );
+              }}
+            >
+              Log objectives
+            </Button>
           </div>
         )}
 
-        <Sheet open={shouldShowMenus}>
-          <SheetContent
-            side="top"
-            withOverlay={false}
-            withCloseButton={false}
-            style={{
-              pointerEvents: "none",
-            }}
-            className={cn(
-              "top-20 mx-auto w-80 border-none bg-transparent shadow-none",
-            )}
-          >
-            <ObjectivesButton />
-          </SheetContent>
-        </Sheet>
-
         <AnimatedObjectivesPanel />
-
-        {/* Collapsible Objectives Panel */}
-
-        <Sheet open={showObjectives}>
-          <SheetContent
-            side="bottom"
-            withOverlay={false}
-            withCloseButton={false}
-            style={{
-              pointerEvents: "none",
-            }}
-            className={cn(
-              "pointer-events-auto z-10 mx-auto mb-20 w-80 border-none bg-transparent shadow-none data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-            )}
-          >
-            <ObjectivesPanel
-              objectives={activeObjectives}
-              onCollectReward={collectObjectiveReward}
-              onViewAll={() => setShowAllObjectives(true)}
-            />
-          </SheetContent>
-        </Sheet>
-
-        {/* Reward Collection */}
-        <div className="pointer-events-none absolute top-[50%] right-4 flex flex-col gap-2">
-          {activeObjectives
-            .filter((obj) => obj.completed && !obj.rewarded)
-            .map((objective) => (
-              <CompletedObjectiveNotification
-                key={objective.id}
-                objective={objective}
-                onCollectReward={collectObjectiveReward}
-              />
-            ))}
-        </div>
 
         {/* Entity Info Panel - Right Side */}
         <EntityInfoPanel />

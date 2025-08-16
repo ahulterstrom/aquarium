@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores/gameStore";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const AnimatedObjectivesPanel = () => {
   return (
@@ -39,6 +40,11 @@ export function ChainedBox() {
   const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
 
   const open = showObjectives;
+
+  // Count objectives ready to claim
+  const readyToClaimCount = activeObjectives.filter(
+    (obj) => obj.completed && !obj.rewarded,
+  ).length;
 
   // 1) EXPAND via width (no text scaling)
   const expandRef = useSpringRef();
@@ -104,7 +110,7 @@ export function ChainedBox() {
       ? [expandRef, iconSizeRef, heightRef, titleRevealRef, contentRevealRef]
       : [contentRevealRef, titleRevealRef, heightRef, iconSizeRef, expandRef],
     open ? [0, 0.1, 0.52, 0.3, 0.7] : [0, 0.1, 0.1, 0.12, 0.84],
-    500,
+    open ? 500 : 100,
   );
 
   if (activeObjectives.length === 0) {
@@ -112,155 +118,171 @@ export function ChainedBox() {
   }
 
   return (
-    <a.div
-      style={{ width: expand.width, height: height.y }}
-      className="glass relative overflow-hidden"
-    >
-      {/* Clickable box — width animates, text stays crisp */}
-      <a.button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setShowObjectives((v) => !v)}
-        style={
-          {
-            // width: expand.width,
-            // y: lift.y,
-            // transformOrigin: "left",
-            // willChange: "width, transform",
-          }
-        }
-        className={cn(
-          "absolute top-0 right-0 left-0 z-100",
-          "inline-flex items-center gap-2 px-4 py-3",
-          "border-b transition-[box-shadow] duration-200",
-        )}
-      >
-        <a.span
-          style={{
-            width: iconSize.width,
-            height: iconSize.height,
-            willChange: "width, height",
-          }}
-          className="shrink-0"
-        >
-          <Target className="size-full" />
-        </a.span>
-        <a.div
-          style={{
-            opacity: titleReveal.opacity,
-            willChange: "opacity",
-          }}
-          className="flex w-full items-center justify-between font-medium"
-        >
-          <span>Objectives</span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto h-6 px-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowAllObjectives(true);
-            }}
-          >
-            <List className="mr-1 h-3 w-3" />
-            View All
-          </Button>
-        </a.div>
-      </a.button>
-
-      {/* Revealed panel under original position */}
+    <div className="relative">
+      {/* Badge for ready to claim objectives - outside the overflow container */}
+      {readyToClaimCount > 0 && (
+        <div className="absolute -top-2 -right-2 z-150 flex h-6 w-6 animate-pulse items-center justify-center rounded-full bg-green-500 text-xs font-bold text-white shadow-lg">
+          {readyToClaimCount}
+        </div>
+      )}
       <a.div
-        aria-hidden={!open}
-        style={{
-          width: expand.width,
-          willChange: "width",
-        }}
-        className={cn("absolute top-0 right-0 bottom-0 left-0 z-99 mt-12 p-4")}
+        style={{ width: expand.width, height: height.y }}
+        className="glass relative overflow-hidden"
       >
-        <a.div
-          style={{
-            opacity: contentReveal.opacity,
-          }}
-          className="text-sm will-change-[opacity] space-y-3 overflow-y-auto max-h-48"
+        {/* Clickable box — width animates, text stays crisp */}
+        <a.button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setShowObjectives((v) => !v)}
+          style={
+            {
+              // width: expand.width,
+              // y: lift.y,
+              // transformOrigin: "left",
+              // willChange: "width, transform",
+            }
+          }
+          className={cn(
+            "absolute top-0 right-0 left-0 z-100",
+            "inline-flex items-center gap-2 px-4 py-3",
+            "border-b transition-[box-shadow] duration-200",
+          )}
         >
-          {activeObjectives.map((objective) => (
-            <div
-              key={objective.id}
-              className={cn(
-                "rounded-lg border p-3 transition-all duration-300",
-                objective.completed
-                  ? "border-green-500/50 bg-green-500/10"
-                  : "border-gray-300 bg-white/50",
-              )}
+          <a.span
+            style={{
+              width: iconSize.width,
+              height: iconSize.height,
+              willChange: "width, height",
+            }}
+            className="shrink-0"
+          >
+            <Target className="size-full" />
+          </a.span>
+          <a.div
+            style={{
+              opacity: titleReveal.opacity,
+              willChange: "opacity",
+            }}
+            className="flex w-full items-center justify-between font-medium"
+          >
+            <span>Objectives</span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto h-6 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAllObjectives(true);
+              }}
             >
-              <div className="mb-2 flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    {objective.completed ? (
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-500" />
-                    ) : (
-                      <Circle className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    )}
-                    <h4
-                      className={cn(
-                        "text-sm font-medium",
-                        objective.completed
-                          ? "text-green-700"
-                          : "text-gray-800",
-                      )}
-                    >
-                      {objective.title}
-                    </h4>
-                  </div>
-                  <p
+              <List className="mr-1 h-3 w-3" />
+              View All
+            </Button>
+          </a.div>
+        </a.button>
+
+        {/* Revealed panel under original position */}
+        <a.div
+          aria-hidden={!open}
+          style={{
+            width: expand.width,
+            willChange: "width",
+          }}
+          className={cn(
+            "absolute top-0 right-0 bottom-0 left-0 z-99 mt-12 px-1 pt-4",
+          )}
+        >
+          <a.div
+            style={{
+              opacity: contentReveal.opacity,
+            }}
+            className="text-sm will-change-[opacity]"
+          >
+            <ScrollArea type="always" className="h-49">
+              <div className="space-y-3 pr-3 pb-1">
+                {activeObjectives.map((objective) => (
+                  <div
+                    key={objective.id}
                     className={cn(
-                      "mt-1 ml-6 text-xs",
-                      objective.completed ? "text-green-600" : "text-gray-600",
+                      "w-60 rounded-lg border p-3 transition-all duration-300",
+                      objective.completed
+                        ? "border-green-500/50 bg-green-500/10"
+                        : "border-none bg-white/15 shadow-md",
                     )}
                   >
-                    {objective.description}
-                  </p>
-                </div>
-                <div className="ml-2 flex items-center gap-1">
-                  {objective.completed ? (
-                    <Button
-                      size="sm"
-                      className="h-6 bg-green-600 px-2 text-xs hover:bg-green-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        collectObjectiveReward(objective.id);
-                      }}
-                    >
-                      <Gift className="mr-1 h-3 w-3" />
-                      +${objective.moneyReward}
-                    </Button>
-                  ) : (
-                    <span className="text-sm font-medium text-green-600">
-                      +${objective.moneyReward}
-                    </span>
-                  )}
-                </div>
-              </div>
+                    <div className="mb-2 flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {objective.completed ? (
+                            <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-500" />
+                          ) : (
+                            <Circle className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                          )}
+                          <h4
+                            className={cn(
+                              "text-sm font-medium",
+                              objective.completed
+                                ? "text-green-700"
+                                : "text-gray-800",
+                            )}
+                          >
+                            {objective.title}
+                          </h4>
+                        </div>
+                        <p
+                          className={cn(
+                            "mt-1 ml-6 text-xs",
+                            objective.completed
+                              ? "text-green-600"
+                              : "text-gray-600",
+                          )}
+                        >
+                          {objective.description}
+                        </p>
+                      </div>
+                      <div className="ml-2 flex items-center gap-1">
+                        {objective.completed ? (
+                          <Button
+                            size="sm"
+                            className="h-6 bg-green-600 px-2 text-xs hover:bg-green-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              collectObjectiveReward(objective.id);
+                            }}
+                          >
+                            <Gift className="mr-1 h-3 w-3" />
+                            +${objective.moneyReward}
+                          </Button>
+                        ) : (
+                          <span className="text-sm font-medium text-green-600">
+                            +${objective.moneyReward}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-              {/* Progress bar */}
-              {!objective.completed && (
-                <div className="mt-2 ml-6">
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="text-gray-500">Progress</span>
-                    <span className="font-medium text-gray-700">
-                      {objective.progress}/{objective.target}
-                    </span>
+                    {/* Progress bar */}
+                    {!objective.completed && (
+                      <div className="mt-2 ml-6">
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="text-gray-500">Progress</span>
+                          <span className="font-medium text-gray-700">
+                            {objective.progress}/{objective.target}
+                          </span>
+                        </div>
+                        <Progress
+                          value={(objective.progress / objective.target) * 100}
+                          className="h-2"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <Progress
-                    value={(objective.progress / objective.target) * 100}
-                    className="h-2"
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+                ))}
+              </div>
+            </ScrollArea>
+          </a.div>
         </a.div>
       </a.div>
-    </a.div>
+    </div>
   );
 }

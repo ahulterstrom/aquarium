@@ -22,7 +22,7 @@ import {
 import { useGridStore } from "./gridStore";
 import { ObjectiveSystem } from "../systems/ObjectiveSystem";
 import { UnlockSystem } from "../systems/UnlockSystem";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
@@ -149,9 +149,10 @@ export const useGameStore = createSelectors(
       // Set up unlock system callbacks
       unlockSystem.setOnUnlockCallback((unlockable) => {
         // Show toast notification for unlock
-        toast.success(`🎉 New Unlock: ${unlockable.name}`, {
+        toast({
+          title: `🎉 New Unlock: ${unlockable.name}`,
           description: unlockable.description,
-          action: {
+          button: {
             label: "View",
             onClick: () => {
               // Could open a modal or scroll to the item
@@ -613,15 +614,16 @@ export const useGameStore = createSelectors(
         setWallStyle: (style) => set({ wallStyle: style }),
         setFloorStyle: (style) => set({ floorStyle: style }),
 
-        reset: () =>
-          set({
+        reset: () => {
+          const newObjectiveSystem = new ObjectiveSystem();
+          return set({
             ...initialState,
             tanks: new Map(),
             fish: new Map(),
             entrances: new Map(),
             coins: new Map(),
-            objectiveSystem: new ObjectiveSystem(),
-            activeObjectives: [],
+            objectiveSystem: newObjectiveSystem,
+            activeObjectives: newObjectiveSystem.getActiveObjectives(),
             expansionTiles: 0,
             wallStyle: "concrete",
             floorStyle: "wood",
@@ -632,7 +634,8 @@ export const useGameStore = createSelectors(
               visitors: 0,
               daily: 0,
             },
-          }),
+          });
+        },
       };
     }),
   ),
