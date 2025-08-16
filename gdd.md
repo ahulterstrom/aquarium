@@ -1,5 +1,5 @@
 
-# Aquarium Tycoon - Game Design Document
+# Aquatopia - Game Design Document
 
 ## Core Concept
 
