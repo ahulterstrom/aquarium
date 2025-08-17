@@ -4,7 +4,8 @@ import { Visitors } from "@/components/visitors";
 import { Coins } from "@/components/coins";
 import { FishRenderer } from "@/components/fish";
 import { ExpansionGrid } from "@/components/game/ExpansionGrid";
-import { Walls } from "@/components/game/Walls";
+import { WallSystem } from "@/components/walls/WallSystem";
+import { WallTextureProvider } from "@/components/walls/WallTextureProvider";
 import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
 import { FloorGrid } from "@/components/floor/FloorGrid";
 import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
@@ -37,6 +38,7 @@ export const SandboxScene = () => {
   const addEntrance = useGameStore.use.addEntrance();
   const spendMoney = useGameStore.use.spendMoney();
   const floorStyle = useGameStore.use.floorStyle();
+  const wallStyle = useGameStore.use.wallStyle();
 
   const cells = useGridStore.use.cells();
   const initializeGrid = useGridStore.use.initializeGrid();
@@ -152,10 +154,10 @@ export const SandboxScene = () => {
         shadow-mapSize-height={2048}
       />
 
-      {/* <Ground /> */}
-
-      {/* Walls */}
-      <Walls />
+      {/* Walls with dynamic textures */}
+      <WallTextureProvider preloadStyles={[wallStyle]}>
+        <WallSystem />
+      </WallTextureProvider>
 
       {/* Grid - includes both original and expansion tiles */}
       {(placementMode === "tank" || placementMode === "entrance") && (
@@ -195,7 +197,7 @@ export const SandboxScene = () => {
       </FloorTextureProvider>
 
       <Environment
-        environmentIntensity={2}
+        environmentIntensity={1}
         files={"/rostock_laage_airport_1k.hdr"}
       />
     </>

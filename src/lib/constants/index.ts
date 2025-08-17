@@ -4,3 +4,4 @@ export * from "./tanks";
 export * from "./unlockables";
 export * from "./objectives";
 export * from "./floors";
+export * from "./walls";

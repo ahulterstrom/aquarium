@@ -1,4 +1,4 @@
-import { FloorTextureConfig } from "../textures/floors/floorTextureManager";
+import { FloorTextureConfig } from "@/lib/textures/floorTextureManager";
 
 export interface FloorStyle {
   id: string;

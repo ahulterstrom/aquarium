@@ -17,15 +17,7 @@ import { useState } from "react";
 import { useUIStore } from "../../stores/uiStore";
 import { useGameStore } from "../../stores/gameStore";
 import { FLOOR_STYLES } from "../../lib/constants/floors";
-
-// Define available wall and floor styles
-const WALL_STYLES = [
-  { id: "concrete", name: "Concrete", color: 0x666666 },
-  { id: "glass", name: "Glass", color: 0x87ceeb },
-  { id: "brick", name: "Brick", color: 0x8b4513 },
-  { id: "metal", name: "Metal", color: 0x808080 },
-  { id: "wood", name: "Wood", color: 0x654321 },
-];
+import { WALL_STYLES } from "../../lib/constants/walls";
 
 
 export const CustomizationPanel = () => {
@@ -95,8 +87,7 @@ export const CustomizationPanel = () => {
                 <div className="text-sm">
                   Current:{" "}
                   <span className="font-medium">
-                    {WALL_STYLES.find((s) => s.id === wallStyle)?.name ||
-                      "Concrete"}
+                    {WALL_STYLES[wallStyle]?.name || "Concrete"}
                   </span>
                 </div>
                 <Button
@@ -148,7 +139,7 @@ export const CustomizationPanel = () => {
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3 py-4">
-            {WALL_STYLES.map((style) => (
+            {Object.values(WALL_STYLES).map((style) => (
               <button
                 key={style.id}
                 onClick={() => handleWallStyleSelect(style.id)}
@@ -159,12 +150,15 @@ export const CustomizationPanel = () => {
                 }`}
               >
                 <div
-                  className="mb-2 h-16 w-full rounded"
+                  className="mb-2 h-16 w-full rounded bg-cover bg-center"
                   style={{
-                    backgroundColor: `#${style.color.toString(16).padStart(6, "0")}`,
+                    backgroundImage: `url(${style.textures.baseColor})`,
                   }}
                 />
                 <div className="text-sm font-medium">{style.name}</div>
+                {style.description && (
+                  <div className="text-xs text-gray-500 mt-1">{style.description}</div>
+                )}
               </button>
             ))}
           </div>
