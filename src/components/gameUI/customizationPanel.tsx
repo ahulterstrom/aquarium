@@ -16,6 +16,7 @@ import { Paintbrush, Palette } from "lucide-react";
 import { useState } from "react";
 import { useUIStore } from "../../stores/uiStore";
 import { useGameStore } from "../../stores/gameStore";
+import { FLOOR_STYLES } from "../../lib/constants/floors";
 
 // Define available wall and floor styles
 const WALL_STYLES = [
@@ -26,13 +27,6 @@ const WALL_STYLES = [
   { id: "wood", name: "Wood", color: 0x654321 },
 ];
 
-const FLOOR_STYLES = [
-  { id: "sand", name: "Sand", color: 0xf4e4c1 },
-  { id: "tile", name: "Tile", color: 0xe0e0e0 },
-  { id: "wood", name: "Wood", color: 0x8b4513 },
-  { id: "marble", name: "Marble", color: 0xffffff },
-  { id: "stone", name: "Stone", color: 0x696969 },
-];
 
 export const CustomizationPanel = () => {
   const showCustomization = useUIStore.use.showCustomization();
@@ -130,8 +124,7 @@ export const CustomizationPanel = () => {
                 <div className="text-sm">
                   Current:{" "}
                   <span className="font-medium">
-                    {FLOOR_STYLES.find((s) => s.id === floorStyle)?.name ||
-                      "Wood"}
+                    {FLOOR_STYLES[floorStyle]?.name || "Wood"}
                   </span>
                 </div>
                 <Button
@@ -193,7 +186,7 @@ export const CustomizationPanel = () => {
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3 py-4">
-            {FLOOR_STYLES.map((style) => (
+            {Object.values(FLOOR_STYLES).map((style) => (
               <button
                 key={style.id}
                 onClick={() => handleFloorStyleSelect(style.id)}
@@ -204,12 +197,15 @@ export const CustomizationPanel = () => {
                 }`}
               >
                 <div
-                  className="mb-2 h-16 w-full rounded"
+                  className="mb-2 h-16 w-full rounded bg-cover bg-center"
                   style={{
-                    backgroundColor: `#${style.color.toString(16).padStart(6, "0")}`,
+                    backgroundImage: `url(${style.textures.baseColor})`,
                   }}
                 />
                 <div className="text-sm font-medium">{style.name}</div>
+                {style.description && (
+                  <div className="text-xs text-gray-500 mt-1">{style.description}</div>
+                )}
               </button>
             ))}
           </div>

@@ -5,8 +5,14 @@ import { Coins } from "@/components/coins";
 import { FishRenderer } from "@/components/fish";
 import { ExpansionGrid } from "@/components/game/ExpansionGrid";
 import { Walls } from "@/components/game/Walls";
+import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
+import { FloorGrid } from "@/components/floor/FloorGrid";
 import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
-import { MapControls, OrthographicCamera } from "@react-three/drei";
+import {
+  Environment,
+  MapControls,
+  OrthographicCamera,
+} from "@react-three/drei";
 import { useEffect, useState } from "react";
 import { Grid } from "../components/game/Grid";
 import { GameSystems } from "../components/systems/GameSystems";
@@ -17,15 +23,6 @@ import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
 import { nanoid } from "nanoid";
-
-// Define floor style configurations
-const FLOOR_STYLES = {
-  sand: { color: 0xf4e4c1 },
-  tile: { color: 0xe0e0e0 },
-  wood: { color: 0x8b4513 },
-  marble: { color: 0xffffff },
-  stone: { color: 0x696969 },
-};
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -39,11 +36,11 @@ export const SandboxScene = () => {
   const addTank = useGameStore.use.addTank();
   const addEntrance = useGameStore.use.addEntrance();
   const spendMoney = useGameStore.use.spendMoney();
+  const floorStyle = useGameStore.use.floorStyle();
 
   const cells = useGridStore.use.cells();
   const initializeGrid = useGridStore.use.initializeGrid();
   const canPlaceAt = useGridStore.use.canPlaceAt();
-  const floorStyle = useGameStore.use.floorStyle();
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
   const placeObject = useGridStore.use.placeObject();
   const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
@@ -155,34 +152,7 @@ export const SandboxScene = () => {
         shadow-mapSize-height={2048}
       />
 
-      {/* Ground tiles - one for each grid cell */}
-      {Array.from(cells.values()).map((cell) => {
-        // Only render ground tiles for y=0 (ground level)
-        if (cell.y !== 0) return null;
-
-        return (
-          <mesh
-            key={`ground-${cell.x}-${cell.z}`}
-            position={[cell.x * 2, -0.01, cell.z * 2]}
-            rotation={[-Math.PI / 2, 0, 0]}
-            receiveShadow
-            onClick={(e) => {
-              e.stopPropagation();
-              if (placementMode !== "tank" && placementMode !== "entrance") {
-                clearSelection();
-              }
-            }}
-          >
-            <planeGeometry args={[1.95, 1.95]} />
-            <meshStandardMaterial
-              color={
-                FLOOR_STYLES[floorStyle as keyof typeof FLOOR_STYLES]?.color ||
-                0x8b4513
-              }
-            />
-          </mesh>
-        );
-      })}
+      {/* <Ground /> */}
 
       {/* Walls */}
       <Walls />
@@ -218,6 +188,16 @@ export const SandboxScene = () => {
       <Visitors />
       <Coins />
       <FishRenderer />
+
+      {/* Floor Grid with dynamic textures */}
+      <FloorTextureProvider preloadStyles={[floorStyle]}>
+        <FloorGrid />
+      </FloorTextureProvider>
+
+      <Environment
+        environmentIntensity={2}
+        files={"/rostock_laage_airport_1k.hdr"}
+      />
     </>
   );
 };
