@@ -8,6 +8,7 @@ import { WallSystem } from "@/components/walls/WallSystem";
 import { WallTextureProvider } from "@/components/walls/WallTextureProvider";
 import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
 import { FloorGrid } from "@/components/floor/FloorGrid";
+import { CanvasCapture } from "@/components/screenshot/CanvasCapture";
 import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
 import {
   Environment,
@@ -121,6 +122,9 @@ export const SandboxScene = () => {
 
   return (
     <>
+      {/* Canvas capture for screenshots */}
+      <CanvasCapture />
+      
       {/* Game tick system */}
       <GameSystems />
 

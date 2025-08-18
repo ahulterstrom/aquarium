@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { DebugControls } from "@/components/debugControls";
 import { SoundProvider } from "@/contexts/sound/soundContextProvider";
 import { MenuManager } from "@/managers/menuManager";
-import { useGame } from "@/stores/useGame";
 
 import { MenuProvider } from "@/contexts/menu/menuContextProvider";
 import { SceneProvider } from "@/contexts/scene/sceneContextProvider";
@@ -17,11 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import "./App.css";
 
 function App() {
-  const isDebugging = useGame.use.isDebugging();
-  const score = useGame.use.score();
-  const increaseScore = useGame.use.increaseScore();
-  const { placementMode, selectedTankId, selectTank, setPlacementMode } =
-    useUIStore();
+  const { placementMode, selectTank } = useUIStore();
 
   return (
     <>
@@ -32,6 +27,7 @@ function App() {
             <MenuManager />
             <Canvas
               shadows
+              gl={{ preserveDrawingBuffer: true }}
               onPointerMissed={() => {
                 if (placementMode !== "tank") {
                   selectTank(null);
