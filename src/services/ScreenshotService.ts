@@ -36,14 +36,8 @@ export class ScreenshotService {
         toClipboard = false,
       } = options;
 
-      // Create a promise to handle the blob creation
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(
-          resolve,
-          `image/${format}`,
-          format === "jpeg" ? quality : undefined,
-        );
-      });
+      // Add watermark to canvas and get final blob
+      const blob = await this.addWatermarkToCanvas(canvas, format, quality);
 
       if (!blob) {
         throw new Error("Failed to create image blob");
@@ -73,6 +67,62 @@ export class ScreenshotService {
       });
       return false;
     }
+  }
+
+  /**
+   * Add watermark to canvas and return blob
+   */
+  private async addWatermarkToCanvas(
+    originalCanvas: HTMLCanvasElement,
+    format: string,
+    quality: number,
+  ): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      // Create composite canvas
+      const compositeCanvas = document.createElement("canvas");
+      const ctx = compositeCanvas.getContext("2d");
+
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+
+      // Set canvas size to match original
+      compositeCanvas.width = originalCanvas.width;
+      compositeCanvas.height = originalCanvas.height;
+
+      // Draw original canvas content
+      ctx.drawImage(originalCanvas, 0, 0);
+
+      // Add watermark text
+      const fontSize = Math.max(24, originalCanvas.height * 0.03); // Responsive font size
+      ctx.font = `${fontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.fillStyle = "#49D1F1";
+      ctx.textBaseline = "bottom";
+      
+      // Add semi-transparent background for readability
+      const text = "Aquatopia";
+      const textMetrics = ctx.measureText(text);
+      const padding = 8;
+      const bgX = 20 - padding;
+      const bgY = originalCanvas.height - fontSize - 20 - padding;
+      const bgWidth = textMetrics.width + (padding * 2);
+      const bgHeight = fontSize + (padding * 2);
+      
+      ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+      ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+      
+      // Draw text
+      ctx.fillStyle = "#49D1F1";
+      ctx.fillText(text, 20, originalCanvas.height - 20);
+
+      // Convert to blob
+      compositeCanvas.toBlob(
+        resolve,
+        `image/${format}`,
+        format === "jpeg" ? quality : undefined,
+      );
+    });
   }
 
   /**
