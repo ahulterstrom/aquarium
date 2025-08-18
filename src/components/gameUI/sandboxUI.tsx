@@ -49,6 +49,7 @@ import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
 import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
 import { toast } from "@/components/ui/sonner";
 import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesPanel";
+import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -137,6 +138,7 @@ export const SandboxUI = () => {
   const isInPlacementMode = placementMode !== "none";
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
+  const isPhotoMode = useUIStore.use.isPhotoMode();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
@@ -264,62 +266,80 @@ export const SandboxUI = () => {
     !showTileExpansion &&
     !isInPlacementMode &&
     !showCustomization &&
-    !showBuild;
+    !showBuild &&
+    !isPhotoMode;
+  
+  const shouldShowTopPanel = !isPhotoMode;
 
   return (
     <div className="fixed inset-0">
       {/* Main UI Overlay */}
       <div className="relative h-full p-4">
         {/* Top Center Panel */}
-        <Card className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 p-2">
-          <CardContent className="flex h-8 items-center justify-center gap-4">
-            <MoneyDisplay />
-            <Separator orientation="vertical" />
-            <DateTimeDisplay />
-            <Separator orientation="vertical" />
-            <VisitorCountDisplay />
-            <Separator orientation="vertical" />
+        <Sheet open={shouldShowTopPanel} onOpenChange={() => {}}>
+          <SheetContent
+            withOverlay={false}
+            withCloseButton={false}
+            side="top"
+            style={{
+              pointerEvents: "none",
+            }}
+            className="border-none bg-transparent shadow-none"
+          >
+            <SheetTitle className="sr-only">Game Status</SheetTitle>
+            <div className="flex w-full justify-center p-4">
+              <Card className="pointer-events-auto p-2">
+                <CardContent className="flex h-8 items-center justify-center gap-4">
+                  <MoneyDisplay />
+                  <Separator orientation="vertical" />
+                  <DateTimeDisplay />
+                  <Separator orientation="vertical" />
+                  <VisitorCountDisplay />
+                  <Separator orientation="vertical" />
 
-            <Button
-              size="sm"
-              variant={isPaused ? "default" : "outline"}
-              onClick={() => setPaused(!isPaused)}
-            >
-              {isPaused ? (
-                <Play className="h-4 w-4" />
-              ) : (
-                <Pause className="h-4 w-4" />
-              )}
-            </Button>
+                  <Button
+                    size="sm"
+                    variant={isPaused ? "default" : "outline"}
+                    onClick={() => setPaused(!isPaused)}
+                  >
+                    {isPaused ? (
+                      <Play className="h-4 w-4" />
+                    ) : (
+                      <Pause className="h-4 w-4" />
+                    )}
+                  </Button>
 
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant={gameSpeed === 1 ? "default" : "outline"}
-                onClick={() => setGameSpeed(1)}
-                disabled={isPaused}
-              >
-                1x
-              </Button>
-              <Button
-                size="sm"
-                variant={gameSpeed === 2 ? "default" : "outline"}
-                onClick={() => setGameSpeed(2)}
-                disabled={isPaused}
-              >
-                2x
-              </Button>
-              <Button
-                size="sm"
-                variant={gameSpeed === 3 ? "default" : "outline"}
-                onClick={() => setGameSpeed(3)}
-                disabled={isPaused}
-              >
-                3x
-              </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant={gameSpeed === 1 ? "default" : "outline"}
+                      onClick={() => setGameSpeed(1)}
+                      disabled={isPaused}
+                    >
+                      1x
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={gameSpeed === 2 ? "default" : "outline"}
+                      onClick={() => setGameSpeed(2)}
+                      disabled={isPaused}
+                    >
+                      2x
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={gameSpeed === 3 ? "default" : "outline"}
+                      onClick={() => setGameSpeed(3)}
+                      disabled={isPaused}
+                    >
+                      3x
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </SheetContent>
+        </Sheet>
 
         <Sheet open={shouldShowMenus} onOpenChange={setShowTileExpansion}>
           <SheetContent
@@ -723,6 +743,9 @@ export const SandboxUI = () => {
 
         {/* All Objectives Modal */}
         <AllObjectivesModal />
+
+        {/* Screenshot Controls */}
+        <ScreenshotControls />
       </div>
     </div>
   );

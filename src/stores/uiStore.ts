@@ -1,6 +1,6 @@
 import { createSelectors } from "@/stores/utils";
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
+import { devtools } from "zustand/middleware";
 
 type UIModal =
   | "none"
@@ -56,6 +56,9 @@ interface UIStore {
   showObjectives: boolean;
   showAllObjectives: boolean;
 
+  // Photo mode
+  isPhotoMode: boolean;
+
   // Actions
   selectTank: (id: string | null) => void;
   selectVisitor: (id: string | null) => void;
@@ -74,6 +77,11 @@ interface UIStore {
   setShowBuild: (show: boolean) => void;
   setShowObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
   setShowAllObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
+
+  // Photo mode actions
+  enterPhotoMode: () => void;
+  exitPhotoMode: () => void;
+  togglePhotoMode: () => void;
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
@@ -124,6 +132,8 @@ export const useUIStore = createSelectors(
       showBuild: false,
       showObjectives: false,
       showAllObjectives: false,
+
+      isPhotoMode: false,
 
       activeModal: "none",
       modalData: null,
@@ -288,6 +298,11 @@ export const useUIStore = createSelectors(
         })),
 
       clearNotifications: () => set({ notifications: [] }),
+
+      // Photo mode actions
+      enterPhotoMode: () => set({ isPhotoMode: true }),
+      exitPhotoMode: () => set({ isPhotoMode: false }),
+      togglePhotoMode: () => set((state) => ({ isPhotoMode: !state.isPhotoMode })),
     })),
   ),
 );
