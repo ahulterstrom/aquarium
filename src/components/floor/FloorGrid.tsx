@@ -123,7 +123,7 @@ export const FloorGrid = () => {
     <>
       {groundCells.map((cell) => {
         // Create box geometry with small height
-        const geometry = new THREE.BoxGeometry(2, 0.05, 2);
+        const geometry = new THREE.BoxGeometry(2, 0.2, 2);
 
         // Set up UV2 for ambient occlusion on top face
         const uv = geometry.getAttribute("uv");

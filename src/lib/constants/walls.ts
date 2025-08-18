@@ -20,7 +20,7 @@ export interface WallStyle {
 }
 
 export const WALL_STYLES: Record<string, WallStyle> = {
-  concrete: {
+  oldPaintedConcrete: {
     id: "oldPaintedConcrete",
     name: "Old Painted Concrete",
     description: "Probably needs a fresh coat of paint",
@@ -32,7 +32,7 @@ export const WALL_STYLES: Record<string, WallStyle> = {
       aorm: "/textures/walls/concrete_wall_05_1k/aorm_rgb.png",
     },
     material: {
-      roughness: 0.2,
+      roughness: 0.7,
       metalness: 0.0,
     },
   },
@@ -54,6 +54,54 @@ export const WALL_STYLES: Record<string, WallStyle> = {
     unlockRequirement: {
       type: "money",
       value: 50,
+    },
+  },
+  concrete: {
+    id: "concrete",
+    name: "Concrete",
+    description: "Simple and effective concrete walls",
+    textures: {
+      baseColor:
+        "/textures/walls/concrete_wall_04_1k/concrete_wall_04_color_1k.png",
+      normal:
+        "/textures/walls/concrete_wall_04_1k/concrete_wall_04_normal_gl_1k.png",
+      aorm: "/textures/walls/concrete_wall_04_1k/aorm_rgb.png",
+    },
+    material: {
+      roughness: 0.5,
+      metalness: 0.0,
+    },
+  },
+  tiles: {
+    id: "tiles",
+    name: "Tiles",
+    description: "Colorful and vibrant tile walls",
+    textures: {
+      baseColor:
+        "/textures/walls/concrete_tiles_01_1k/concrete_tiles_01_color_1k.png",
+      normal:
+        "/textures/walls/concrete_tiles_01_1k/concrete_tiles_01_normal_gl_1k.png",
+      aorm: "/textures/walls/concrete_tiles_01_1k/aorm_rgb.png",
+    },
+    material: {
+      roughness: 0.3,
+      metalness: 0.0,
+    },
+  },
+  bricks: {
+    id: "bricks",
+    name: "Bricks",
+    description: "Classic red brick walls",
+    textures: {
+      baseColor:
+        "/textures/walls/bricks_wall_05_1k/bricks_wall_05_color_1k.png",
+      normal:
+        "/textures/walls/bricks_wall_05_1k/bricks_wall_05_normal_gl_1k.png",
+      aorm: "/textures/walls/bricks_wall_05_1k/aorm_rgb.png",
+    },
+    material: {
+      roughness: 0.7,
+      metalness: 0.0,
     },
   },
 };

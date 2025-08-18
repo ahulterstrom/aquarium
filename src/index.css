@@ -153,7 +153,7 @@ button {
 
 @layer utilities {
   .glass {
-    @apply rounded-xl border border-white/30 bg-white/30 shadow-lg backdrop-blur-md;
+    @apply rounded-xl border border-white/20 bg-white/15 shadow-xl backdrop-blur-md;
   }
 }
 

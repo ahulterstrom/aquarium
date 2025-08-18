@@ -180,7 +180,7 @@ export const useGameStore = createSelectors(
         unlockedItems: unlockSystem.getUnlockedItems(),
         expansionTiles: 0,
         wallStyle: "concrete",
-        floorStyle: "wood",
+        floorStyle: "concrete",
         gameTime: 0,
         accumulators: {
           tick: 0,

@@ -1,5 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { WallTextureManager, WallTextures } from "../../lib/textures/wallTextureManager";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import {
+  WallTextureManager,
+  WallTextures,
+} from "../../lib/textures/wallTextureManager";
 import { WALL_STYLES, WallStyle } from "../../lib/constants/walls";
 
 interface WallTextureContextValue {
@@ -16,9 +25,9 @@ interface WallTextureProviderProps {
   preloadStyles?: string[]; // Wall styles to preload on mount
 }
 
-export const WallTextureProvider = ({ 
-  children, 
-  preloadStyles = ["concrete"] // Default preload concrete style
+export const WallTextureProvider = ({
+  children,
+  preloadStyles = ["oldPaintedConcrete"], // Default preload concrete style
 }: WallTextureProviderProps) => {
   const [textureManager] = useState(() => WallTextureManager.getInstance());
   const [loadedStyles, setLoadedStyles] = useState<Set<string>>(new Set());
@@ -48,15 +57,18 @@ export const WallTextureProvider = ({
       return;
     }
 
-    setLoadingStyles(prev => new Set([...prev, styleId]));
+    setLoadingStyles((prev) => new Set([...prev, styleId]));
 
     try {
       await textureManager.loadWallTextures(styleId, style.textures);
-      setLoadedStyles(prev => new Set([...prev, styleId]));
+      setLoadedStyles((prev) => new Set([...prev, styleId]));
     } catch (error) {
-      console.error(`Failed to load wall textures for style '${styleId}':`, error);
+      console.error(
+        `Failed to load wall textures for style '${styleId}':`,
+        error,
+      );
     } finally {
-      setLoadingStyles(prev => {
+      setLoadingStyles((prev) => {
         const newSet = new Set(prev);
         newSet.delete(styleId);
         return newSet;
@@ -89,13 +101,17 @@ export const WallTextureProvider = ({
 export const useWallTextures = (): WallTextureContextValue => {
   const context = useContext(WallTextureContext);
   if (!context) {
-    throw new Error("useWallTextures must be used within a WallTextureProvider");
+    throw new Error(
+      "useWallTextures must be used within a WallTextureProvider",
+    );
   }
   return context;
 };
 
 // Hook for getting textures for a specific style with automatic loading
-export const useWallStyle = (styleId: string): {
+export const useWallStyle = (
+  styleId: string,
+): {
   textures: WallTextures | null;
   style: WallStyle | null;
   isLoading: boolean;
