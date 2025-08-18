@@ -54,14 +54,14 @@ export function GameSystems() {
     // Fast tick (1s) - Money and UI updates
     accumulator.current.tick += dt;
     if (accumulator.current.tick >= TICK_RATES.tick) {
-      console.log("Processing fast tick...");
+      // console.log("Processing fast tick...");
       accumulator.current.tick %= TICK_RATES.tick;
     }
 
     // Water quality (5s)
     accumulator.current.water += dt;
     if (accumulator.current.water >= TICK_RATES.water) {
-      console.log("Updating water quality...");
+      // console.log("Updating water quality...");
       updateWaterQuality();
       accumulator.current.water %= TICK_RATES.water;
     }
@@ -69,7 +69,7 @@ export function GameSystems() {
     // Visitor spawning (10s)
     accumulator.current.visitors += dt;
     if (accumulator.current.visitors >= TICK_RATES.visitors) {
-      console.log("Attempting to spawn visitors...");
+      // console.log("Attempting to spawn visitors...");
       attemptSpawnVisitors();
       accumulator.current.visitors %= TICK_RATES.visitors;
     }
@@ -77,7 +77,7 @@ export function GameSystems() {
     // Day end (60s)
     accumulator.current.daily += dt;
     if (accumulator.current.daily >= TICK_RATES.daily) {
-      console.log("Processing day end...");
+      // console.log("Processing day end...");
       processDayEnd();
       accumulator.current.daily %= TICK_RATES.daily;
     }
