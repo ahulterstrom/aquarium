@@ -17,11 +17,8 @@ export const ScreenshotControls = () => {
   const togglePhotoMode = useUIStore.use.togglePhotoMode();
   const exitPhotoMode = useUIStore.use.exitPhotoMode();
 
-  // Create refs for all animations (must be at top level)
-  const cameraButtonRef = useSpringRef();
-  const downloadButtonPressRef = useSpringRef();
-  const copyButtonPressRef = useSpringRef();
-  const exitButtonPressRef = useSpringRef();
+  // Create refs for all animations
+
   const focusRef = useSpringRef();
   const viewfinderRef = useSpringRef();
   const topLabelRef = useSpringRef();
@@ -32,34 +29,6 @@ export const ScreenshotControls = () => {
   const cornerBracketsRef = useSpringRef();
   const centerReticleRef = useSpringRef();
   const exposureScaleRef = useSpringRef();
-
-  // Button press animations
-  const cameraButtonSpring = useSpring({
-    ref: cameraButtonRef,
-    transform: "scale(1)",
-    config: {
-      tension: 500,
-      friction: 30,
-    },
-  });
-
-  const downloadButtonPressSpring = useSpring({
-    ref: downloadButtonPressRef,
-    transform: "scale(1)",
-    config: { tension: 500, friction: 30 },
-  });
-
-  const copyButtonPressSpring = useSpring({
-    ref: copyButtonPressRef,
-    transform: "scale(1)",
-    config: { tension: 500, friction: 30 },
-  });
-
-  const exitButtonPressSpring = useSpring({
-    ref: exitButtonPressRef,
-    transform: "scale(1)",
-    config: { tension: 500, friction: 30 },
-  });
 
   // Photo mode animations (only active when in photo mode)
   const focusSpring = useSpring({
@@ -154,7 +123,13 @@ export const ScreenshotControls = () => {
       console.log("Taking screenshot, canvas:", canvas);
       console.log("Canvas dimensions:", canvas.width, "x", canvas.height);
 
+      // Trigger flash effect
       screenshotService.triggerFlash();
+
+      // Actually capture the screenshot
+      await screenshotService.captureCanvas(canvas, {
+        toClipboard: options?.toClipboard,
+      });
     },
     [canvas],
   );
@@ -163,10 +138,7 @@ export const ScreenshotControls = () => {
   return (
     <>
       {/* Camera Button */}
-      <animated.div
-        style={cameraButtonSpring}
-        className="pointer-events-auto fixed top-4 right-4 z-60"
-      >
+      <div className="pointer-events-auto fixed top-4 right-4 z-60">
         <Tooltip>
           <TooltipTrigger asChild>
             <div>
@@ -187,7 +159,7 @@ export const ScreenshotControls = () => {
             {isPhotoMode ? <p>Exit Photo Mode</p> : <p>Photo Mode</p>}
           </TooltipContent>
         </Tooltip>
-      </animated.div>
+      </div>
 
       {/* Photo Mode UI */}
       <div className="pointer-events-none fixed inset-0 z-50">
@@ -205,7 +177,7 @@ export const ScreenshotControls = () => {
           <div className="glass flex items-center gap-2 p-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <animated.div style={downloadButtonPressSpring}>
+                <div>
                   <Button
                     variant="default"
                     onClick={() => handleScreenshot()}
@@ -213,7 +185,7 @@ export const ScreenshotControls = () => {
                   >
                     <Download className="size-4" />
                   </Button>
-                </animated.div>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Download</p>
@@ -222,7 +194,7 @@ export const ScreenshotControls = () => {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <animated.div style={copyButtonPressSpring}>
+                <div>
                   <Button
                     variant="default"
                     onClick={() => handleScreenshot({ toClipboard: true })}
@@ -230,7 +202,7 @@ export const ScreenshotControls = () => {
                   >
                     <Copy className="size-4" />
                   </Button>
-                </animated.div>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Copy to Clipboard</p>
@@ -239,7 +211,7 @@ export const ScreenshotControls = () => {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <animated.div style={exitButtonPressSpring}>
+                <div>
                   <Button
                     variant="default"
                     onClick={exitPhotoMode}
@@ -247,7 +219,7 @@ export const ScreenshotControls = () => {
                   >
                     <X className="size-4" />
                   </Button>
-                </animated.div>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Exit Photo Mode</p>
