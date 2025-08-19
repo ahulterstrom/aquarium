@@ -28,15 +28,15 @@ const EntranceMesh = ({
         break;
       case "south": // Bottom edge, door faces north
         offsetZ = 1; // Move to south edge of tile
-        rotationY = Math.PI;
+        rotationY = -Math.PI;
         break;
       case "east": // Right edge, door faces west
         offsetX = 1; // Move to east edge of tile
-        rotationY = Math.PI / 2;
+        rotationY = -Math.PI / 2;
         break;
       case "west": // Left edge, door faces east
         offsetX = -1; // Move to west edge of tile
-        rotationY = -Math.PI / 2;
+        rotationY = Math.PI / 2;
         break;
     }
 
@@ -71,7 +71,7 @@ const EntranceMesh = ({
     >
       {/* Door frame */}
       <mesh position={[0, 1.5, 0]}>
-        <boxGeometry args={[2, 3, 0.2]} />
+        <boxGeometry args={[2, 3, 0.3]} />
         <meshLambertMaterial color={0x8b4513} />
       </mesh>
 
