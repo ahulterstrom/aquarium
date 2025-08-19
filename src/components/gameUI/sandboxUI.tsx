@@ -26,30 +26,30 @@ import { useState } from "react";
 
 // Import game stores and types
 import { AllObjectivesModal } from "@/components/gameUI/allObjectivesModal";
+import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesPanel";
 import { BuildPanel } from "@/components/gameUI/buildPanel";
-import { CompletedObjectiveNotification } from "@/components/gameUI/completedObjectiveNotification";
 import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
+import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
-import { GameTimeDisplay } from "@/components/gameUI/gameTimeDisplay";
 import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
-import { ObjectivesButton } from "@/components/gameUI/objectivesButton";
-import { ObjectivesPanel } from "@/components/gameUI/objectivesPanel";
 import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
+import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
+import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
 import { spawnVisitor } from "@/components/systems/visitorSystem";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { toast } from "@/components/ui/sonner";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import { useGame } from "@/stores/useGame";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
-import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
-import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
-import { toast } from "@/components/ui/sonner";
-import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesPanel";
-import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -114,12 +114,8 @@ export const SandboxUI = () => {
   const setGameSpeed = useGameStore.use.setGameSpeed();
   const isPaused = useGameStore.use.isPaused();
   const setPaused = useGameStore.use.setPaused();
-  const day = useGameStore.use.day();
-  const entrances = useGameStore.use.entrances();
   const activeObjectives = useGameStore.use.activeObjectives();
-  const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
   const isUnlocked = useGameStore.use.isUnlocked();
-  const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
 
   const removeObject = useGridStore.use.removeObject();
   const showFishShop = useUIStore.use.showFishShop();
@@ -132,8 +128,6 @@ export const SandboxUI = () => {
   const setShowCustomization = useUIStore.use.setShowCustomization();
   const showBuild = useUIStore.use.showBuild();
   const setShowBuild = useUIStore.use.setShowBuild();
-  const showObjectives = useUIStore.use.showObjectives();
-  const setShowObjectives = useUIStore.use.setShowObjectives();
   const placementMode = useUIStore.use.placementMode();
   const isInPlacementMode = placementMode !== "none";
   const selectedTankId = useUIStore.use.selectedTankId();
@@ -268,7 +262,7 @@ export const SandboxUI = () => {
     !showCustomization &&
     !showBuild &&
     !isPhotoMode;
-  
+
   const shouldShowTopPanel = !isPhotoMode;
 
   return (
@@ -287,6 +281,9 @@ export const SandboxUI = () => {
             className="border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game Status</SheetTitle>
+            <SheetDescription className="sr-only">
+              Current status of the game
+            </SheetDescription>
             <div className="flex w-full justify-center p-4">
               <Card className="pointer-events-auto p-2">
                 <CardContent className="flex h-8 items-center justify-center gap-4">
@@ -352,6 +349,9 @@ export const SandboxUI = () => {
             className="border-none bg-transparent shadow-none"
           >
             <SheetTitle className="sr-only">Game UI</SheetTitle>
+            <SheetDescription className="sr-only">
+              Common functions to manage your aquarium
+            </SheetDescription>
             <div className="flex w-full justify-center gap-4 p-4">
               {/* Build Button */}
               <Button
