@@ -38,6 +38,8 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
   const groupRef = useRef<THREE.Group>(null);
   const [modelLoaded, setModelLoaded] = useState(false);
   const modelManager = useMemo(() => CharacterModelManager.getInstance(), []);
+  const skinToneRef = useRef<string | undefined>();
+  const hairColorRef = useRef<string | undefined>();
 
   // Get animations for this model
   const animations = useMemo(() => {
@@ -57,13 +59,19 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
 
     const loadModel = async () => {
       try {
+        // Get visitor's appearance
+        const visitorSystem = getVisitorSystem();
+        const visitor = visitorSystem.getVisitors().find((v) => v.id === visitorId);
+        skinToneRef.current = visitor?.skinTone;
+        hairColorRef.current = visitor?.hairColor;
+
         // Ensure model is loaded
         await modelManager.loadModel(characterModel);
         
         if (!mounted) return;
 
-        // Create instance
-        const instance = modelManager.createInstance(characterModel.id);
+        // Create instance with appearance customizations
+        const instance = modelManager.createInstance(characterModel.id, skinToneRef.current, hairColorRef.current);
         if (instance && groupRef.current) {
           // Clear existing children
           while (groupRef.current.children.length > 0) {
@@ -85,7 +93,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     return () => {
       mounted = false;
     };
-  }, [characterModel, modelManager]);
+  }, [characterModel, modelManager, visitorId]);
 
   // Initialize animations when model is loaded
   useEffect(() => {

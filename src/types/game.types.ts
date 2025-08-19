@@ -91,6 +91,9 @@ export interface Visitor {
   id: string;
   name: string;
   gender: "male" | "female";
+  age: number;
+  skinTone?: string; // ID from skin tone palette
+  hairColor?: string; // ID from hair color palette
   position: Vector3;
   velocity: Vector3;
 

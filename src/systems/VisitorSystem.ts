@@ -15,6 +15,8 @@ import { PathSmoother } from "../utils/pathSmoothing";
 import { nanoid } from "nanoid";
 import { GridStore as GridStoreInterface } from "../stores/gridStore";
 import { CoinSystem } from "./CoinSystem";
+import { generateWeightedSkinTone } from "../utils/skinTones";
+import { hairColorGenerator } from "../utils/hairColorGenerator";
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;
@@ -72,13 +74,27 @@ export class VisitorSystem {
       satisfactionThreshold: Math.floor(60 + Math.random() * 40), // 60-100 satisfaction needed
     };
 
+    // Generate age first as it affects hair color generation
+    const age = Math.floor(Math.random() * 60) + 18; // Random age between 18 and 77
+
+    // Generate skin tone and hair color with age consideration
+    const skinTone = generateWeightedSkinTone();
+    const hairColor = hairColorGenerator.generate({
+      age,
+      variation: true,
+      seed: visitorId, // Use visitor ID for deterministic hair color
+    });
+
     const visitor: Visitor = {
       id: visitorId,
       name: generateVisitorName(gender),
       gender,
+      age,
+      skinTone: skinTone.id,
+      hairColor: hairColor.id,
       position: new THREE.Vector3(
         entrance.position.x * 2,
-        0.5,
+        0,
         entrance.position.z * 2,
       ),
       velocity: new THREE.Vector3(0, 0, 0),
@@ -350,7 +366,7 @@ export class VisitorSystem {
       if (nearestEntrance) {
         visitor.targetPosition = new THREE.Vector3(
           nearestEntrance.position.x * 2,
-          0.5,
+          0,
           nearestEntrance.position.z * 2,
         );
       }
@@ -372,7 +388,7 @@ export class VisitorSystem {
         // Move slightly beyond the entrance to simulate exiting
         const entrancePos = new THREE.Vector3(
           nearestEntrance.position.x * 2,
-          0.5,
+          0,
           nearestEntrance.position.z * 2,
         );
 
@@ -600,7 +616,7 @@ export class VisitorSystem {
   }
 
   private gridToWorld(gridPos: GridPosition): THREE.Vector3 {
-    return new THREE.Vector3(gridPos.x * 2, 0.5, gridPos.z * 2);
+    return new THREE.Vector3(gridPos.x * 2, 0, gridPos.z * 2);
   }
 
   private isAtTarget(visitor: Visitor): boolean {
@@ -677,7 +693,7 @@ export class VisitorSystem {
     for (const entrance of Array.from(this.entrances.values())) {
       const entrancePos = new THREE.Vector3(
         entrance.position.x * 2,
-        0.5,
+        0,
         entrance.position.z * 2,
       );
       const distance = visitor.position.distanceTo(entrancePos);
