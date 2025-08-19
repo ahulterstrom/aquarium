@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -50,13 +51,12 @@ export const BuildPanel = () => {
             <Hammer className="h-6 w-6 text-orange-600" />
             Build Mode
           </SheetTitle>
+          <SheetDescription>
+            Build new structures in your aquarium.
+          </SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 p-4">
-          <div className="mb-4 text-sm text-gray-600">
-            Place new structures in your aquarium.
-          </div>
-
           {/* Place Entrance - Only show if no entrance exists */}
           {entrances.size === 0 && (
             <div className="rounded-lg border p-4">

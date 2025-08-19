@@ -130,8 +130,7 @@ export function ChainedBox() {
         className="glass relative overflow-hidden"
       >
         {/* Clickable box — width animates, text stays crisp */}
-        <a.button
-          type="button"
+        <a.div
           aria-expanded={open}
           onClick={() => setShowObjectives((v) => !v)}
           style={
@@ -143,7 +142,7 @@ export function ChainedBox() {
             }
           }
           className={cn(
-            "absolute top-0 right-0 left-0 z-100",
+            "absolute top-0 right-0 left-0 z-100 cursor-pointer",
             "inline-flex items-center gap-2 px-4 py-3",
             "border-b transition-[box-shadow] duration-200",
           )}
@@ -179,7 +178,7 @@ export function ChainedBox() {
               View All
             </Button>
           </a.div>
-        </a.button>
+        </a.div>
 
         {/* Revealed panel under original position */}
         <a.div

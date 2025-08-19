@@ -1,13 +1,23 @@
-import { useUIStore } from "@/stores/uiStore";
-import { useRef, useState, useCallback } from "react";
-import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
+import { AnimatedCharacter } from "@/components/characters/AnimatedCharacter";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
+import {
+  CHARACTER_MODELS,
+  getRandomCharacter,
+  PRELOAD_CHARACTERS,
+} from "@/lib/constants/characters";
 import { useGameStore } from "@/stores/gameStore";
+import { useUIStore } from "@/stores/uiStore";
+import { CharacterModelManager } from "@/systems/CharacterModelManager";
+import { CharacterModel } from "@/types/character.types";
+import { useFrame } from "@react-three/fiber";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+
+// Configuration flag to use animated characters
+const USE_ANIMATED_CHARACTERS = true; // Set to false to use simple box visitors
 
 // Helper function to interpolate angles smoothly
 function lerpAngle(from: number, to: number, factor: number): number {
-  // Normalize angles to [-π, π]
   const normalizeAngle = (angle: number) => {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
@@ -17,7 +27,6 @@ function lerpAngle(from: number, to: number, factor: number): number {
   from = normalizeAngle(from);
   to = normalizeAngle(to);
 
-  // Find the shortest path between angles
   let diff = to - from;
   if (diff > Math.PI) diff -= 2 * Math.PI;
   if (diff < -Math.PI) diff += 2 * Math.PI;
@@ -180,11 +189,40 @@ const VisitorMesh = ({
   );
 };
 
+interface VisitorWithModel {
+  visitorId: string;
+  characterModel: CharacterModel | null;
+}
+
 export const Visitors = () => {
   const selectVisitor = useUIStore.use.selectVisitor();
   const setVisitorCount = useGameStore.use.setVisitorCount();
 
-  const [visitorIds, setVisitorIds] = useState<string[]>([]);
+  const [visitorsWithModels, setVisitorsWithModels] = useState<
+    VisitorWithModel[]
+  >([]);
+  const modelManager = useMemo(() => CharacterModelManager.getInstance(), []);
+
+  // Preload character models on mount
+  useEffect(() => {
+    if (USE_ANIMATED_CHARACTERS) {
+      const preloadModels = async () => {
+        const modelsToPreload = PRELOAD_CHARACTERS.map(
+          (id) => CHARACTER_MODELS[id],
+        ).filter(Boolean);
+
+        if (modelsToPreload.length > 0) {
+          try {
+            await modelManager.preloadModels(modelsToPreload);
+            console.log(`Preloaded ${modelsToPreload.length} character models`);
+          } catch (error) {
+            console.error("Failed to preload character models:", error);
+          }
+        }
+      };
+      preloadModels();
+    }
+  }, [modelManager]);
 
   const handleVisitorClick = useCallback(
     (visitorId: string) => {
@@ -193,6 +231,9 @@ export const Visitors = () => {
     [selectVisitor],
   );
 
+  // Track visitor character assignments
+  const visitorModelMap = useRef<Map<string, CharacterModel>>(new Map());
+
   // Only update the visitor list when visitors are added/removed (not every frame)
   useFrame((state, delta) => {
     const frameCount = state.clock.elapsedTime;
@@ -200,28 +241,72 @@ export const Visitors = () => {
       // Check for new/removed visitors every 1 second
       const visitorSystem = getVisitorSystem();
       const currentVisitors = visitorSystem.getVisitors();
+      setVisitorCount(currentVisitors.length);
+
+      // Build list of visitors with their models
+      const newVisitorsWithModels: VisitorWithModel[] = [];
+      let needsUpdate = false;
+
+      currentVisitors.forEach((visitor) => {
+        // Check if we already have a model assigned
+        let model = visitorModelMap.current.get(visitor.id);
+
+        if (!model && USE_ANIMATED_CHARACTERS) {
+          // Assign a new character model based on visitor properties
+          const randomModel = getRandomCharacter({ gender: visitor.gender });
+          if (randomModel) {
+            model = randomModel;
+            visitorModelMap.current.set(visitor.id, model);
+            needsUpdate = true;
+          }
+        }
+
+        newVisitorsWithModels.push({
+          visitorId: visitor.id,
+          characterModel: USE_ANIMATED_CHARACTERS ? model || null : null,
+        });
+      });
+
+      // Clean up removed visitors
       const currentIds = currentVisitors.map((v) => v.id);
-      setVisitorCount(currentIds.length);
+      visitorModelMap.current.forEach((_, visitorId) => {
+        if (!currentIds.includes(visitorId)) {
+          visitorModelMap.current.delete(visitorId);
+          needsUpdate = true;
+        }
+      });
 
       // Only update React state if the visitor list changed
       if (
-        currentIds.length !== visitorIds.length ||
-        !currentIds.every((id) => visitorIds.includes(id))
+        needsUpdate ||
+        newVisitorsWithModels.length !== visitorsWithModels.length ||
+        !newVisitorsWithModels.every(
+          (v, i) => v.visitorId === visitorsWithModels[i]?.visitorId,
+        )
       ) {
-        setVisitorIds(currentIds);
+        setVisitorsWithModels(newVisitorsWithModels);
       }
     }
   });
 
   return (
     <>
-      {visitorIds.map((visitorId) => (
-        <VisitorMesh
-          key={visitorId}
-          visitorId={visitorId}
-          onClick={handleVisitorClick}
-        />
-      ))}
+      {visitorsWithModels.map(({ visitorId, characterModel }) =>
+        characterModel ? (
+          <AnimatedCharacter
+            key={visitorId}
+            visitorId={visitorId}
+            characterModel={characterModel}
+            onClick={handleVisitorClick}
+          />
+        ) : (
+          <VisitorMesh
+            key={visitorId}
+            visitorId={visitorId}
+            onClick={handleVisitorClick}
+          />
+        ),
+      )}
     </>
   );
 };

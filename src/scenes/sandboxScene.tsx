@@ -124,7 +124,7 @@ export const SandboxScene = () => {
     <>
       {/* Canvas capture for screenshots */}
       <CanvasCapture />
-      
+
       {/* Game tick system */}
       <GameSystems />
 

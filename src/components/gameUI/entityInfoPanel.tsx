@@ -23,6 +23,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -108,6 +109,9 @@ export const EntityInfoPanel = () => {
                 </>
               )}
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Info about the selected entity
+            </SheetDescription>
             <Button variant="ghost" size="sm" onClick={() => clearSelection()}>
               <X className="h-4 w-4" />
             </Button>

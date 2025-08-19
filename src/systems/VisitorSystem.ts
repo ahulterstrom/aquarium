@@ -119,7 +119,7 @@ export class VisitorSystem {
     for (const visitor of Array.from(this.visitors.values())) {
       this.updateVisitor(visitor, deltaTime);
     }
-    
+
     // Update coin system for auto-despawn
     this.coinSystem.update(Date.now());
   }
@@ -215,7 +215,7 @@ export class VisitorSystem {
         // Choose to explore
         this.transitionToState(visitor, "exploring");
       } else {
-        console.log("Choosing to view a POI");
+        // console.log("Choosing to view a POI");
         // Choose to visit a POI
         const poi = this.poiSystem.getRandomPOI();
         if (poi) {
@@ -234,7 +234,7 @@ export class VisitorSystem {
           }
         } else {
           // No POIs available, go explore
-          console.warn("No POIs available, switching to exploring");
+          // console.warn("No POIs available, switching to exploring");
           this.transitionToState(visitor, "exploring");
         }
       }
@@ -464,9 +464,9 @@ export class VisitorSystem {
           // Generate smoothed path from grid path
           visitor.smoothPath = this.pathSmoother.smoothPath(path);
           visitor.pathIndex = 0;
-          console.log(
-            `Generated path: ${path.length} grid nodes, ${visitor.smoothPath.length} smooth points`,
-          );
+          // console.log(
+          //   `Generated path: ${path.length} grid nodes, ${visitor.smoothPath.length} smooth points`,
+          // );
         } else {
           console.warn(`No path found - using direct movement`);
           this.moveDirectlyToTarget(visitor, deltaTime);
@@ -504,13 +504,16 @@ export class VisitorSystem {
         visitor.smoothPath = null;
         visitor.currentPath = null;
         visitor.pathIndex = 0;
-        
+
         // Gradually stop instead of instant stop
         const deceleration = 4.0; // Units per second²
         const maxVelocityChange = deceleration * (deltaTime / 1000);
-        
+
         if (visitor.velocity.length() > maxVelocityChange) {
-          const stopDirection = visitor.velocity.clone().normalize().multiplyScalar(-maxVelocityChange);
+          const stopDirection = visitor.velocity
+            .clone()
+            .normalize()
+            .multiplyScalar(-maxVelocityChange);
           visitor.velocity.add(stopDirection);
         } else {
           visitor.velocity.set(0, 0, 0);
@@ -531,12 +534,12 @@ export class VisitorSystem {
     // Smooth acceleration/deceleration
     const acceleration = 3.0; // Units per second²
     const maxVelocityChange = acceleration * (deltaTime / 1000);
-    
+
     const velocityDiff = targetVelocity.clone().sub(visitor.velocity);
     if (velocityDiff.length() > maxVelocityChange) {
       velocityDiff.normalize().multiplyScalar(maxVelocityChange);
     }
-    
+
     visitor.velocity.add(velocityDiff);
 
     // Apply movement
@@ -560,12 +563,12 @@ export class VisitorSystem {
       // Smooth acceleration/deceleration
       const acceleration = 3.0; // Units per second²
       const maxVelocityChange = acceleration * (deltaTime / 1000);
-      
+
       const velocityDiff = targetVelocity.clone().sub(visitor.velocity);
       if (velocityDiff.length() > maxVelocityChange) {
         velocityDiff.normalize().multiplyScalar(maxVelocityChange);
       }
-      
+
       visitor.velocity.add(velocityDiff);
 
       visitor.position.add(
@@ -575,9 +578,12 @@ export class VisitorSystem {
       // Gradually stop when close to target
       const deceleration = 4.0; // Units per second² (faster deceleration)
       const maxVelocityChange = deceleration * (deltaTime / 1000);
-      
+
       if (visitor.velocity.length() > maxVelocityChange) {
-        const stopDirection = visitor.velocity.clone().normalize().multiplyScalar(-maxVelocityChange);
+        const stopDirection = visitor.velocity
+          .clone()
+          .normalize()
+          .multiplyScalar(-maxVelocityChange);
         visitor.velocity.add(stopDirection);
       } else {
         visitor.velocity.set(0, 0, 0);
@@ -701,11 +707,7 @@ export class VisitorSystem {
   }
 
   private generateRandomSizePreferences(): ("medium" | "large" | "huge")[] {
-    const sizes: ("medium" | "large" | "huge")[] = [
-      "medium",
-      "large",
-      "huge",
-    ];
+    const sizes: ("medium" | "large" | "huge")[] = ["medium", "large", "huge"];
     const preferenceCount = 1 + Math.floor(Math.random() * 2); // 1-2 size preferences
 
     const result: ("medium" | "large" | "huge")[] = [];
@@ -738,7 +740,7 @@ export class VisitorSystem {
   }
 
   getPOI(id: string) {
-    return this.poiSystem.getPOIs().find(poi => poi.id === id);
+    return this.poiSystem.getPOIs().find((poi) => poi.id === id);
   }
 
   getTotalVisitorsCreated(): number {

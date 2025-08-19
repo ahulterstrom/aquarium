@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -11,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Paintbrush, Palette } from "lucide-react";
 import { useState } from "react";
@@ -18,7 +20,6 @@ import { useUIStore } from "../../stores/uiStore";
 import { useGameStore } from "../../stores/gameStore";
 import { FLOOR_STYLES } from "../../lib/constants/floors";
 import { WALL_STYLES } from "../../lib/constants/walls";
-
 
 export const CustomizationPanel = () => {
   const showCustomization = useUIStore.use.showCustomization();
@@ -64,14 +65,13 @@ export const CustomizationPanel = () => {
               <Paintbrush className="h-6 w-6 text-purple-600" />
               Aquarium Customization
             </SheetTitle>
+            <SheetDescription>
+              Customize the look of your aquarium with different wall and floor
+              styles.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-6 p-4">
-            <div className="mb-4 text-sm text-gray-600">
-              Customize the look of your aquarium with different wall and floor
-              styles.
-            </div>
-
             {/* Wall Customization Button */}
             <div className="rounded-lg border p-4">
               <div className="mb-3">
@@ -138,7 +138,7 @@ export const CustomizationPanel = () => {
             <DialogTitle>Select Wall Style</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-4">
+          <div className="grid max-h-[80vh] grid-cols-2 gap-3 py-4">
             {Object.values(WALL_STYLES).map((style) => (
               <button
                 key={style.id}
@@ -157,7 +157,9 @@ export const CustomizationPanel = () => {
                 />
                 <div className="text-sm font-medium">{style.name}</div>
                 {style.description && (
-                  <div className="text-xs text-gray-500 mt-1">{style.description}</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    {style.description}
+                  </div>
                 )}
               </button>
             ))}
@@ -179,7 +181,7 @@ export const CustomizationPanel = () => {
             <DialogTitle>Select Floor Style</DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-4">
+          <div className="grid max-h-[80vh] grid-cols-2 gap-3 overflow-y-auto py-4">
             {Object.values(FLOOR_STYLES).map((style) => (
               <button
                 key={style.id}
@@ -198,7 +200,9 @@ export const CustomizationPanel = () => {
                 />
                 <div className="text-sm font-medium">{style.name}</div>
                 {style.description && (
-                  <div className="text-xs text-gray-500 mt-1">{style.description}</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    {style.description}
+                  </div>
                 )}
               </button>
             ))}

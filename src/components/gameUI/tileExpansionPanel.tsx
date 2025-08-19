@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -128,6 +129,9 @@ export const TileExpansionPanel = () => {
               <Grid3X3 className="h-6 w-6 text-blue-600" />
               Aquarium Expansion
             </SheetTitle>
+            <SheetDescription>
+              Expand your aquarium by placing new tiles.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-6 p-4">
