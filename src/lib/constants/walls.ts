@@ -20,22 +20,22 @@ export interface WallStyle {
 }
 
 export const WALL_STYLES: Record<string, WallStyle> = {
-  oldPaintedConcrete: {
-    id: "oldPaintedConcrete",
-    name: "Old Painted Concrete",
-    description: "Probably needs a fresh coat of paint",
-    textures: {
-      baseColor:
-        "/textures/walls/concrete_wall_05_1k/concrete_wall_05_color_1k.png",
-      normal:
-        "/textures/walls/concrete_wall_05_1k/concrete_wall_05_normal_gl_1k.png",
-      aorm: "/textures/walls/concrete_wall_05_1k/aorm_rgb.png",
-    },
-    material: {
-      roughness: 0.7,
-      metalness: 0.0,
-    },
-  },
+  // oldPaintedConcrete: {
+  //   id: "oldPaintedConcrete",
+  //   name: "Old Painted Concrete",
+  //   description: "Probably needs a fresh coat of paint",
+  //   textures: {
+  //     baseColor:
+  //       "/textures/walls/concrete_wall_05_1k/concrete_wall_05_color_1k.png",
+  //     normal:
+  //       "/textures/walls/concrete_wall_05_1k/concrete_wall_05_normal_gl_1k.png",
+  //     aorm: "/textures/walls/concrete_wall_05_1k/aorm_rgb.png",
+  //   },
+  //   material: {
+  //     roughness: 0.9,
+  //     metalness: 0.0,
+  //   },
+  // },
   whiteBrick: {
     id: "whiteBrick",
     name: "White Bricks",
@@ -102,6 +102,20 @@ export const WALL_STYLES: Record<string, WallStyle> = {
     material: {
       roughness: 0.7,
       metalness: 0.0,
+    },
+  },
+  metal: {
+    id: "metal",
+    name: "Metal",
+    description: "A little rust never hurt anyone",
+    textures: {
+      baseColor: "/textures/walls/metal_03_1k/metal_03_color_1k.png",
+      normal: "/textures/walls/metal_03_1k/metal_03_normal_gl_1k.png",
+      aorm: "/textures/walls/metal_03_1k/aorm_rgb.png",
+    },
+    material: {
+      roughness: 0.2,
+      metalness: 1.0,
     },
   },
 };

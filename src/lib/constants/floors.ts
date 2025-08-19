@@ -16,6 +16,22 @@ export interface FloorStyle {
 }
 
 export const FLOOR_STYLES: Record<string, FloorStyle> = {
+  concrete: {
+    id: "concrete",
+    name: "Concrete",
+    description: "Hey, at least it's not dirt!",
+    textures: {
+      baseColor:
+        "/textures/floors/concrete_ground_01_1k/concrete_ground_01_color_1k.png",
+      normal:
+        "/textures/floors/concrete_ground_01_1k/concrete_ground_01_normal_gl_1k.png",
+      aorm: "/textures/floors/concrete_ground_01_1k/aorm_rgb.png",
+    },
+    material: {
+      roughness: 0.5,
+      metalness: 0.0,
+    },
+  },
   wood: {
     id: "wood",
     name: "Wood Planks",
@@ -32,10 +48,10 @@ export const FLOOR_STYLES: Record<string, FloorStyle> = {
       metalness: 0.0,
     },
   },
-  concrete: {
-    id: "concrete",
-    name: "Concrete",
-    description: "Modern industrial concrete flooring",
+  industrialConcrete: {
+    id: "industrialConcrete",
+    name: "Premium Concrete",
+    description: '"Premium" concrete slabbing',
     textures: {
       baseColor:
         "/textures/floors/concrete_slabs_04_1k/concrete_slabs_04_basecolor_1k.png",
@@ -148,7 +164,7 @@ export const FLOOR_STYLES: Record<string, FloorStyle> = {
       aorm: "/textures/floors/ground_tiles_15_1k/aorm_rgb.png",
     },
     material: {
-      roughness: 0.9,
+      roughness: 0.4,
       metalness: 0.0,
     },
     unlockRequirement: {
