@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Tank, GridPosition } from "../types/game.types";
 import { GridStore } from "../stores/gridStore";
+import { FLOOR_HEIGHT } from "@/systems/VisitorSystem";
 
 export interface POI {
   id: string;
@@ -30,19 +31,15 @@ export class POISystem {
       // For multi-cell tanks, create POI at center of all occupied cells
       const gridWidth = tank.gridWidth || 1;
       const gridDepth = tank.gridDepth || 1;
-      
+
       // Calculate center position for multi-cell tanks
       const centerX = tank.position.x + (gridWidth - 1) * 0.5;
       const centerZ = tank.position.z + (gridDepth - 1) * 0.5;
-      
+
       const poi: POI = {
         id: `tank_${tank.id}`,
         type: "tank",
-        position: new THREE.Vector3(
-          centerX * 2,
-          0.5,
-          centerZ * 2,
-        ),
+        position: new THREE.Vector3(centerX * 2, FLOOR_HEIGHT, centerZ * 2),
         object: tank,
       };
       this.pois.set(poi.id, poi);
@@ -81,7 +78,10 @@ export class POISystem {
     const gridDepth = tank.gridDepth || 1;
 
     // Get all potential viewing positions around the multi-cell tank
-    const viewingCandidates: Array<{ position: GridPosition, direction: { x: number, z: number } }> = [];
+    const viewingCandidates: Array<{
+      position: GridPosition;
+      direction: { x: number; z: number };
+    }> = [];
 
     // Generate viewing positions around the tank's perimeter
     for (let x = tank.position.x; x < tank.position.x + gridWidth; x++) {
@@ -97,15 +97,16 @@ export class POISystem {
         for (const direction of directions) {
           const viewingGridPos: GridPosition = {
             x: x + direction.x,
-            y: 0,
+            y: FLOOR_HEIGHT,
             z: z + direction.z,
           };
 
           // Only add positions that are outside the tank's footprint
-          const isOutsideTank = viewingGridPos.x < tank.position.x ||
-                               viewingGridPos.x >= tank.position.x + gridWidth ||
-                               viewingGridPos.z < tank.position.z ||
-                               viewingGridPos.z >= tank.position.z + gridDepth;
+          const isOutsideTank =
+            viewingGridPos.x < tank.position.x ||
+            viewingGridPos.x >= tank.position.x + gridWidth ||
+            viewingGridPos.z < tank.position.z ||
+            viewingGridPos.z >= tank.position.z + gridDepth;
 
           if (isOutsideTank) {
             viewingCandidates.push({ position: viewingGridPos, direction });
@@ -115,7 +116,9 @@ export class POISystem {
     }
 
     // Shuffle candidates to get random viewing positions
-    const shuffledCandidates = [...viewingCandidates].sort(() => Math.random() - 0.5);
+    const shuffledCandidates = [...viewingCandidates].sort(
+      () => Math.random() - 0.5,
+    );
 
     for (const candidate of shuffledCandidates) {
       const { position: viewingGridPos, direction } = candidate;
@@ -146,7 +149,7 @@ export class POISystem {
 
         const worldPos = new THREE.Vector3(
           viewingGridPos.x * 2 + offsetX,
-          0.5,
+          FLOOR_HEIGHT,
           viewingGridPos.z * 2 + offsetZ,
         );
 
@@ -180,7 +183,7 @@ export class POISystem {
       if (this.gridStore.isWalkable(gridX, 0, gridZ)) {
         return new THREE.Vector3(
           tileX + Math.random() * 0.5 - 0.25,
-          0.5,
+          FLOOR_HEIGHT,
           tileZ + Math.random() * 0.5 - 0.25,
         );
       }
@@ -192,7 +195,7 @@ export class POISystem {
     );
     const centerX = Math.floor(width / 2);
     const centerZ = Math.floor(depth / 2);
-    return new THREE.Vector3(centerX * 2, 0.5, centerZ * 2);
+    return new THREE.Vector3(centerX * 2, FLOOR_HEIGHT, centerZ * 2);
   }
 
   /**

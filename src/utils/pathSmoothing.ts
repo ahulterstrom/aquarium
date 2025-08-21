@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GridPosition } from "../types/game.types";
 import { GridStore } from "../stores/gridStore";
+import { FLOOR_HEIGHT } from "../systems/VisitorSystem";
 
 export class PathSmoother {
   private gridStore: GridStore;
@@ -165,7 +166,7 @@ export class PathSmoother {
   }
 
   private gridToWorld(gridPos: GridPosition): THREE.Vector3 {
-    return new THREE.Vector3(gridPos.x * 2, 0.5, gridPos.z * 2);
+    return new THREE.Vector3(gridPos.x * 2, FLOOR_HEIGHT, gridPos.z * 2);
   }
 
   private worldToGrid(worldPos: THREE.Vector3): GridPosition {

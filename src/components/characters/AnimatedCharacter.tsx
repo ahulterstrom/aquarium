@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { CharacterModel } from '@/types/character.types';
-import { CharacterModelManager } from '@/systems/CharacterModelManager';
-import { useCharacterAnimation } from '@/hooks/useCharacterAnimation';
-import { getVisitorSystem } from '@/components/systems/visitorSystem';
+import React, { useRef, useEffect, useState, useMemo } from "react";
+import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
+import { CharacterModel } from "@/types/character.types";
+import { CharacterModelManager } from "@/systems/CharacterModelManager";
+import { useCharacterAnimation } from "@/hooks/useCharacterAnimation";
+import { getVisitorSystem } from "@/components/systems/visitorSystem";
 
 interface AnimatedCharacterProps {
   visitorId: string;
@@ -61,26 +61,33 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
       try {
         // Get visitor's appearance
         const visitorSystem = getVisitorSystem();
-        const visitor = visitorSystem.getVisitors().find((v) => v.id === visitorId);
+        const visitor = visitorSystem
+          .getVisitors()
+          .find((v) => v.id === visitorId);
         skinToneRef.current = visitor?.skinTone;
         hairColorRef.current = visitor?.hairColor;
 
         // Ensure model is loaded
         await modelManager.loadModel(characterModel);
-        
+
         if (!mounted) return;
 
         // Create instance with appearance customizations
-        const instance = modelManager.createInstance(characterModel.id, skinToneRef.current, hairColorRef.current);
+        const instance = modelManager.createInstance(
+          characterModel.id,
+          skinToneRef.current,
+          hairColorRef.current,
+        );
         if (instance && groupRef.current) {
           // Clear existing children
           while (groupRef.current.children.length > 0) {
             groupRef.current.remove(groupRef.current.children[0]);
           }
 
-          // Add the model
+          // Add the model with a vertical offset to prevent floating
+          instance.position.y = 0.12; // Adjust this value to lower/raise the character
           groupRef.current.add(instance);
-          
+
           setModelLoaded(true);
         }
       } catch (error) {
@@ -97,7 +104,11 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
 
   // Initialize animations when model is loaded
   useEffect(() => {
-    if (modelLoaded && groupRef.current && groupRef.current.children.length > 0) {
+    if (
+      modelLoaded &&
+      groupRef.current &&
+      groupRef.current.children.length > 0
+    ) {
       const modelInstance = groupRef.current.children[0] as THREE.Group;
       initializeMixer(modelInstance);
     }
@@ -108,7 +119,9 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     if (!groupRef.current) return;
 
     const visitorSystem = getVisitorSystem();
-    const currentVisitor = visitorSystem.getVisitors().find((v) => v.id === visitorId);
+    const currentVisitor = visitorSystem
+      .getVisitors()
+      .find((v) => v.id === visitorId);
 
     if (!currentVisitor) return;
 
@@ -137,14 +150,22 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
       }
     } else if (currentVisitor.velocity.length() > 0.01) {
       // Face movement direction when moving
-      targetAngle = Math.atan2(currentVisitor.velocity.x, currentVisitor.velocity.z);
+      targetAngle = Math.atan2(
+        currentVisitor.velocity.x,
+        currentVisitor.velocity.z,
+      );
     }
 
     if (targetAngle !== null) {
       const currentAngle = groupRef.current.rotation.y;
-      const rotationSpeed = currentVisitor.velocity.length() <= 0.05 ? 3.3 : 6.6;
+      const rotationSpeed =
+        currentVisitor.velocity.length() <= 0.05 ? 3.3 : 6.6;
       const factor = Math.min(1.0, rotationSpeed * (1 / 60));
-      groupRef.current.rotation.y = lerpAngle(currentAngle, targetAngle, factor);
+      groupRef.current.rotation.y = lerpAngle(
+        currentAngle,
+        targetAngle,
+        factor,
+      );
     }
   });
 

@@ -7,10 +7,16 @@ import { HAIR_COLOR_PALETTE } from '@/data/hairColorPalette';
 export class HairColorGenerator {
   private palette: HairColor[];
   private cumulativeWeights: Map<HairColor, number> = new Map();
+  private generatedColors: Map<string, HairColor> = new Map(); // Cache for variant colors
   
   constructor(palette: HairColor[] = HAIR_COLOR_PALETTE) {
     this.palette = palette;
     this.updateWeights();
+    
+    // Pre-populate cache with base palette colors
+    palette.forEach(color => {
+      this.generatedColors.set(color.id, color);
+    });
   }
   
   private updateWeights(options?: HairColorGenerationOptions): void {
@@ -57,13 +63,20 @@ export class HairColorGenerator {
     
     for (const [color, weight] of entries) {
       if (random <= weight) {
-        return options?.variation 
+        const finalColor = options?.variation 
           ? this.addVariation(color, randomFn) 
           : color;
+        
+        // Cache the generated color for later lookup
+        this.generatedColors.set(finalColor.id, finalColor);
+        return finalColor;
       }
     }
     
-    return entries[0][0]; // Fallback
+    // Fallback - cache and return first color
+    const fallbackColor = entries[0][0];
+    this.generatedColors.set(fallbackColor.id, fallbackColor);
+    return fallbackColor;
   }
   
   private addVariation(color: HairColor, randomFn: () => number = Math.random): HairColor {
@@ -71,20 +84,26 @@ export class HairColorGenerator {
     const hsl = { ...color.hsl };
     
     // Vary lightness by ±5%
-    hsl.l = Math.max(0, Math.min(100, hsl.l + (randomFn() - 0.5) * 10));
+    const lightnessDelta = (randomFn() - 0.5) * 10;
+    hsl.l = Math.max(0, Math.min(100, hsl.l + lightnessDelta));
     
     // Vary saturation by ±3%
-    hsl.s = Math.max(0, Math.min(100, hsl.s + (randomFn() - 0.5) * 6));
+    const saturationDelta = (randomFn() - 0.5) * 6;
+    hsl.s = Math.max(0, Math.min(100, hsl.s + saturationDelta));
     
     // Vary hue by ±2 degrees
-    hsl.h = (hsl.h + (randomFn() - 0.5) * 4 + 360) % 360;
+    const hueDelta = (randomFn() - 0.5) * 4;
+    hsl.h = (hsl.h + hueDelta + 360) % 360;
     
     const rgb = hslToRgb(hsl);
     const hex = rgbToHex(rgb);
     
+    // Create a unique ID based on the variations
+    const variantHash = Math.abs(Math.round(lightnessDelta * 100 + saturationDelta * 100 + hueDelta * 100));
+    
     return {
       ...color,
-      id: `${color.id}_variant`,
+      id: `${color.id}_v${variantHash}`,
       name: `${color.name} (Variant)`,
       hex,
       rgb,
@@ -101,7 +120,7 @@ export class HairColorGenerator {
   }
   
   getColorById(id: string): HairColor | undefined {
-    return this.palette.find(c => c.id === id);
+    return this.generatedColors.get(id);
   }
 }
 
