@@ -6,7 +6,14 @@ import {
   useChain,
 } from "@react-spring/web";
 import { cn } from "@/lib/utils";
-import { List, Target, CheckCircle2, Circle, Gift } from "lucide-react";
+import {
+  List,
+  Target,
+  CheckCircle2,
+  Circle,
+  Gift,
+  ListChecks,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useUIStore } from "@/stores/uiStore";
@@ -155,7 +162,7 @@ export function ChainedBox() {
             }}
             className="shrink-0"
           >
-            <Target className="size-full" />
+            <ListChecks className="size-full" />
           </a.span>
           <a.div
             style={{

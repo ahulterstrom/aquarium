@@ -63,36 +63,27 @@ export function TankMedium(props: JSX.IntrinsicElements["group"]) {
   return (
     <group {...props} dispose={null}>
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Medium_1.geometry}
         material={glassCornersMaterial}
       />
+      <mesh geometry={nodes.Tank_Medium_2.geometry} material={frameMaterial} />
       <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Tank_Medium_2.geometry}
-        material={frameMaterial}
-      />
-      <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Medium_3.geometry}
         material={glassFaceMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Medium_4.geometry}
         material={sandMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Medium_5.geometry}
         material={frameInnerMaterial}
       />
-      <mesh castShadow receiveShadow geometry={nodes.Tank_Medium_6.geometry}>
+      <mesh geometry={nodes.Tank_Medium_6.geometry}>
         <AnimatedWaterRippleMaterial
           uLineThickness={0.8}
           uRippleFrequency={4.0}
@@ -107,36 +98,27 @@ export function TankLarge(props: JSX.IntrinsicElements["group"]) {
   return (
     <group {...props} dispose={null}>
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Large_1.geometry}
         material={glassCornersMaterial}
       />
+      <mesh geometry={nodes.Tank_Large_2.geometry} material={frameMaterial} />
       <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Tank_Large_2.geometry}
-        material={frameMaterial}
-      />
-      <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Large_3.geometry}
         material={glassFaceMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Large_4.geometry}
         material={sandMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Large_5.geometry}
         material={frameInnerMaterial}
       />
-      <mesh castShadow receiveShadow geometry={nodes.Tank_Large_6.geometry}>
+      <mesh geometry={nodes.Tank_Large_6.geometry}>
         <AnimatedWaterRippleMaterial />
       </mesh>
     </group>
@@ -148,36 +130,27 @@ export function TankHuge(props: JSX.IntrinsicElements["group"]) {
   return (
     <group {...props} dispose={null}>
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Huge_1.geometry}
         material={glassCornersMaterial}
       />
+      <mesh geometry={nodes.Tank_Huge_2.geometry} material={frameMaterial} />
       <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Tank_Huge_2.geometry}
-        material={frameMaterial}
-      />
-      <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Huge_3.geometry}
         material={glassFaceMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Huge_4.geometry}
         material={sandMaterial}
       />
       <mesh
-        castShadow
         receiveShadow
         geometry={nodes.Tank_Huge_5.geometry}
         material={frameInnerMaterial}
       />
-      <mesh castShadow receiveShadow geometry={nodes.Tank_Huge_6.geometry}>
+      <mesh geometry={nodes.Tank_Huge_6.geometry}>
         <AnimatedWaterRippleMaterial />
       </mesh>
     </group>

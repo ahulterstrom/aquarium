@@ -1,7 +1,7 @@
 import { Loader } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
-import { Suspense } from "react";
+import { Suspense, useRef } from "react";
 
 import { DebugControls } from "@/components/debugControls";
 import { SoundProvider } from "@/contexts/sound/soundContextProvider";
@@ -28,7 +28,12 @@ function App() {
             <Canvas
               shadows
               gl={{ preserveDrawingBuffer: true }}
-              onPointerMissed={() => {
+              onPointerMissed={(event) => {
+                // Ignore all right mouse button events (button === 2)
+                if (event.button === 2) {
+                  return;
+                }
+
                 if (placementMode !== "tank") {
                   selectTank(null);
                 }

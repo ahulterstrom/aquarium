@@ -1,3 +1,4 @@
+import { Arrow } from "@/components/arrow";
 import { AnimatedCharacter } from "@/components/characters/AnimatedCharacter";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
 import {
@@ -197,6 +198,8 @@ interface VisitorWithModel {
 export const Visitors = () => {
   const selectVisitor = useUIStore.use.selectVisitor();
   const setVisitorCount = useGameStore.use.setVisitorCount();
+  const selectedVisitorId = useUIStore.use.selectedVisitorId();
+  const arrowRef = useRef<THREE.Group>(null);
 
   const [visitorsWithModels, setVisitorsWithModels] = useState<
     VisitorWithModel[]
@@ -237,10 +240,23 @@ export const Visitors = () => {
   // Only update the visitor list when visitors are added/removed (not every frame)
   useFrame((state, delta) => {
     const frameCount = state.clock.elapsedTime;
+
+    const visitorSystem = getVisitorSystem();
+    const currentVisitors = visitorSystem.getVisitors();
+
+    // Update arrow position to the position of any active visitor
+    if (selectedVisitorId && arrowRef.current) {
+      const selectedVisitor = currentVisitors.find(
+        (v) => v.id === selectedVisitorId,
+      );
+      if (selectedVisitor) {
+        arrowRef.current.position.copy(selectedVisitor.position);
+      }
+    }
+
     if (frameCount % 1 < delta) {
       // Check for new/removed visitors every 1 second
-      const visitorSystem = getVisitorSystem();
-      const currentVisitors = visitorSystem.getVisitors();
+
       setVisitorCount(currentVisitors.length);
 
       // Build list of visitors with their models
@@ -291,6 +307,11 @@ export const Visitors = () => {
 
   return (
     <>
+      <group>
+        {selectedVisitorId && (
+          <Arrow ref={arrowRef} scale={0.8} position={[0, 0, 0]} />
+        )}
+      </group>
       {visitorsWithModels.map(({ visitorId, characterModel }) =>
         characterModel ? (
           <AnimatedCharacter

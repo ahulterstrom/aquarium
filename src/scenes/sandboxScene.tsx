@@ -201,12 +201,6 @@ export const SandboxScene = () => {
         <FloorGrid />
       </FloorTextureProvider>
 
-      <TankMedium />
-
-      <TankLarge position={[5, 0, 5]} />
-
-      <TankHuge position={[10, 0, 10]} />
-
       <Environment
         environmentIntensity={1}
         files={"/rostock_laage_airport_1k.hdr"}

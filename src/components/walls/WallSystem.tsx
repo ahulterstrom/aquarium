@@ -64,7 +64,6 @@ const WallSegment = ({
       position={position}
       geometry={geometry}
       material={sharedMaterial || undefined}
-      castShadow
       receiveShadow
     />
   );

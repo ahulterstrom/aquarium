@@ -6,6 +6,8 @@ import { CharacterModelManager } from "@/systems/CharacterModelManager";
 import { useCharacterAnimation } from "@/hooks/useCharacterAnimation";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
 
+const VISITOR_Y = -0.1;
+
 interface AnimatedCharacterProps {
   visitorId: string;
   characterModel: CharacterModel;
@@ -132,7 +134,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     // Update position
     groupRef.current.position.set(
       currentVisitor.position.x,
-      currentVisitor.position.y,
+      VISITOR_Y,
       currentVisitor.position.z,
     );
 

@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { useGameStore } from "../stores/gameStore";
 import { useUIStore } from "../stores/uiStore";
 import { Tank as TankType } from "../types/game.types";
-import { TANK_SPECS } from "../lib/constants";
+import { TankMedium, TankLarge, TankHuge } from "./tankModels";
+import { Arrow } from "./arrow";
 
 const TankMesh = ({
   tank,
@@ -16,32 +17,33 @@ const TankMesh = ({
 }) => {
   const groupRef = useRef<THREE.Group>(null);
 
-  const getDimensions = () => {
-    const specs = TANK_SPECS[tank.size];
-    if (specs) {
-      return specs.visualDimensions;
-    }
-    // Fallback for unknown sizes
-    return [1.5, 1.2, 1.5];
-  };
-
-  const [width, height, depth] = getDimensions();
-
   // Calculate position offset for multi-cell tanks
-  const getPosition = () => {
+  const getPosition = (): [number, number, number] => {
     const baseX = tank.position.x * 2;
     const baseZ = tank.position.z * 2;
-    
+
     // Handle legacy tanks that don't have grid dimensions
     const gridWidth = tank.gridWidth || 1;
     const gridDepth = tank.gridDepth || 1;
-    
+
     // Center the tank on all occupied grid cells
-    const offsetX = gridWidth > 1 ? (gridWidth - 1) : 0;
-    const offsetZ = gridDepth > 1 ? (gridDepth - 1) : 0;
-    
-    return [baseX + offsetX, height / 2, baseZ + offsetZ];
+    const offsetX = gridWidth > 1 ? gridWidth - 1 : 0;
+    const offsetZ = gridDepth > 1 ? gridDepth - 1 : 0;
+
+    return [baseX + offsetX, 0, baseZ + offsetZ];
   };
+
+  // Select the appropriate tank component based on size
+  const TankComponent = {
+    medium: TankMedium,
+    large: TankLarge,
+    huge: TankHuge,
+  }[tank.size];
+
+  if (!TankComponent) {
+    console.error(`Unknown tank size: ${tank.size}`);
+    return null;
+  }
 
   return (
     <group
@@ -60,47 +62,10 @@ const TankMesh = ({
         document.body.style.cursor = "default";
       }}
     >
-      {/* Glass */}
-      <mesh>
-        <boxGeometry args={[width, height, depth]} />
-        <meshPhysicalMaterial
-          color={0xffffff}
-          metalness={0}
-          roughness={0}
-          transmission={0.95}
-          thickness={0.1}
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {/* Water */}
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[width - 0.1, height - 0.2, depth - 0.1]} />
-        <meshPhysicalMaterial
-          color={0x006994}
-          metalness={0}
-          roughness={0.1}
-          transmission={0.9}
-          thickness={1}
-          transparent
-          opacity={0.7}
-        />
-      </mesh>
+      <TankComponent />
 
       {/* Selection Highlight */}
-      {isSelected && (
-        <mesh position={[0, -0.5, 0]}>
-          <ringGeometry args={[width * 0.7, width * 0.8, 16]} />
-          <meshBasicMaterial
-            color={0x00ff00}
-            transparent
-            opacity={0.8}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      {isSelected && <Arrow />}
     </group>
   );
 };
