@@ -102,7 +102,7 @@ export const WallSystem = () => {
     }> = [];
     const wallHeight = 2; // Taller walls for better visibility
     const wallThickness = 0.1;
-    const verticalOffset = 0.1;
+    const verticalOffset = 0.0;
     const horizontalOffset = 0.025;
 
     // For each ground cell, check if it needs walls on any of its 4 edges

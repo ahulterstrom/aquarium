@@ -4,6 +4,7 @@ import { useGridStore } from "../../stores/gridStore";
 import { useGameStore } from "../../stores/gameStore";
 import { useUIStore } from "../../stores/uiStore";
 import { useFloorStyle } from "./FloorTextureProvider";
+import { FLOOR_THICKNESS } from "@/lib/constants";
 
 // Extract dominant color from texture using canvas
 const extractColorFromTexture = (texture: THREE.Texture): THREE.Color => {
@@ -123,7 +124,7 @@ export const FloorGrid = () => {
     <>
       {groundCells.map((cell) => {
         // Create box geometry with small height
-        const geometry = new THREE.BoxGeometry(2, 0.2, 2);
+        const geometry = new THREE.BoxGeometry(2, FLOOR_THICKNESS, 2);
 
         // Set up UV2 for ambient occlusion on top face
         const uv = geometry.getAttribute("uv");
@@ -140,7 +141,7 @@ export const FloorGrid = () => {
         return (
           <group
             key={`floor-${cell.x}-${cell.z}`}
-            position={[cell.x * 2, 0, cell.z * 2]} // Adjust Y to center the box
+            position={[cell.x * 2, -FLOOR_THICKNESS / 2, cell.z * 2]} // Adjust Y to center the box
             onClick={(e) => {
               e.stopPropagation();
               handleTileClick();

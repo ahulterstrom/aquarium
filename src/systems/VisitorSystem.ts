@@ -19,7 +19,7 @@ import { generateWeightedSkinTone } from "../utils/skinTones";
 import { hairColorGenerator } from "../utils/hairColorGenerator";
 
 // Consistent floor height for all visitor positions
-export const FLOOR_HEIGHT = 0;
+export const FLOOR_HEIGHT = -0.1;
 
 export class VisitorSystem {
   private visitors: Map<string, Visitor>;

@@ -1,5 +1,6 @@
 import { FloorTextureConfig } from "@/lib/textures/floorTextureManager";
 
+export const FLOOR_THICKNESS = 0.2;
 export interface FloorStyle {
   id: string;
   name: string;
