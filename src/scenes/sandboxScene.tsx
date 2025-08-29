@@ -25,7 +25,7 @@ import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
 import { nanoid } from "nanoid";
-import { MaterialTest } from "@/components/MaterialTest";
+import { TanksNew } from "@/components/tanksNew";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -201,7 +201,7 @@ export const SandboxScene = () => {
         <FloorGrid />
       </FloorTextureProvider>
 
-      <MaterialTest />
+      <TanksNew />
 
       <Environment
         environmentIntensity={1}
