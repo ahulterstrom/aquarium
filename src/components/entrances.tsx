@@ -3,13 +3,16 @@ import * as THREE from "three";
 import { useGameStore } from "../stores/gameStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance } from "../types/game.types";
+import { Arrow } from "./arrow";
 
 const EntranceMesh = ({
   entrance,
   onClick,
+  isSelected,
 }: {
   entrance: Entrance;
   onClick: (entrance: Entrance) => void;
+  isSelected: boolean;
 }) => {
   const groupRef = useRef<THREE.Group>(null);
 
@@ -112,12 +115,16 @@ const EntranceMesh = ({
           </mesh>
         </>
       )}
+
+      {/* Selection Arrow */}
+      {isSelected && <Arrow position={[0, 1.5, 0]} />}
     </group>
   );
 };
 
 export const Entrances = () => {
   const selectEntrance = useUIStore.use.selectEntrance();
+  const selectedEntranceId = useUIStore.use.selectedEntranceId();
   const entrances = useGameStore.use.entrances();
 
   const handleEntranceClick = (entrance: Entrance) => {
@@ -131,6 +138,7 @@ export const Entrances = () => {
           key={entrance.id}
           entrance={entrance}
           onClick={handleEntranceClick}
+          isSelected={selectedEntranceId === entrance.id}
         />
       ))}
     </>
