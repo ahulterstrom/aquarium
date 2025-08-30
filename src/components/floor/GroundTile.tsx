@@ -51,21 +51,18 @@ export const GroundTile = ({
   return (
     <group position={position} rotation={[-Math.PI / 2, 0, 0]}>
       <mesh geometry={geometry} rotation={rotation} receiveShadow>
-        <meshStandardMaterial
+        <meshToonMaterial
           map={textures.baseColor}
-          normalMap={textures.normal}
-          aoMap={textures.aorm}
-          roughnessMap={textures.aorm}
-          metalnessMap={textures.aorm}
-          // Apply material properties from floor style
-          roughness={style.material.roughness}
-          metalness={style.material.metalness}
-          envMapIntensity={style.material.envMapIntensity}
-          emissive={style.material.emissive || 0x000000}
-          color={0xffffff} // White multiplier to preserve texture colors
+          // normalMap={textures.normal}
+          // aoMap={textures.aorm}
+          // roughnessMap={textures.aorm}
+          // metalnessMap={textures.aorm}
+          // // Apply material properties from floor style
+          // roughness={style.material.roughness}
+          // metalness={style.material.metalness}
+          // color={0xffffff} // White multiplier to preserve texture colors
         />
       </mesh>
     </group>
   );
 };
-

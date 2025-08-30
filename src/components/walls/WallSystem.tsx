@@ -78,14 +78,14 @@ export const WallSystem = () => {
   const wallMaterial = useMemo(() => {
     if (!textures || !style) return null;
 
-    const material = new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshBasicMaterial({
       map: textures.baseColor,
-      normalMap: textures.normal,
-      aoMap: textures.aorm,
-      roughnessMap: textures.aorm,
-      metalnessMap: textures.aorm,
-      roughness: style.material.roughness,
-      metalness: style.material.metalness,
+      // normalMap: textures.normal,
+      // aoMap: textures.aorm,
+      // roughnessMap: textures.aorm,
+      // metalnessMap: textures.aorm,
+      // roughness: style.material.roughness,
+      // metalness: style.material.metalness,
     });
 
     return material;
