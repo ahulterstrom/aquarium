@@ -1,50 +1,47 @@
-# React + TypeScript + Vite
+# Aquarium Tycoon
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A 3D aquarium management game built with React Three Fiber where players build and manage their own aquarium business.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **3D Aquarium Building**: Place tanks, decorations, and entrances in a 3D environment
+- **Grid-Based Placement**: Strategic placement system with rotation support for tanks
+- **Expansion System**: Progressive aquarium growth through purchasable expansion packs
+- **Visitor Management**: Attract visitors who generate revenue and interact with your aquarium
+- **Fish Care**: Manage water quality, temperature, and fish happiness
+- **Objective System**: Guided progression through achievements and milestones
+- **Unlock System**: New content unlocked through gameplay progression
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- **React 18** with TypeScript
+- **React Three Fiber** for 3D rendering
+- **Three.js** for 3D graphics and custom shaders
+- **Zustand** for state management
+- **Tailwind CSS** + **shadcn/ui** for UI components
+- **Vite** for development and building
 
-- Configure the top-level `parserOptions` property like this:
+## Development
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run linter
+npm run lint
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Project Structure
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+- `/src/components/` - 3D React Three Fiber components
+- `/src/components/gameUI/` - 2D UI components using Tailwind
+- `/src/stores/` - Zustand state management
+- `/src/systems/` - Core game logic classes
+- `/src/scenes/` - Main 3D scenes
+- `/public/` - 3D assets (.glb models, textures)
