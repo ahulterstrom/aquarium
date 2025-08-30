@@ -1,21 +1,21 @@
 import { useGameStore } from "@/stores/gameStore";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import * as THREE from "three";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { getCoinSystem } from "@/components/systems/coinSystem";
+import { coinInteractionManager } from "@/lib/coinInteraction";
 
 const COIN_RADIUS = 0.16;
 
 const CoinMesh = ({
   coinId,
-  onClick,
   onAnimationComplete,
 }: {
   coinId: string;
-  onClick: (coinId: string) => void;
   onAnimationComplete?: (coinId: string) => void;
 }) => {
   const meshRef = useRef<THREE.Group>(null);
+  const hitboxRef = useRef<THREE.Mesh>(null);
   const { camera } = useThree();
 
   // Animation state stored in refs for performance
@@ -30,16 +30,24 @@ const CoinMesh = ({
     initialized: false,
   });
 
-  const handleHover = useCallback(
-    (e: THREE.Event<PointerEvent>) => {
-      if (animationState.current.isCollected) return;
-      e.stopPropagation();
-      document.body.style.cursor = "default";
+  // Expose collection trigger function
+  const triggerCollection = useCallback(() => {
+    if (!animationState.current.isCollected) {
       animationState.current.isCollected = true;
-      onClick(coinId);
-    },
-    [coinId, onClick],
-  );
+    }
+  }, []);
+
+  // Register/unregister hitbox mesh and callback for global raycasting
+  useEffect(() => {
+    if (hitboxRef.current) {
+      coinInteractionManager.registerMesh(coinId, hitboxRef.current);
+      coinInteractionManager.registerCallback(coinId, triggerCollection);
+    }
+    return () => {
+      coinInteractionManager.unregisterMesh(coinId);
+      coinInteractionManager.unregisterCallback(coinId);
+    };
+  }, [coinId, triggerCollection]);
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
@@ -71,7 +79,7 @@ const CoinMesh = ({
       anim.progress = Math.min(anim.progress + delta * 1.5, 1);
 
       // Calculate target position dynamically based on current camera
-      if ((camera as any).isOrthographicCamera) {
+      if ("isOrthographicCamera" in camera && camera.isOrthographicCamera) {
         const orthoCam = camera as THREE.OrthographicCamera;
 
         // Get camera basis vectors
@@ -127,15 +135,14 @@ const CoinMesh = ({
 
   return (
     <>
-      <group
-        ref={meshRef}
-        onPointerEnter={handleHover}
-        onPointerLeave={() => {
-          if (!animationState.current.isCollected) {
-            document.body.style.cursor = "default";
-          }
-        }}
-      >
+      <group ref={meshRef}>
+        {/* Invisible larger hitbox for interaction */}
+        <mesh ref={hitboxRef} position={[0, COIN_RADIUS, 0]}>
+          <boxGeometry args={[COIN_RADIUS * 3, COIN_RADIUS * 3, COIN_RADIUS * 3]} />
+          <meshBasicMaterial visible={false} />
+        </mesh>
+        
+        {/* Visual coin mesh */}
         <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, COIN_RADIUS, 0]}>
           <cylinderGeometry args={[COIN_RADIUS, COIN_RADIUS, 0.08, 12]} />
           <meshLambertMaterial color={0xffd700} />
@@ -148,22 +155,6 @@ const CoinMesh = ({
 export const Coins = () => {
   const [coinIds, setCoinIds] = useState<string[]>([]);
   const [animatingCoins, setAnimatingCoins] = useState<Set<string>>(new Set());
-  const addMoney = useGameStore.use.addMoney();
-
-  const handleCoinClick = useCallback(
-    (coinId: string) => {
-      const coinSystem = getCoinSystem();
-      const coin = coinSystem.collectCoin(coinId);
-
-      if (coin) {
-        addMoney(coin.value);
-        console.log(`Collected coin worth ${coin.value}`);
-        // Add to animating set to keep it rendered during animation
-        setAnimatingCoins((prev) => new Set(prev).add(coinId));
-      }
-    },
-    [addMoney],
-  );
 
   const handleAnimationComplete = useCallback((coinId: string) => {
     // Remove from both animating set and coinIds when animation completes
@@ -205,7 +196,6 @@ export const Coins = () => {
         <CoinMesh
           key={coinId}
           coinId={coinId}
-          onClick={handleCoinClick}
           onAnimationComplete={handleAnimationComplete}
         />
       ))}

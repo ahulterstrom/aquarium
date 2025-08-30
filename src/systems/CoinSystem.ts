@@ -12,7 +12,7 @@ export class CoinSystem {
     onCoinCollected?: (coin: Coin) => void,
     addCoinToStore?: (coin: Coin) => void,
     removeCoinFromStore?: (id: string) => void,
-    getCoinsFromStore?: () => Map<string, Coin>
+    getCoinsFromStore?: () => Map<string, Coin>,
   ) {
     this.onCoinCollected = onCoinCollected;
     this.addCoinToStore = addCoinToStore;
@@ -23,7 +23,11 @@ export class CoinSystem {
   /**
    * Drop a coin at the specified position
    */
-  dropCoin(position: THREE.Vector3, value: number = 1, droppedByVisitorId: string): Coin {
+  dropCoin(
+    position: THREE.Vector3,
+    value: number = 1,
+    droppedByVisitorId: string,
+  ): Coin {
     const coin: Coin = {
       id: `coin_${nanoid()}`,
       position: position.clone(),
@@ -35,7 +39,7 @@ export class CoinSystem {
     if (this.addCoinToStore) {
       this.addCoinToStore(coin);
     }
-    console.log(`Coin dropped at (${position.x.toFixed(2)}, ${position.z.toFixed(2)}) by visitor ${droppedByVisitorId}`);
+    // console.log(`Coin dropped at (${position.x.toFixed(2)}, ${position.z.toFixed(2)}) by visitor ${droppedByVisitorId}`);
     return coin;
   }
 
@@ -50,8 +54,8 @@ export class CoinSystem {
     if (this.removeCoinFromStore) {
       this.removeCoinFromStore(coinId);
     }
-    console.log(`Coin collected: +${coin.value} money`);
-    
+    // console.log(`Coin collected: +${coin.value} money`);
+
     if (this.onCoinCollected) {
       this.onCoinCollected(coin);
     }

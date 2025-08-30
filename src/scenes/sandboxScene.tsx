@@ -16,11 +16,15 @@ import {
   MapControls,
   OrthographicCamera,
 } from "@react-three/drei";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useThree, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 import { Grid } from "../components/game/Grid";
 import { GameSystems } from "../components/systems/GameSystems";
 import { initializeCoinSystem } from "../components/systems/coinSystem";
 import { initializeFishSystem } from "../components/systems/fishSystem";
+import { getCoinSystem } from "../components/systems/coinSystem";
+import { coinInteractionManager } from "../lib/coinInteraction";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
@@ -34,6 +38,9 @@ export const SandboxScene = () => {
     y: number;
     z: number;
   } | null>(null);
+
+  const { camera, gl } = useThree();
+  const raycaster = useRef(new THREE.Raycaster());
 
   const entrances = useGameStore.use.entrances();
   const addTank = useGameStore.use.addTank();
@@ -55,6 +62,84 @@ export const SandboxScene = () => {
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const addMoney = useGameStore.use.addMoney();
+
+  // Global coin interaction handler
+  const handleGlobalPointerMove = useCallback((event: PointerEvent) => {
+    if (placementMode !== "none") return; // Don't interfere with placement mode
+    
+    const pointer = new THREE.Vector2();
+    const rect = gl.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.current.setFromCamera(pointer, camera);
+    
+    // Only raycast against coin meshes
+    const coinObjects = coinInteractionManager.getCoinMeshes();
+    const intersects = raycaster.current.intersectObjects(coinObjects, true);
+    
+    if (intersects.length > 0) {
+      document.body.style.cursor = "pointer";
+      // Collect coin on hover
+      const coinId = coinInteractionManager.findCoinIdFromMesh(intersects[0].object);
+      if (coinId) {
+        coinInteractionManager.handleCoinClick(coinId);
+      }
+    } else {
+      document.body.style.cursor = "default";
+    }
+  }, [camera, gl, placementMode]);
+
+  const handleGlobalClick = useCallback((event: MouseEvent) => {
+    if (placementMode !== "none") return; // Don't interfere with placement mode
+    
+    const pointer = new THREE.Vector2();
+    const rect = gl.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.current.setFromCamera(pointer, camera);
+    
+    // Only raycast against coin meshes
+    const coinObjects = coinInteractionManager.getCoinMeshes();
+    const intersects = raycaster.current.intersectObjects(coinObjects, true);
+    
+    if (intersects.length > 0) {
+      const coinId = coinInteractionManager.findCoinIdFromMesh(intersects[0].object);
+      if (coinId) {
+        coinInteractionManager.handleCoinClick(coinId);
+      }
+    }
+  }, [camera, gl, placementMode]);
+
+  // Set up coin click handling for money/game logic
+  useEffect(() => {
+    const handleCoinLogic = (coinId: string) => {
+      const coinSystem = getCoinSystem();
+      const coin = coinSystem.collectCoin(coinId);
+      if (coin) {
+        addMoney(coin.value);
+        console.log(`Collected coin worth ${coin.value}`);
+      }
+    };
+
+    coinInteractionManager.addClickCallback(handleCoinLogic);
+    return () => {
+      coinInteractionManager.removeClickCallback(handleCoinLogic);
+    };
+  }, [addMoney]);
+
+  // Add global event listeners
+  useEffect(() => {
+    const canvas = gl.domElement;
+    canvas.addEventListener('pointermove', handleGlobalPointerMove);
+    canvas.addEventListener('click', handleGlobalClick);
+    
+    return () => {
+      canvas.removeEventListener('pointermove', handleGlobalPointerMove);
+      canvas.removeEventListener('click', handleGlobalClick);
+    };
+  }, [gl, handleGlobalPointerMove, handleGlobalClick]);
 
   useEffect(() => {
     initializeGrid(3, 1, 3);
