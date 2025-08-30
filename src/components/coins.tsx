@@ -4,6 +4,8 @@ import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { getCoinSystem } from "@/components/systems/coinSystem";
 
+const COIN_RADIUS = 0.16;
+
 const CoinMesh = ({
   coinId,
   onClick,
@@ -50,11 +52,7 @@ const CoinMesh = ({
       const coin = coinSystem.getCoin(coinId);
       if (!coin) return;
 
-      anim.coinPosition.set(
-        coin.position.x,
-        coin.position.y + 0.1,
-        coin.position.z,
-      );
+      anim.coinPosition.set(coin.position.x, coin.position.y, coin.position.z);
       anim.currentPosition.copy(anim.coinPosition);
       anim.initialized = true;
 
@@ -138,8 +136,8 @@ const CoinMesh = ({
           }
         }}
       >
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.16, 0.16, 0.08, 12]} />
+        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, COIN_RADIUS, 0]}>
+          <cylinderGeometry args={[COIN_RADIUS, COIN_RADIUS, 0.08, 12]} />
           <meshLambertMaterial color={0xffd700} />
         </mesh>
       </group>

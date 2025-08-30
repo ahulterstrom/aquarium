@@ -3,6 +3,7 @@ import { useGridStore } from '../../stores/gridStore';
 import { useUIStore } from '../../stores/uiStore';
 import { GridPosition } from '../../types/game.types';
 import { TANK_SPECS } from '../../lib/constants';
+import { getRotatedDimensions } from '../../lib/utils/placement';
 
 interface GridProps {
   hoveredCell: GridPosition | null;
@@ -15,6 +16,7 @@ export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
   const placementMode = useUIStore.use.placementMode();
   const placementPreview = useUIStore.use.placementPreview();
+  const placementRotation = useUIStore.use.placementRotation();
 
   return (
     <>
@@ -34,14 +36,21 @@ export const Grid = ({ hoveredCell, onCellClick }: GridProps) => {
             const tankSize = placementPreview.size || "medium";
             const specs = TANK_SPECS[tankSize];
             
+            // Get rotated dimensions for preview
+            const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
+              specs.gridWidth,
+              specs.gridDepth,
+              placementRotation
+            );
+            
             // Check if this cell is part of the multi-cell preview
-            const inXRange = x >= hoveredCell.x && x < hoveredCell.x + specs.gridWidth;
-            const inZRange = z >= hoveredCell.z && z < hoveredCell.z + specs.gridDepth;
+            const inXRange = x >= hoveredCell.x && x < hoveredCell.x + rotatedWidth;
+            const inZRange = z >= hoveredCell.z && z < hoveredCell.z + rotatedDepth;
             
             if (inXRange && inZRange) {
               isHighlighted = true;
               // Validate the entire placement from the origin cell
-              isValidPlacement = canPlaceAt(hoveredCell, specs.gridWidth, specs.gridDepth);
+              isValidPlacement = canPlaceAt(hoveredCell, rotatedWidth, rotatedDepth);
             }
           } else if (placementMode === "entrance") {
             isHighlighted = hoveredCell.x === x && hoveredCell.z === z;

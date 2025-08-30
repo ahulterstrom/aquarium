@@ -11,6 +11,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+/**
+ * Screenshot controls component that provides photo mode functionality.
+ *
+ * Features:
+ * - Toggle between normal view and photo mode
+ * - Animated viewfinder with grid lines, corner brackets, and focus reticle
+ * - Screenshot capture with download and clipboard options
+ * - Smooth spring animations for UI transitions
+ *
+ * @returns JSX element containing camera button and photo mode overlay UI
+ */
 export const ScreenshotControls = () => {
   const canvas = useCanvasStore.use.canvas();
   const isPhotoMode = useUIStore.use.isPhotoMode();
@@ -18,7 +29,6 @@ export const ScreenshotControls = () => {
   const exitPhotoMode = useUIStore.use.exitPhotoMode();
 
   // Create refs for all animations
-
   const focusRef = useSpringRef();
   const viewfinderRef = useSpringRef();
   const topLabelRef = useSpringRef();

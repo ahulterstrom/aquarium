@@ -10,6 +10,7 @@ import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
 import { FloorGrid } from "@/components/floor/FloorGrid";
 import { CanvasCapture } from "@/components/screenshot/CanvasCapture";
 import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
+import { getRotatedDimensions } from "@/lib/utils/placement";
 import {
   Environment,
   MapControls,
@@ -25,7 +26,6 @@ import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
 import { nanoid } from "nanoid";
-import { TankHuge, TankLarge, TankMedium } from "@/components/tankModels";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -51,6 +51,7 @@ export const SandboxScene = () => {
 
   const placementMode = useUIStore.use.placementMode();
   const placementPreview = useUIStore.use.placementPreview();
+  const placementRotation = useUIStore.use.placementRotation();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const addMoney = useGameStore.use.addMoney();
@@ -66,16 +67,25 @@ export const SandboxScene = () => {
     if (placementMode === "tank" && placementPreview) {
       const tankSize = placementPreview.size || "medium";
       const specs = TANK_SPECS[tankSize];
+      const rotation = placementRotation;
 
-      if (canPlaceAt({ x, y: 0, z }, specs.gridWidth, specs.gridDepth)) {
+      // Get rotated dimensions for placement validation
+      const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
+        specs.gridWidth,
+        specs.gridDepth,
+        rotation,
+      );
+
+      if (canPlaceAt({ x, y: 0, z }, rotatedWidth, rotatedDepth)) {
         if (spendMoney(specs.cost)) {
           const tankId = `tank_${nanoid()}`;
           const newTank: TankType = {
             id: tankId,
             position: { x, y: 0, z },
             size: tankSize,
-            gridWidth: specs.gridWidth,
+            gridWidth: specs.gridWidth, // Store original dimensions
             gridDepth: specs.gridDepth,
+            rotation: rotation, // Store rotation
             waterQuality: 1,
             temperature: 25,
             capacity: specs.capacity,
@@ -87,8 +97,8 @@ export const SandboxScene = () => {
           addTank(newTank);
           placeObject(
             { x, y: 0, z },
-            specs.gridWidth,
-            specs.gridDepth,
+            rotatedWidth, // Use rotated dimensions for grid placement
+            rotatedDepth,
             "tank",
             tankId,
           );

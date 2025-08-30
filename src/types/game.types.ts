@@ -12,6 +12,7 @@ export interface Tank {
   size: "medium" | "large" | "huge";
   gridWidth: number; // Number of grid cells wide (X-axis)
   gridDepth: number; // Number of grid cells deep (Z-axis)
+  rotation: number; // Rotation in degrees (0, 90, 180, 270)
   waterQuality: number;
   temperature: number;
   capacity: number;

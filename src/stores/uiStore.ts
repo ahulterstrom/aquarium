@@ -37,7 +37,9 @@ interface UIStore {
   placementPreview: {
     type: string;
     size?: "medium" | "large" | "huge";
+    rotation?: number;
   } | null;
+  placementRotation: number; // 0, 90, 180, 270 degrees
 
   // Expansion placement
   expansionSelectedTiles: Set<string>;
@@ -85,6 +87,8 @@ interface UIStore {
 
   setPlacementMode: (mode: PlacementMode, preview?: any) => void;
   cancelPlacement: () => void;
+  rotatePlacementCCW: () => void;
+  rotatePlacementCW: () => void;
 
   // Expansion tile selection actions
   setExpansionSelectedTiles: (tiles: Set<string>) => void;
@@ -140,6 +144,7 @@ export const useUIStore = createSelectors(
 
       placementMode: "none",
       placementPreview: null,
+      placementRotation: 0,
       expansionSelectedTiles: new Set(),
 
       showGrid: true,
@@ -224,7 +229,9 @@ export const useUIStore = createSelectors(
       setPlacementMode: (mode, preview) =>
         set((state) => ({
           placementMode: mode,
-          placementPreview: preview,
+          placementPreview: { ...preview, rotation: state.placementRotation },
+          // Reset rotation when entering new placement mode
+          placementRotation: mode !== "none" ? 0 : state.placementRotation,
           // Clear expansion selection when exiting expansion mode
           ...(state.placementMode === "expansion" && mode !== "expansion"
             ? { expansionSelectedTiles: new Set() }
@@ -245,7 +252,32 @@ export const useUIStore = createSelectors(
         set({
           placementMode: "none",
           placementPreview: null,
+          placementRotation: 0,
           expansionSelectedTiles: new Set(),
+        }),
+
+      rotatePlacementCCW: () =>
+        set((state) => {
+          if (state.placementMode === "none") return state;
+          const newRotation = (state.placementRotation - 90 + 360) % 360;
+          return {
+            placementRotation: newRotation,
+            placementPreview: state.placementPreview 
+              ? { ...state.placementPreview, rotation: newRotation }
+              : null,
+          };
+        }),
+
+      rotatePlacementCW: () =>
+        set((state) => {
+          if (state.placementMode === "none") return state;
+          const newRotation = (state.placementRotation + 90) % 360;
+          return {
+            placementRotation: newRotation,
+            placementPreview: state.placementPreview 
+              ? { ...state.placementPreview, rotation: newRotation }
+              : null,
+          };
         }),
 
       setExpansionSelectedTiles: (tiles) =>

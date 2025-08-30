@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { LockedCard } from "@/components/ui/locked";
 import {
   Sheet,
   SheetContent,
@@ -6,11 +7,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { LockedCard } from "@/components/ui/locked";
-import { Hammer, Fish, DoorOpen } from "lucide-react";
-import { useUIStore } from "../../stores/uiStore";
-import { useGameStore } from "../../stores/gameStore";
+import { DoorOpen, Fish, Hammer } from "lucide-react";
 import { ENTRANCE_COST, TANK_SPECS } from "../../lib/constants";
+import { useGameStore } from "../../stores/gameStore";
+import { useUIStore } from "../../stores/uiStore";
 
 export const BuildPanel = () => {
   const showBuild = useUIStore.use.showBuild();

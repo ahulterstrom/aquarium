@@ -50,6 +50,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
+import { PlacementControls } from "@/components/gameUI/placementControls";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -467,7 +468,7 @@ export const SandboxUI = () => {
             >
               Log Cells
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               className="w-full text-xs whitespace-break-spaces"
@@ -479,7 +480,8 @@ export const SandboxUI = () => {
               }}
             >
               Toast test
-            </Button>
+            </Button> */}
+
             <Button
               variant="outline"
               size="sm"
@@ -500,6 +502,17 @@ export const SandboxUI = () => {
               }}
             >
               Log objectives
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                const tanks = useGameStore.getState().tanks;
+                console.log("Tanks:", Array.from(tanks.entries()));
+              }}
+            >
+              Log POIs
             </Button>
           </div>
         )}
@@ -746,6 +759,9 @@ export const SandboxUI = () => {
 
         {/* Screenshot Controls */}
         <ScreenshotControls />
+
+        {/* PlacementMode Controls */}
+        <PlacementControls />
       </div>
     </div>
   );
