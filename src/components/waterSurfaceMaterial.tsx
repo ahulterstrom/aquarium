@@ -6,6 +6,7 @@ import * as THREE from "three";
 
 export type WaterRippleUniforms = {
   uTime: number;
+  uTimeOffset: number;
   uRippleFrequency: number;
   uRippleSpeed: number;
   uRippleAmplitude: number;
@@ -137,6 +138,7 @@ const fragment = /* glsl */ `
   varying vec2 vUv;
 
   uniform float uTime;
+  uniform float uTimeOffset;
   uniform float uRippleFrequency;
   uniform float uRippleSpeed;
   uniform float uRippleAmplitude;
@@ -187,16 +189,17 @@ const fragment = /* glsl */ `
     
     // Add noise to create irregular edge shape
     vec2 noiseCoord = vUv * uNoiseScale;
-    float noiseValue = fbm(noiseCoord + uTime * -0.1) - 0.5;
+    float adjustedTime = uTime + uTimeOffset;
+    float noiseValue = fbm(noiseCoord + adjustedTime * -0.1) - 0.5;
     
     // Distort the edge distance with noise
     float distortedEdgeDist = edgeDist + noiseValue * uNoiseStrength;
     
     // Create ripples that follow the edge shape
-    float rippleBase = distortedEdgeDist * uRippleFrequency - uTime * uRippleSpeed;
+    float rippleBase = distortedEdgeDist * uRippleFrequency - adjustedTime * uRippleSpeed;
     
     // Add more noise to the ripple phase for irregularity
-    float phaseNoise = noise(vUv * 8.0 + uTime * 0.3) * 2.0;
+    float phaseNoise = noise(vUv * 8.0 + adjustedTime * 0.3) * 2.0;
     rippleBase += phaseNoise;
     
     // Generate the ripple pattern
@@ -230,6 +233,7 @@ const WaterRippleMaterial = shaderMaterial(
   // default uniforms
   {
     uTime: 0,
+    uTimeOffset: 0,
     uRippleFrequency: 7.0,
     uRippleSpeed: 1.1,
     uRippleAmplitude: 1.2,
@@ -265,6 +269,9 @@ export const AnimatedWaterRippleMaterial = (
 ) => {
   const matRef = useRef<THREE.ShaderMaterial>(null!);
 
+  // Generate a random time offset for this instance
+  const timeOffset = useMemo(() => Math.random() * 1000, []);
+
   // Create edge falloff texture if not provided
   const edgeFalloffTexture = useMemo(
     () =>
@@ -284,6 +291,7 @@ export const AnimatedWaterRippleMaterial = (
       ref={matRef}
       transparent={props.transparent ?? true}
       uEdgeFalloffTexture={edgeFalloffTexture}
+      uTimeOffset={timeOffset}
       {...props}
     />
   );
