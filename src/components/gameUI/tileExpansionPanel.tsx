@@ -18,10 +18,12 @@ import {
 import { useGameStore } from "../../stores/gameStore";
 import { useUIStore } from "../../stores/uiStore";
 import { useGridStore } from "../../stores/gridStore";
+import { EXPANSION_BASE_COST } from "../../lib/constants";
 import {
-  EXPANSION_PACK_COST,
-  TILES_PER_EXPANSION_PACK,
-} from "../../lib/constants";
+  getNextExpansionPackSize,
+  getNextExpansionCost,
+  getNextExpansionInfo,
+} from "../../lib/utils/expansion";
 export const TileExpansionPanel = () => {
   // Game store
   const money = useGameStore.use.money();
@@ -30,6 +32,9 @@ export const TileExpansionPanel = () => {
   const placeExpansionTiles = useGameStore.use.placeExpansionTiles();
   const getAvailableExpansionPositions =
     useGameStore.use.getAvailableExpansionPositions();
+  const canBuyExpansion = useGameStore.use.canBuyExpansion();
+  const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
+  const purchasedExpansionLevels = useGameStore.use.purchasedExpansionLevels();
 
   // Grid store
   const cells = useGridStore.use.cells();
@@ -48,9 +53,31 @@ export const TileExpansionPanel = () => {
   const availablePositions = getAvailableExpansionPositions(
     isInPlacementMode ? selectedTiles : undefined,
   );
-  const canAffordExpansion = money >= EXPANSION_PACK_COST;
+
+  // Dynamic expansion pack info - based on total tiles owned (placed + inventory)
+  const totalTilesOwned = cells.size + expansionTiles;
+  const expansionInfo = getNextExpansionInfo(totalTilesOwned);
+  const nextPackCost = getNextExpansionCost(
+    totalTilesOwned,
+    EXPANSION_BASE_COST,
+  );
+  const nextPackSize = getNextExpansionPackSize(totalTilesOwned);
+
+  const canAffordExpansion = money >= nextPackCost;
   const hasAvailableTiles = expansionTiles > 0;
   const hasValidPositions = availablePositions.length > 0;
+  const expansionUnlocked = canBuyExpansion();
+
+  // Get unlock requirements for next expansion level
+  const nextLevelUnlockId = `expansion_level_${expansionInfo.nextLevel}`;
+  const expansionUnlockables = getUnlockablesByCategory("expansions");
+  const nextExpansionUnlock = expansionUnlockables.find(
+    (u) => u.id === nextLevelUnlockId,
+  );
+
+  const alreadyPurchased = purchasedExpansionLevels.has(
+    expansionInfo.nextLevel,
+  );
 
   const currentGridSize = cells.size;
 
@@ -173,37 +200,81 @@ export const TileExpansionPanel = () => {
             <div className="rounded-lg border p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold">Expansion Pack</h3>
+                  <h3 className="font-semibold">
+                    Expansion Pack #{expansionInfo.nextLevel}
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    Get {TILES_PER_EXPANSION_PACK} tiles to expand your aquarium
+                    Get {nextPackSize} tiles to expand your aquarium
                   </p>
+                  {/* <p className="mt-1 text-xs text-gray-500">
+                    Current: {expansionInfo.currentGridSize} • Target capacity:{" "}
+                    {expansionInfo.nextGridSize}
+                  </p> */}
                 </div>
                 <Badge
                   variant="outline"
                   className="border-green-600 text-green-600"
                 >
-                  +{TILES_PER_EXPANSION_PACK} tiles
+                  +{nextPackSize} tiles
                 </Badge>
               </div>
+
+              {!expansionUnlocked && nextExpansionUnlock && (
+                <div className="mb-3 flex items-center gap-2 text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm">
+                    Unlock requirements:{" "}
+                    {nextExpansionUnlock.conditions
+                      .map((c) => c.description)
+                      .join(", ")}
+                  </span>
+                </div>
+              )}
+
+              {alreadyPurchased && (
+                <div className="mb-3 flex items-center gap-2 text-green-600">
+                  <Check className="h-4 w-4" />
+                  <span className="text-sm">
+                    Already purchased - place your tiles to unlock the next pack
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-green-600" />
-                  <span className="font-semibold">${EXPANSION_PACK_COST}</span>
+                  <span className="font-semibold">{nextPackCost}</span>
                   {!canAffordExpansion && (
                     <span className="text-sm text-red-600">
-                      (Need ${EXPANSION_PACK_COST - money} more)
+                      (Need ${nextPackCost - money} more)
                     </span>
                   )}
                 </div>
 
                 <Button
                   onClick={handleBuyExpansionPack}
-                  disabled={!canAffordExpansion}
-                  className={canAffordExpansion ? "" : "opacity-50"}
+                  disabled={
+                    !canAffordExpansion ||
+                    !expansionUnlocked ||
+                    alreadyPurchased
+                  }
+                  className={
+                    canAffordExpansion && expansionUnlocked && !alreadyPurchased
+                      ? ""
+                      : "opacity-50"
+                  }
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Buy Pack
+                  {alreadyPurchased ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Purchased
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Buy Pack
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -221,7 +292,7 @@ export const TileExpansionPanel = () => {
                 </div>
               </div>
 
-              {!hasAvailableTiles && (
+              {!hasAvailableTiles && expansionUnlocked && (
                 <div className="mb-3 flex items-center gap-2 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm">

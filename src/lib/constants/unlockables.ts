@@ -132,18 +132,46 @@ export const UNLOCKABLES: Unlockable[] = [
     ],
     hidden: true,
   },
-  // Expansion unlockables
+  // Expansion unlockables - progressive levels
   {
-    id: "expansion_mega",
-    category: "expansions",
-    name: "Mega Expansion Pack",
-    description: "10 tiles for massive expansion",
+    id: "expansion_level_1",
+    category: "expansions", 
+    name: "First Expansion",
+    description: "Expand beyond your starting 3×3 grid",
     conditions: [
       {
         type: "objective",
-        target: "expand_aquarium",
-        description: "Complete 'More Space' objective",
+        target: "build_first_tank",
+        description: "Build your first tank",
       },
     ],
+  },
+  {
+    id: "expansion_level_2", 
+    category: "expansions",
+    name: "Level 2 Expansion",
+    description: "Continue expanding your aquarium",
+    conditions: [
+      {
+        type: "money",
+        target: 100,
+        description: "Earn $100",
+      },
+    ],
+    dependencies: ["expansion_level_1"],
+  },
+  {
+    id: "expansion_level_3",
+    category: "expansions", 
+    name: "Level 3 Expansion",
+    description: "Large scale aquarium expansion",
+    conditions: [
+      {
+        type: "count",
+        target: 3,
+        description: "Build 3 tanks",
+      },
+    ],
+    dependencies: ["expansion_level_2"],
   },
 ];

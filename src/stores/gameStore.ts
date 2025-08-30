@@ -15,10 +15,8 @@ import {
   addFishToSystem,
   removeFishFromSystem,
 } from "../components/systems/fishSystem";
-import {
-  EXPANSION_PACK_COST,
-  TILES_PER_EXPANSION_PACK,
-} from "../lib/constants";
+import { EXPANSION_BASE_COST } from "../lib/constants";
+import { getNextExpansionPackSize, getNextExpansionCost, getCurrentExpansionLevel } from "../lib/utils/expansion";
 import { useGridStore } from "./gridStore";
 import { ObjectiveSystem } from "../systems/ObjectiveSystem";
 import { UnlockSystem } from "../systems/UnlockSystem";
@@ -29,6 +27,7 @@ interface GameStore extends GameState {
   fish: Map<string, Fish>;
   entrances: Map<string, Entrance>;
   coins: Map<string, Coin>;
+  purchasedExpansionLevels: Set<number>;
 
   // Objective system
   objectiveSystem: ObjectiveSystem;
@@ -45,6 +44,7 @@ interface GameStore extends GameState {
 
   // Expansion system
   expansionTiles: number; // Available tiles in inventory
+  purchasedExpansionLevels: Set<number>; // Track which expansion packs have been bought
 
   // Customization
   wallStyle: string;
@@ -98,6 +98,7 @@ interface GameStore extends GameState {
     z: number,
     includingSelected?: Set<string>,
   ) => boolean;
+  canBuyExpansion: () => boolean;
 
   // Queries
   getTank: (id: string) => Tank | undefined;
@@ -179,6 +180,7 @@ export const useGameStore = createSelectors(
         unlockSystem,
         unlockedItems: unlockSystem.getUnlockedItems(),
         expansionTiles: 0,
+        purchasedExpansionLevels: new Set(),
         wallStyle: "metal",
         floorStyle: "concrete",
         gameTime: 0,
@@ -413,14 +415,45 @@ export const useGameStore = createSelectors(
         // Expansion system implementations
         buyExpansionPack: () => {
           const state = get();
-          if (state.money >= EXPANSION_PACK_COST) {
+          const gridState = useGridStore.getState();
+          const currentTiles = gridState.cells.size;
+          const currentLevel = getCurrentExpansionLevel(currentTiles);
+          const nextLevel = currentLevel + 1;
+          
+          // Check if this level has already been purchased
+          if (state.purchasedExpansionLevels.has(nextLevel)) {
+            return false; // Already purchased this level
+          }
+          
+          const packCost = getNextExpansionCost(currentTiles, EXPANSION_BASE_COST);
+          const packSize = getNextExpansionPackSize(currentTiles);
+          
+          if (state.money >= packCost) {
             set((state) => ({
-              money: state.money - EXPANSION_PACK_COST,
-              expansionTiles: state.expansionTiles + TILES_PER_EXPANSION_PACK,
+              money: state.money - packCost,
+              expansionTiles: state.expansionTiles + packSize,
+              purchasedExpansionLevels: new Set([...state.purchasedExpansionLevels, nextLevel]),
             }));
             return true;
           }
           return false;
+        },
+
+        canBuyExpansion: () => {
+          const state = get();
+          const gridState = useGridStore.getState();
+          const currentTiles = gridState.cells.size;
+          const currentLevel = getCurrentExpansionLevel(currentTiles);
+          const nextLevel = currentLevel + 1;
+          
+          // Check if this level has already been purchased
+          if (state.purchasedExpansionLevels.has(nextLevel)) {
+            return false; // Already purchased this level
+          }
+          
+          // Check if next expansion level is unlocked
+          const nextLevelUnlockId = `expansion_level_${nextLevel}`;
+          return state.unlockSystem.isUnlocked(nextLevelUnlockId);
         },
 
         placeExpansionTiles: (positions) => {
@@ -625,6 +658,7 @@ export const useGameStore = createSelectors(
             objectiveSystem: newObjectiveSystem,
             activeObjectives: newObjectiveSystem.getActiveObjectives(),
             expansionTiles: 0,
+            purchasedExpansionLevels: new Set(),
             wallStyle: "concrete",
             floorStyle: "wood",
             gameTime: 0,

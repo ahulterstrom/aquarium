@@ -13,5 +13,5 @@ export const TANK_COST = 6; // 1x1 tank cost
 export const LARGE_TANK_COST = 12; // 2x1 tank cost
 export const HUGE_TANK_COST = 24; // 2x2 tank cost
 export const ENTRANCE_COST = 0;
-export const EXPANSION_PACK_COST = 15;
-export const TILES_PER_EXPANSION_PACK = 9;
+export const EXPANSION_BASE_COST = 15;
+// TILES_PER_EXPANSION_PACK is now dynamic - see expansion.ts utils
