@@ -1,20 +1,15 @@
 import { animated, useTransition } from "@react-spring/web";
 import { ReactNode, useEffect } from "react";
 
-import { GameOverlay } from "@/components/gameUI/gameOverlay";
-import PauseMenu from "@/components/gameUI/pauseMenu";
+import { CreditsMenu } from "@/components/gameUI/creditsMenu";
 import { SettingsMenu } from "@/components/gameUI/settingsMenu";
 import { MenuName } from "@/contexts/menu/menuContext";
 import { useMenu } from "@/contexts/menu/useMenu";
 import { cn } from "@/lib/utils";
-import { StatsMenu } from "@/components/gameUI/statsMenu";
-import { CreditsMenu } from "@/components/gameUI/creditsMenu";
 
 const menus: Record<MenuName, ReactNode> = {
   none: null,
-  pause: <PauseMenu />,
   settings: <SettingsMenu />,
-  stats: <StatsMenu />,
   credits: <CreditsMenu />,
 };
 

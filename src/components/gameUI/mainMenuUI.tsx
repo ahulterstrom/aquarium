@@ -35,14 +35,6 @@ export const MainMenuUI = () => {
         <Button
           variant="onGlass"
           className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
-          onClick={() => openMenu("stats")}
-        >
-          <BarChart3 className="size-6" />
-          <span className="text-xs">Stats</span>
-        </Button>
-        <Button
-          variant="onGlass"
-          className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
           onClick={() => openMenu("credits")}
         >
           <Users className="size-6" />

@@ -28,6 +28,8 @@ import { coinInteractionManager } from "../lib/coinInteraction";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
 import { useUIStore } from "../stores/uiStore";
+import { useStatisticsStore } from "../stores/statisticsStore";
+import { useEconomyStore } from "../stores/economyStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
 import { nanoid } from "nanoid";
 
@@ -119,6 +121,10 @@ export const SandboxScene = () => {
       const coin = coinSystem.collectCoin(coinId);
       if (coin) {
         addMoney(coin.value);
+        // Track coin collection statistics
+        useStatisticsStore.getState().recordCoinCollected(coin.value);
+        // Track revenue in economy store
+        useEconomyStore.getState().addTicketRevenue(coin.value);
         console.log(`Collected coin worth ${coin.value}`);
       }
     };

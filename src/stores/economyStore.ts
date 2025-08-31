@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Revenue, Expense } from '../types/game.types';
+import { createSelectors } from './utils';
 
 interface EconomyStore {
   dailyRevenue: Revenue;
@@ -11,6 +12,26 @@ interface EconomyStore {
   addTicketRevenue: (amount: number) => void;
   addGiftShopRevenue: (amount: number) => void;
   addConcessionRevenue: (amount: number) => void;
+  
+  // Visitor and tank metrics
+  visitorMetrics: {
+    totalVisitorsToday: number;
+    averageSpendingPerVisitor: number;
+    revenuePerVisitor: number;
+  };
+  tankMetrics: {
+    totalTanks: number;
+    revenuePerTank: number;
+    averageFishPerTank: number;
+  };
+  
+  // Visitor tracking
+  recordVisitorEntry: () => void;
+  updateVisitorSpending: (amount: number) => void;
+  
+  // Tank tracking  
+  updateTankCount: (count: number) => void;
+  updateFishCount: (totalFish: number, tankCount: number) => void;
   
   // Expense tracking
   addFishFoodExpense: (amount: number) => void;
@@ -45,11 +66,23 @@ const createEmptyExpense = (): Expense => ({
   total: 0,
 });
 
-export const useEconomyStore = create<EconomyStore>()(
-  devtools((set, get) => ({
+export const useEconomyStore = createSelectors(
+  create<EconomyStore>()(
+    devtools((set, get) => ({
     dailyRevenue: createEmptyRevenue(),
     dailyExpense: createEmptyExpense(),
     ticketPrice: 10,
+    
+    visitorMetrics: {
+      totalVisitorsToday: 0,
+      averageSpendingPerVisitor: 0,
+      revenuePerVisitor: 0,
+    },
+    tankMetrics: {
+      totalTanks: 0,
+      revenuePerTank: 0,
+      averageFishPerTank: 0,
+    },
     
     addTicketRevenue: (amount) => set((state) => {
       const ticketSales = state.dailyRevenue.ticketSales + amount;
@@ -149,7 +182,53 @@ export const useEconomyStore = create<EconomyStore>()(
     resetDaily: () => set({
       dailyRevenue: createEmptyRevenue(),
       dailyExpense: createEmptyExpense(),
+      visitorMetrics: {
+        totalVisitorsToday: 0,
+        averageSpendingPerVisitor: 0,
+        revenuePerVisitor: 0,
+      },
     }),
+    
+    recordVisitorEntry: () => set((state) => ({
+      visitorMetrics: {
+        ...state.visitorMetrics,
+        totalVisitorsToday: state.visitorMetrics.totalVisitorsToday + 1,
+        revenuePerVisitor: state.visitorMetrics.totalVisitorsToday > 0 
+          ? state.dailyRevenue.total / state.visitorMetrics.totalVisitorsToday 
+          : 0,
+      },
+    })),
+    
+    updateVisitorSpending: (amount) => set((state) => {
+      const newAverageSpending = state.visitorMetrics.totalVisitorsToday > 0
+        ? (state.visitorMetrics.averageSpendingPerVisitor * state.visitorMetrics.totalVisitorsToday + amount) / state.visitorMetrics.totalVisitorsToday
+        : amount;
+      
+      return {
+        visitorMetrics: {
+          ...state.visitorMetrics,
+          averageSpendingPerVisitor: newAverageSpending,
+          revenuePerVisitor: state.visitorMetrics.totalVisitorsToday > 0 
+            ? state.dailyRevenue.total / state.visitorMetrics.totalVisitorsToday 
+            : 0,
+        },
+      };
+    }),
+    
+    updateTankCount: (count) => set((state) => ({
+      tankMetrics: {
+        ...state.tankMetrics,
+        totalTanks: count,
+        revenuePerTank: count > 0 ? state.dailyRevenue.total / count : 0,
+      },
+    })),
+    
+    updateFishCount: (totalFish, tankCount) => set((state) => ({
+      tankMetrics: {
+        ...state.tankMetrics,
+        averageFishPerTank: tankCount > 0 ? totalFish / tankCount : 0,
+      },
+    })),
     
     getRevenueBreakdown: () => {
       const state = get();
@@ -170,4 +249,5 @@ export const useEconomyStore = create<EconomyStore>()(
       ];
     },
   }))
+)
 );

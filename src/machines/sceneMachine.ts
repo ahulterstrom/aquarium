@@ -5,13 +5,7 @@ type SceneMachineContext = object;
 export const sceneMachine = setup({
   types: {
     context: {} as SceneMachineContext,
-    events: {} as
-      | { type: "GO_TO_CHARACTER_SELECTION" }
-      | { type: "GO_TO_SANDBOX" }
-      | { type: "BACK" }
-      | { type: "GO_TO_MAP" }
-      | { type: "GO_TO_BATTLE" }
-      | { type: "GO_TO_BATTLE_RESULTS" },
+    events: {} as { type: "GO_TO_SANDBOX" } | { type: "BACK" },
   },
   actions: {},
 }).createMachine({
@@ -21,34 +15,12 @@ export const sceneMachine = setup({
   states: {
     mainMenu: {
       on: {
-        GO_TO_CHARACTER_SELECTION: "characterSelection",
         GO_TO_SANDBOX: "sandbox",
       },
     },
     sandbox: {
       on: {
         BACK: "mainMenu",
-      },
-    },
-    characterSelection: {
-      on: {
-        BACK: "mainMenu",
-        GO_TO_MAP: "map",
-      },
-    },
-    map: {
-      on: {
-        GO_TO_BATTLE: "battle",
-      },
-    },
-    battle: {
-      on: {
-        GO_TO_BATTLE_RESULTS: "battleResults",
-      },
-    },
-    battleResults: {
-      on: {
-        GO_TO_MAP: "map",
       },
     },
   },

@@ -9,16 +9,17 @@ export const PlacementControls = () => {
   const rotatePlacementCCW = useUIStore.use.rotatePlacementCCW();
   const rotatePlacementCW = useUIStore.use.rotatePlacementCW();
 
+  const shouldShowMenu =
+    placementMode !== "none" && placementMode !== "expansion";
+
   const bottomControlsSpring = useSpring({
-    opacity: placementMode !== "none" ? 1 : 0,
-    transform:
-      placementMode !== "none" ? "translateY(0px)" : "translateY(20px)",
+    opacity: shouldShowMenu ? 1 : 0,
+    transform: shouldShowMenu ? "translateY(0px)" : "translateY(20px)",
     config: { tension: 280, friction: 25 },
   });
 
   return (
     <div className="pointer-events-none fixed inset-0 z-50">
-      {placementMode !== "none" && <div>test</div>}
       <animated.div
         style={bottomControlsSpring}
         className="pointer-events-auto absolute bottom-28 left-1/2 -translate-x-1/2 transform"

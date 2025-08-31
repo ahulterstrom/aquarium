@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-export type MenuName = "none" | "pause" | "settings" | "stats" | "credits";
+export type MenuName = "none" | "settings" | "credits";
 
 export interface MenuContextType {
   openMenu: (menu: MenuName) => void;

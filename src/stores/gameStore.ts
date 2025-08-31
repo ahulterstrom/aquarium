@@ -18,9 +18,11 @@ import {
 import { EXPANSION_BASE_COST } from "../lib/constants";
 import { getNextExpansionPackSize, getNextExpansionCost, getCurrentExpansionLevel } from "../lib/utils/expansion";
 import { useGridStore } from "./gridStore";
+import { useEconomyStore } from "./economyStore";
 import { ObjectiveSystem } from "../systems/ObjectiveSystem";
 import { UnlockSystem } from "../systems/UnlockSystem";
 import { toast } from "@/components/ui/sonner";
+import { useStatisticsStore } from "./statisticsStore";
 
 interface GameStore extends GameState {
   tanks: Map<string, Tank>;
@@ -168,6 +170,7 @@ export const useGameStore = createSelectors(
         });
       });
 
+
       return {
         ...initialState,
         tanks: new Map(),
@@ -195,11 +198,35 @@ export const useGameStore = createSelectors(
 
         setGameSpeed: (speed) => set({ gameSpeed: speed }),
 
-        setVisitorCount: (count) => set({ visitorCount: count }),
+        setVisitorCount: (count) => {
+          const state = get();
+          // Track statistics when visitor count increases
+          if (count > state.visitorCount) {
+            const newVisitors = count - state.visitorCount;
+            for (let i = 0; i < newVisitors; i++) {
+              useStatisticsStore.getState().recordVisitorServed();
+              useEconomyStore.getState().recordVisitorEntry();
+            }
+            useStatisticsStore.getState().updateVisitorCount(count);
+          }
+          
+          set({ visitorCount: count });
+        },
 
         addMoney: (amount) =>
           set((state) => {
             const newMoney = state.money + amount;
+
+            // Track statistics
+            useStatisticsStore.getState().recordMoneyEarned(amount);
+            useStatisticsStore.getState().recordAction();
+            useStatisticsStore.getState().updateAverageProfitPerVisitor();
+            useEconomyStore.getState().updateVisitorSpending(amount);
+            
+            // Check for milestone
+            if (state.money < 100 && newMoney >= 100) {
+              useStatisticsStore.getState().recordFirst100Dollars();
+            }
 
             // Update objectives
             state.objectiveSystem.updateProgress("earn_money", newMoney);
@@ -216,6 +243,10 @@ export const useGameStore = createSelectors(
         spendMoney: (amount) => {
           const state = get();
           if (state.money >= amount) {
+            // Track statistics
+            useStatisticsStore.getState().recordMoneySpent(amount);
+            useStatisticsStore.getState().recordAction();
+            
             set({ money: state.money - amount });
             return true;
           }
@@ -229,6 +260,9 @@ export const useGameStore = createSelectors(
               Math.min(100, state.reputation + delta),
             );
 
+            // Track statistics
+            useStatisticsStore.getState().updateReputation(newReputation);
+
             // Check for unlocks after reputation change
             setTimeout(() => get().checkAndProcessUnlocks(), 0);
 
@@ -236,14 +270,43 @@ export const useGameStore = createSelectors(
           }),
 
         nextDay: () =>
-          set((state) => ({
-            day: state.day + 1,
-          })),
+          set((state) => {
+            // Calculate daily profit from economy store  
+            const economyState = useEconomyStore.getState();
+            const dailyProfit = economyState.calculateDailyProfit();
+            
+            // Track statistics
+            useStatisticsStore.getState().updateDailyProfit(dailyProfit);
+            
+            // Create daily snapshot
+            const gridState = useGridStore.getState();
+            useStatisticsStore.getState().createDailySnapshot({
+              day: state.day,
+              money: state.money,
+              tankCount: state.tanks.size,
+              fishCount: state.fish.size,
+              visitorCount: state.visitorCount,
+              reputation: state.reputation,
+              dailyProfit,
+              gridSize: gridState.cells.size,
+            });
+            
+            // Reset daily statistics for new day
+            useStatisticsStore.getState().resetDailyStats();
+            economyState.resetDaily();
+
+            return { day: state.day + 1 };
+          }),
 
         addTank: (tank) =>
           set((state) => {
             const tanks = new Map(state.tanks);
             tanks.set(tank.id, tank);
+
+            // Track statistics
+            useStatisticsStore.getState().recordTankBuilt();
+            useStatisticsStore.getState().recordAction();
+            useEconomyStore.getState().updateTankCount(tanks.size);
 
             // Update objectives
             if (tanks.size === 1) {
@@ -293,7 +356,18 @@ export const useGameStore = createSelectors(
             const tanks = new Map(state.tanks);
             const tank = tanks.get(id);
             if (tank) {
-              tanks.set(id, { ...tank, ...updates });
+              const updatedTank = { ...tank, ...updates };
+              tanks.set(id, updatedTank);
+              
+              // Track water quality if updated
+              if (updates.waterQuality !== undefined) {
+                useStatisticsStore.getState().updateWaterQuality(updates.waterQuality);
+              }
+              
+              // Track fish count in tank if fish IDs changed
+              if (updates.fishIds !== undefined) {
+                useStatisticsStore.getState().updateFishInTank(updates.fishIds.length);
+              }
             }
             return { tanks };
           }),
@@ -302,6 +376,11 @@ export const useGameStore = createSelectors(
           set((state) => {
             const fishMap = new Map(state.fish);
             fishMap.set(fish.id, fish);
+
+            // Track statistics
+            useStatisticsStore.getState().recordFishPurchased();
+            useStatisticsStore.getState().recordAction();
+            useEconomyStore.getState().updateFishCount(fishMap.size, state.tanks.size);
 
             // Also add to fish system
             try {
@@ -345,7 +424,13 @@ export const useGameStore = createSelectors(
             const fishMap = new Map(state.fish);
             const fish = fishMap.get(id);
             if (fish) {
-              fishMap.set(id, { ...fish, ...updates });
+              const updatedFish = { ...fish, ...updates };
+              fishMap.set(id, updatedFish);
+              
+              // Track fish happiness if updated
+              if (updates.happiness !== undefined) {
+                useStatisticsStore.getState().updateFishHappiness(updates.happiness);
+              }
             }
             return { fish: fishMap };
           }),
@@ -462,13 +547,23 @@ export const useGameStore = createSelectors(
           // Create expansion cells in gridStore
           useGridStore.getState().createExpansionCells(positions);
 
+          // Track statistics
+          positions.forEach(() => {
+            useStatisticsStore.getState().recordExpansionTile();
+            useStatisticsStore.getState().recordAction();
+          });
+          
+          // Update grid size tracking
+          const gridState = useGridStore.getState();
+          const totalGridSize = gridState.cells.size + positions.length;
+          useStatisticsStore.getState().updateGridSize(totalGridSize);
+
           // Update available tiles count
           set({
             expansionTiles: state.expansionTiles - positions.length,
           });
 
           // Update objectives - count total expansion cells
-          const gridState = useGridStore.getState();
           const expansionCellCount = Array.from(
             gridState.cells.values(),
           ).filter((cell) => cell.type === "expansion").length;
@@ -649,6 +744,7 @@ export const useGameStore = createSelectors(
 
         reset: () => {
           const newObjectiveSystem = new ObjectiveSystem();
+          
           return set({
             ...initialState,
             tanks: new Map(),

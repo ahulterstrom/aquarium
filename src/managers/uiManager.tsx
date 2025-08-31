@@ -1,23 +1,16 @@
 import { animated, useTransition } from "@react-spring/web";
-import { ReactNode, useEffect } from "react";
+import { ReactNode } from "react";
 
-import { GameOverlay } from "@/components/gameUI/gameOverlay";
+import { MainMenuUI } from "@/components/gameUI/mainMenuUI";
+import { SandboxUI } from "@/components/gameUI/sandboxUI";
 import { useSceneMachine } from "@/contexts/scene/useScene";
 import { cn } from "@/lib/utils";
 import { sceneMachine } from "@/machines/sceneMachine";
 import { useSelector } from "@xstate/react";
 import { SnapshotFrom } from "xstate";
-import { MainMenuUI } from "@/components/gameUI/mainMenuUI";
-import { CharacterSelectUI } from "@/components/gameUI/characterSelectUI";
-import { MapUI } from "@/components/gameUI/mapUI";
-import { SandboxUI } from "@/components/gameUI/sandboxUI";
 
 const uis: Record<SnapshotFrom<typeof sceneMachine>["value"], ReactNode> = {
   mainMenu: <MainMenuUI />,
-  characterSelection: <CharacterSelectUI />,
-  map: <div>Map</div>,
-  battle: <div>Battle</div>,
-  battleResults: <div>Battle Results</div>,
   sandbox: <SandboxUI />,
 };
 

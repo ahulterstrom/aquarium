@@ -12,6 +12,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
   AlertTriangle,
+  ChartLine,
   DollarSign,
   Expand,
   Fish,
@@ -32,6 +33,7 @@ import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
 import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
+import { PlacementControls } from "@/components/gameUI/placementControls";
 import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
 import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
 import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
@@ -42,7 +44,6 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { toast } from "@/components/ui/sonner";
 import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
 import { useGame } from "@/stores/useGame";
 import * as THREE from "three";
@@ -50,7 +51,7 @@ import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
-import { PlacementControls } from "@/components/gameUI/placementControls";
+import { StatisticsModal } from "@/components/gameUI/statisticsModal";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -129,6 +130,8 @@ export const SandboxUI = () => {
   const setShowCustomization = useUIStore.use.setShowCustomization();
   const showBuild = useUIStore.use.showBuild();
   const setShowBuild = useUIStore.use.setShowBuild();
+  const showStatistics = useUIStore.use.showStatistics();
+  const setShowStatistics = useUIStore.use.setShowStatistics();
   const placementMode = useUIStore.use.placementMode();
   const isInPlacementMode = placementMode !== "none";
   const selectedTankId = useUIStore.use.selectedTankId();
@@ -271,7 +274,7 @@ export const SandboxUI = () => {
       {/* Main UI Overlay */}
       <div className="relative h-full p-4">
         {/* Top Center Panel */}
-        <Sheet open={shouldShowTopPanel} onOpenChange={() => {}}>
+        <Sheet open={shouldShowTopPanel}>
           <SheetContent
             withOverlay={false}
             withCloseButton={false}
@@ -294,6 +297,13 @@ export const SandboxUI = () => {
                   <Separator orientation="vertical" />
                   <VisitorCountDisplay />
                   <Separator orientation="vertical" />
+                  <Button
+                    variant="onGlass"
+                    onClick={() => setShowStatistics(!showStatistics)}
+                  >
+                    <ChartLine />
+                  </Button>
+                  <Separator orientation="vertical" />
 
                   <Button
                     size="sm"
@@ -306,7 +316,7 @@ export const SandboxUI = () => {
                       <Pause className="h-4 w-4" />
                     )}
                   </Button>
-
+                  {/* 
                   <div className="flex gap-1">
                     <Button
                       size="sm"
@@ -332,7 +342,7 @@ export const SandboxUI = () => {
                     >
                       3x
                     </Button>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             </div>
@@ -762,6 +772,9 @@ export const SandboxUI = () => {
 
         {/* PlacementMode Controls */}
         <PlacementControls />
+
+        {/* Statistics Modal */}
+        <StatisticsModal />
       </div>
     </div>
   );

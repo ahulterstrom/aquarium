@@ -57,6 +57,7 @@ interface UIStore {
   showBuild: boolean;
   showObjectives: boolean;
   showAllObjectives: boolean;
+  showStatistics: boolean;
 
   // Photo mode
   isPhotoMode: boolean;
@@ -79,6 +80,7 @@ interface UIStore {
   setShowBuild: (show: boolean) => void;
   setShowObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
   setShowAllObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
+  setShowStatistics: (value: boolean | ((prev: boolean) => boolean)) => void;
 
   // Photo mode actions
   enterPhotoMode: () => void;
@@ -136,6 +138,7 @@ export const useUIStore = createSelectors(
       showBuild: false,
       showObjectives: false,
       showAllObjectives: false,
+      showStatistics: false,
 
       isPhotoMode: false,
 
@@ -226,6 +229,11 @@ export const useUIStore = createSelectors(
           showAllObjectives:
             typeof show === "function" ? show(state.showAllObjectives) : show,
         })),
+      setShowStatistics: (show) =>
+        set((state) => ({
+          showStatistics:
+            typeof show === "function" ? show(state.showStatistics) : show,
+        })),
       setPlacementMode: (mode, preview) =>
         set((state) => ({
           placementMode: mode,
@@ -262,7 +270,7 @@ export const useUIStore = createSelectors(
           const newRotation = (state.placementRotation - 90 + 360) % 360;
           return {
             placementRotation: newRotation,
-            placementPreview: state.placementPreview 
+            placementPreview: state.placementPreview
               ? { ...state.placementPreview, rotation: newRotation }
               : null,
           };
@@ -274,7 +282,7 @@ export const useUIStore = createSelectors(
           const newRotation = (state.placementRotation + 90) % 360;
           return {
             placementRotation: newRotation,
-            placementPreview: state.placementPreview 
+            placementPreview: state.placementPreview
               ? { ...state.placementPreview, rotation: newRotation }
               : null,
           };
@@ -334,7 +342,8 @@ export const useUIStore = createSelectors(
       // Photo mode actions
       enterPhotoMode: () => set({ isPhotoMode: true }),
       exitPhotoMode: () => set({ isPhotoMode: false }),
-      togglePhotoMode: () => set((state) => ({ isPhotoMode: !state.isPhotoMode })),
+      togglePhotoMode: () =>
+        set((state) => ({ isPhotoMode: !state.isPhotoMode })),
     })),
   ),
 );
