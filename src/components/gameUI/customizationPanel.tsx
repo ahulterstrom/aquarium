@@ -20,6 +20,7 @@ import { useUIStore } from "../../stores/uiStore";
 import { useGameStore } from "../../stores/gameStore";
 import { FLOOR_STYLES } from "../../lib/constants/floors";
 import { WALL_STYLES } from "../../lib/constants/walls";
+import { cn } from "@/lib/utils";
 
 export const CustomizationPanel = () => {
   const showCustomization = useUIStore.use.showCustomization();
@@ -153,11 +154,15 @@ export const CustomizationPanel = () => {
               <button
                 key={style.id}
                 onClick={() => handleWallStyleSelect(style.id)}
-                className={`glass rounded-lg border-2 !bg-white/50 p-4 transition-all ${
-                  selectedWallStyle === style.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
+                className={cn(
+                  `glass rounded-lg border-2 !bg-white/50 p-4 transition-all`,
+                  {
+                    "!border-sky-500 !bg-white/80":
+                      selectedWallStyle === style.id,
+                    "border-gray-200 hover:border-gray-300":
+                      selectedWallStyle !== style.id,
+                  },
+                )}
               >
                 <div
                   className="mb-2 h-16 w-full rounded bg-cover bg-center"
@@ -204,11 +209,15 @@ export const CustomizationPanel = () => {
               <button
                 key={style.id}
                 onClick={() => handleFloorStyleSelect(style.id)}
-                className={`glass rounded-lg border-2 !bg-white/50 p-4 transition-all ${
-                  selectedFloorStyle === style.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
+                className={cn(
+                  `glass rounded-lg border-2 !bg-white/50 p-4 transition-all`,
+                  {
+                    "!border-sky-500 !bg-white/80":
+                      selectedFloorStyle === style.id,
+                    "border-gray-200 hover:border-gray-300":
+                      selectedFloorStyle !== style.id,
+                  },
+                )}
               >
                 <div
                   className="mb-2 h-16 w-full rounded bg-cover bg-center"

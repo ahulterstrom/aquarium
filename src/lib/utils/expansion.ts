@@ -10,7 +10,7 @@
 export function getCurrentExpansionLevel(totalTiles: number): number {
   // Find the largest square that fits within totalTiles
   const sideLength = Math.floor(Math.sqrt(totalTiles));
-  
+
   // Convert side length to expansion level (3×3 = level 0, 4×4 = level 1, etc.)
   return Math.max(0, sideLength - 3);
 }
@@ -22,7 +22,7 @@ export function getCurrentExpansionLevel(totalTiles: number): number {
 export function getNextExpansionPackSize(currentTiles: number): number {
   const currentLevel = getCurrentExpansionLevel(currentTiles);
   const nextLevel = currentLevel + 1;
-  
+
   // Calculate tiles needed: difference between (nextLevel+3)² and current tiles
   const nextSquareSize = Math.pow(nextLevel + 3, 2);
   return nextSquareSize - currentTiles;
@@ -37,7 +37,7 @@ export function getNextExpansionInfo(currentTiles: number) {
   const tilesNeeded = getNextExpansionPackSize(currentTiles);
   const nextTotalTiles = currentTiles + tilesNeeded;
   const nextGridSize = Math.sqrt(nextTotalTiles);
-  
+
   return {
     currentLevel,
     nextLevel,
@@ -52,7 +52,10 @@ export function getNextExpansionInfo(currentTiles: number) {
  * Calculate the cost for the next expansion
  * Progressive pricing: base cost × (level + 1)
  */
-export function getNextExpansionCost(currentTiles: number, baseCost: number = 15): number {
+export function getNextExpansionCost(
+  currentTiles: number,
+  baseCost: number = 15,
+): number {
   const nextLevel = getCurrentExpansionLevel(currentTiles) + 1;
   return baseCost * nextLevel;
 }

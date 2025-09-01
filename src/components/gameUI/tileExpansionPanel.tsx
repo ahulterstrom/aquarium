@@ -36,6 +36,8 @@ export const TileExpansionPanel = () => {
   const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
   const purchasedExpansionLevels = useGameStore.use.purchasedExpansionLevels();
 
+  console.log("canBuyExpansion:", canBuyExpansion());
+
   // Grid store
   const cells = useGridStore.use.cells();
   const currentGridSize = cells.size;
