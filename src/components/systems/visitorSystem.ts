@@ -7,7 +7,9 @@ import { SoundController } from "../../controllers/soundController";
 // Global visitor system instance
 let visitorSystem: VisitorSystem | null = null;
 
-export function getVisitorSystem(soundController: SoundController): VisitorSystem {
+export function getVisitorSystem(
+  soundController: SoundController,
+): VisitorSystem {
   if (!visitorSystem) {
     const gridStore = useGridStore.getState();
     const coinSystem = getCoinSystem();
@@ -19,7 +21,10 @@ export function getVisitorSystem(soundController: SoundController): VisitorSyste
 /**
  * Update all visitors (called every frame)
  */
-export function updateVisitors(deltaTime: number, soundController: SoundController) {
+export function updateVisitors(
+  deltaTime: number,
+  soundController: SoundController,
+) {
   const state = useGameStore.getState();
   const system = getVisitorSystem(soundController);
 
@@ -30,14 +35,23 @@ export function updateVisitors(deltaTime: number, soundController: SoundControll
   system.update(deltaTime);
 
   // Update visitor objectives
-  state.objectiveSystem.updateProgress("attract_visitors", system.getTotalVisitorsCreated());
-  state.objectiveSystem.updateProgress("satisfy_visitors", system.getSatisfiedVisitorCount());
+  state.objectiveSystem.updateProgress(
+    "attract_visitors",
+    system.getTotalVisitorsCreated(),
+  );
+  state.objectiveSystem.updateProgress(
+    "satisfy_visitors",
+    system.getSatisfiedVisitorCount(),
+  );
 }
 
 /**
  * Spawn a visitor at a specific entrance (guaranteed spawn)
  */
-export function spawnVisitor(entranceId?: string, soundController: SoundController) {
+export function spawnVisitor(
+  entranceId?: string,
+  soundController: SoundController,
+) {
   const state = useGameStore.getState();
   const system = getVisitorSystem(soundController);
 
@@ -91,8 +105,10 @@ export function attemptSpawnVisitors(soundController: SoundController) {
     return;
   }
 
+  const cells = useGridStore.getState().cells;
+  const currentGridSize = cells.size;
   // Limit concurrent visitors
-  const maxVisitors = Math.max(2, Math.floor(state.tanks.size * 1.5));
+  const maxVisitors = currentGridSize;
   const currentVisitorCount = system.getVisitorCount();
 
   if (currentVisitorCount >= maxVisitors) {

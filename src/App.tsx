@@ -13,6 +13,7 @@ import { SceneManager } from "@/managers/sceneManager";
 import { UIManager } from "@/managers/uiManager";
 import { useUIStore } from "@/stores/uiStore";
 import { Toaster } from "@/components/ui/sonner";
+import { LandscapeRequired } from "@/components/ui/LandscapeRequired";
 import "./App.css";
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
           </MenuProvider>
         </SceneProvider>
       </SoundProvider>
+      <LandscapeRequired />
       <Toaster position="bottom-right" />
     </>
   );

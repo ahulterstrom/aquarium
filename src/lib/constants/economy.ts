@@ -4,8 +4,8 @@
 export const TICK_RATES = {
   tick: 1000, // 1 second - money updates
   water: 5000, // 5 seconds - water quality
-  visitors: 10000, // 10 seconds - spawn visitors
-  daily: 60000 * 5, // 5 minutes - day end
+  visitors: 3000, // 3 seconds - spawn visitors
+  daily: 60000 * 3, // 3 minutes - day end
 };
 
 // Building costs

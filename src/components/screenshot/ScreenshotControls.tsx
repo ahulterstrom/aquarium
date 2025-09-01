@@ -153,9 +153,9 @@ export const ScreenshotControls = () => {
           <TooltipTrigger asChild>
             <div>
               <Button
-                variant="outline"
+                variant="glass"
                 onClick={togglePhotoMode}
-                className="size-10"
+                className="size-[3.125rem]"
               >
                 {isPhotoMode ? (
                   <X className="size-4" />

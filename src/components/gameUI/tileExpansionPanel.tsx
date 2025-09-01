@@ -38,6 +38,7 @@ export const TileExpansionPanel = () => {
 
   // Grid store
   const cells = useGridStore.use.cells();
+  const currentGridSize = cells.size;
 
   // UI store
   const showTileExpansion = useUIStore.use.showTileExpansion();
@@ -78,8 +79,6 @@ export const TileExpansionPanel = () => {
   const alreadyPurchased = purchasedExpansionLevels.has(
     expansionInfo.nextLevel,
   );
-
-  const currentGridSize = cells.size;
 
   const handleBuyExpansionPack = () => {
     if (buyExpansionPack()) {

@@ -68,7 +68,7 @@ export function GameSystems() {
       accumulator.current.water %= TICK_RATES.water;
     }
 
-    // Visitor spawning (10s)
+    // Visitor spawning (3s)
     accumulator.current.visitors += dt;
     if (accumulator.current.visitors >= TICK_RATES.visitors) {
       // console.log("Attempting to spawn visitors...");
