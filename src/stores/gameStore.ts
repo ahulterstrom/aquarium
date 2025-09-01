@@ -322,6 +322,9 @@ export const useGameStore = createSelectors(
                   tanks.size,
                 );
 
+                // Check for unlocks after tank is added
+                setTimeout(() => get().checkAndProcessUnlocks(), 0);
+
                 return {
                   tanks,
                   activeObjectives: state.objectiveSystem.getActiveObjectives(),
@@ -348,6 +351,9 @@ export const useGameStore = createSelectors(
                 // Otherwise give half refund
                 const isLastTank = state.tanks.size === 1;
                 const refund = isLastTank ? 6 : 3;
+
+                // Check for unlocks after tank is removed
+                setTimeout(() => get().checkAndProcessUnlocks(), 0);
 
                 return {
                   tanks,

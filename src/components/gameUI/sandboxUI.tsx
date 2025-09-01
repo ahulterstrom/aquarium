@@ -545,6 +545,17 @@ export const SandboxUI = () => {
             >
               Log POIs
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                const state = useGameStore.getState();
+                state.addMoney(100);
+              }}
+            >
+              Give $100
+            </Button>
           </div>
         )}
 
