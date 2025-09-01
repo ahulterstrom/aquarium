@@ -478,6 +478,17 @@ export const SandboxUI = () => {
             >
               Log Cells
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs whitespace-break-spaces"
+              onClick={() => {
+                const fish = useGameStore.getState().fish;
+                console.log("Fish:", Array.from(fish.entries()));
+              }}
+            >
+              Log Fish
+            </Button>
             {/* <Button
               variant="outline"
               size="sm"

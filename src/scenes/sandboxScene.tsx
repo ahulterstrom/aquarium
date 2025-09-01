@@ -22,7 +22,7 @@ import * as THREE from "three";
 import { Grid } from "../components/game/Grid";
 import { GameSystems } from "../components/systems/GameSystems";
 import { initializeCoinSystem } from "../components/systems/coinSystem";
-import { initializeFishSystem } from "../components/systems/fishSystem";
+import { initializeFishSystem, addFishToSystem, updateFishSystemReferences } from "../components/systems/fishSystem";
 import { getCoinSystem } from "../components/systems/coinSystem";
 import { coinInteractionManager } from "../lib/coinInteraction";
 import { useGameStore } from "../stores/gameStore";
@@ -148,11 +148,27 @@ export const SandboxScene = () => {
   }, [gl, handleGlobalPointerMove, handleGlobalClick]);
 
   useEffect(() => {
-    initializeGrid(3, 1, 3);
+    // Only initialize grid if it's empty (first load)
+    if (cells.size === 0) {
+      initializeGrid(3, 1, 3);
+    }
 
     initializeCoinSystem();
     initializeFishSystem();
-  }, [initializeGrid, addMoney]);
+
+    // Rehydrate fish into FishSystem after initialization
+    const fishMap = useGameStore.getState().fish;
+    if (fishMap.size > 0) {
+      fishMap.forEach((fish) => {
+        try {
+          addFishToSystem(fish);
+        } catch (error) {
+          console.warn("Failed to add fish to system during scene initialization:", error);
+        }
+      });
+      updateFishSystemReferences();
+    }
+  }, [initializeGrid, cells.size, addMoney]);
 
   const handleCellClick = (x: number, z: number) => {
     if (placementMode === "tank" && placementPreview) {

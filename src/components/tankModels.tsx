@@ -40,7 +40,7 @@ const frameMaterial = new THREE.MeshToonMaterial({
 const glassFaceMaterial = new THREE.MeshBasicMaterial({
   color: new THREE.Color(0x516b9f), // White color for the glass face
   transparent: true,
-  opacity: 0.9,
+  opacity: 0.7,
 });
 
 // Sand Material

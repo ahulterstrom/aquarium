@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { devtools, subscribeWithSelector } from "zustand/middleware";
+import { devtools, subscribeWithSelector, persist } from "zustand/middleware";
+import * as THREE from "three";
 import {
   GameState,
   Tank,
@@ -134,7 +135,9 @@ const unlockSystem = new UnlockSystem();
 
 export const useGameStore = createSelectors(
   create<GameStore>()(
-    devtools((set, get) => {
+    devtools(
+      persist(
+        (set, get) => {
       // Set up objective system callbacks
       objectiveSystem.setRewardCallback((amount, objective) => {
         get().addMoney(amount);
@@ -743,7 +746,9 @@ export const useGameStore = createSelectors(
         setFloorStyle: (style) => set({ floorStyle: style }),
 
         reset: () => {
-          const newObjectiveSystem = new ObjectiveSystem();
+          // Reset the systems
+          objectiveSystem.reset();
+          unlockSystem.reset();
           
           return set({
             ...initialState,
@@ -751,8 +756,11 @@ export const useGameStore = createSelectors(
             fish: new Map(),
             entrances: new Map(),
             coins: new Map(),
-            objectiveSystem: newObjectiveSystem,
-            activeObjectives: newObjectiveSystem.getActiveObjectives(),
+            objectiveSystem: objectiveSystem,
+            activeObjectives: objectiveSystem.getActiveObjectives(),
+            allObjectives: objectiveSystem.getAllObjectives(),
+            unlockSystem: unlockSystem,
+            unlockedItems: unlockSystem.getUnlockedItems(),
             expansionTiles: 0,
             purchasedExpansionLevels: new Set(),
             wallStyle: "concrete",
@@ -767,6 +775,99 @@ export const useGameStore = createSelectors(
           });
         },
       };
-    }),
+    },
+    {
+      name: "aquarium-game-state",
+      partialize: (state) => ({
+        money: state.money,
+        reputation: state.reputation,
+        visitorCount: state.visitorCount,
+        day: state.day,
+        tanks: Array.from(state.tanks.entries()),
+        fish: Array.from(state.fish.entries()).map(([id, fish]) => [
+          id,
+          {
+            ...fish,
+            position: { x: fish.position.x, y: fish.position.y, z: fish.position.z },
+            velocity: { x: fish.velocity.x, y: fish.velocity.y, z: fish.velocity.z }
+          }
+        ]),
+        entrances: Array.from(state.entrances.entries()),
+        coins: Array.from(state.coins.entries()).map(([id, coin]) => [
+          id,
+          {
+            ...coin,
+            position: { x: coin.position.x, y: coin.position.y, z: coin.position.z }
+          }
+        ]),
+        expansionTiles: state.expansionTiles,
+        purchasedExpansionLevels: Array.from(state.purchasedExpansionLevels),
+        wallStyle: state.wallStyle,
+        floorStyle: state.floorStyle,
+        objectiveSystemData: state.objectiveSystem.serialize(),
+        unlockSystemData: state.unlockSystem.getState(),
+      }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error('Failed to rehydrate gameStore:', error);
+          return;
+        }
+
+        if (state) {
+          // Convert arrays back to Maps
+          state.tanks = new Map(state.tanks);
+          state.fish = new Map(state.fish);
+          state.entrances = new Map(state.entrances);
+          state.coins = new Map(state.coins);
+          state.purchasedExpansionLevels = new Set(state.purchasedExpansionLevels);
+
+          // Convert plain objects back to Vector3 instances for fish
+          state.fish.forEach((fish) => {
+            if (fish.position && !(fish.position instanceof THREE.Vector3)) {
+              fish.position = new THREE.Vector3(
+                fish.position.x,
+                fish.position.y,
+                fish.position.z
+              );
+            }
+            if (fish.velocity && !(fish.velocity instanceof THREE.Vector3)) {
+              fish.velocity = new THREE.Vector3(
+                fish.velocity.x,
+                fish.velocity.y,
+                fish.velocity.z
+              );
+            }
+          });
+
+          // Convert plain objects back to Vector3 instances for coins
+          state.coins.forEach((coin) => {
+            if (coin.position && !(coin.position instanceof THREE.Vector3)) {
+              coin.position = new THREE.Vector3(
+                coin.position.x,
+                coin.position.y,
+                coin.position.z
+              );
+            }
+          });
+
+          // Deserialize objective system if data exists
+          if (state.objectiveSystemData) {
+            objectiveSystem.deserialize(state.objectiveSystemData);
+            state.objectiveSystem = objectiveSystem;
+            state.activeObjectives = objectiveSystem.getActiveObjectives();
+            state.allObjectives = objectiveSystem.getAllObjectives();
+          }
+
+          // Load unlock system state if data exists
+          if (state.unlockSystemData) {
+            unlockSystem.loadState(state.unlockSystemData);
+            state.unlockSystem = unlockSystem;
+            state.unlockedItems = unlockSystem.getUnlockedItems();
+          }
+        }
+      },
+    }
+  )
+    ),
   ),
 );

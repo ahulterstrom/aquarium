@@ -37,7 +37,7 @@ export class POISystem {
       const centerZ = tank.position.z + (gridDepth - 1) * 0.5;
 
       const poi: POI = {
-        id: `tank_${tank.id}`,
+        id: tank.id,
         type: "tank",
         position: new THREE.Vector3(centerX * 2, FLOOR_HEIGHT, centerZ * 2),
         object: tank,

@@ -86,7 +86,7 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
           // Desaturate color when unhealthy - create a new color instead of modifying the original
           materialColor.lerp(new THREE.Color(0x666666), 0.3);
         }
-        
+
         // Apply the final color to the material
         bodyMaterialRef.current.color.copy(materialColor);
         bodyMaterialRef.current.opacity = opacity;
@@ -159,17 +159,18 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
 };
 
 export const FishRenderer = () => {
+  // Initialize with persisted fish from gameStore to avoid visual gap on reload
   const [fishIds, setFishIds] = useState<string[]>([]);
   const lastUpdateRef = useRef(0);
 
   // Update fish list less frequently and more smoothly
   useFrame((state) => {
     const currentTime = state.clock.elapsedTime * 1000; // Convert to milliseconds
-    
+
     // Only check every 100ms instead of 500ms for smoother updates
-    if (currentTime - lastUpdateRef.current > 100) {
+    if (currentTime - lastUpdateRef.current > 1000) {
       lastUpdateRef.current = currentTime;
-      
+
       try {
         const fishSystem = getFishSystem();
         const currentFish = fishSystem.getAllFish();
@@ -178,12 +179,12 @@ export const FishRenderer = () => {
         // Use Set for more efficient comparison
         const existingIdsSet = new Set(fishIds);
         const currentIdsSet = new Set(currentIds);
-        
+
         // Only update if there's actually a difference
-        const hasChanges = 
+        const hasChanges =
           existingIdsSet.size !== currentIdsSet.size ||
-          !currentIds.every(id => existingIdsSet.has(id));
-          
+          !currentIds.every((id) => existingIdsSet.has(id));
+
         if (hasChanges) {
           setFishIds(currentIds);
         }

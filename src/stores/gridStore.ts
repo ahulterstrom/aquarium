@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import { devtools, persist } from "zustand/middleware";
 import { GridCell, GridPosition } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 
@@ -41,307 +41,327 @@ export interface GridStore {
 
 export const useGridStore = createSelectors(
   create<GridStore>()(
-    devtools((set, get) => ({
-      gridSize: { width: 3, height: 1, depth: 3 },
-      cells: new Map(),
+    devtools(
+      persist(
+        (set, get) => ({
+          gridSize: { width: 3, height: 1, depth: 3 },
+          cells: new Map(),
 
-      initializeGrid: (width, height, depth) => {
-        const cells = new Map<string, GridCell>();
+          initializeGrid: (width, height, depth) => {
+            const cells = new Map<string, GridCell>();
 
-        for (let x = 0; x < width; x++) {
-          for (let y = 0; y < height; y++) {
-            for (let z = 0; z < depth; z++) {
-              const key = `${x},${y},${z}`;
-              cells.set(key, {
-                x,
-                y,
-                z,
-                occupied: false,
-                type: "empty",
-              });
-            }
-          }
-        }
-
-        set({
-          gridSize: { width, height, depth },
-          cells,
-        });
-      },
-
-      getCell: (x, y, z) => {
-        return get().cells.get(`${x},${y},${z}`);
-      },
-
-      setCell: (cell) =>
-        set((state) => {
-          const cells = new Map(state.cells);
-          cells.set(`${cell.x},${cell.y},${cell.z}`, cell);
-          return { cells };
-        }),
-
-      createExpansionCells: (positions) =>
-        set((state) => {
-          const cells = new Map(state.cells);
-
-          for (const pos of positions) {
-            const key = `${pos.x},0,${pos.z}`;
-            const newCell = {
-              x: pos.x,
-              y: 0,
-              z: pos.z,
-              occupied: false,
-              type: "empty" as const,
-            };
-            cells.set(key, newCell);
-          }
-
-          return { cells };
-        }),
-
-      canPlaceAt: (position, width, depth) => {
-        const state = get();
-
-        for (let x = position.x; x < position.x + width; x++) {
-          for (let z = position.z; z < position.z + depth; z++) {
-            const cell = state.getCell(x, position.y, z);
-
-            // Can place only if cell exists and is not occupied
-            if (!cell || cell.occupied) {
-              return false;
-            }
-          }
-        }
-
-        return true;
-      },
-
-      canPlaceEntranceAt: (position) => {
-        const state = get();
-
-        // First check if the position is valid and not occupied
-        if (!state.canPlaceAt(position, 1, 1)) {
-          return false;
-        }
-
-        // Check if position is on the exterior (perimeter) of the grid
-        const { width, depth } = state.gridSize;
-        const { x, z } = position;
-
-        // Position must be on the edge of the grid
-        const isOnPerimeter =
-          x === 0 || x === width - 1 || z === 0 || z === depth - 1;
-
-        return isOnPerimeter;
-      },
-
-      placeObject: (position, width, depth, type, id) => {
-        const state = get();
-
-        if (!state.canPlaceAt(position, width, depth)) {
-          return false;
-        }
-
-        const cells = new Map(state.cells);
-
-        for (let x = position.x; x < position.x + width; x++) {
-          for (let z = position.z; z < position.z + depth; z++) {
-            const key = `${x},${position.y},${z}`;
-            const cell = cells.get(key);
-
-            if (cell) {
-              // Update existing grid cell
-              cells.set(key, {
-                ...cell,
-                occupied: true,
-                type,
-                tankId: type === "tank" ? id : undefined,
-                entranceId: type === "entrance" ? id : undefined,
-              });
-            }
-          }
-        }
-
-        set({ cells });
-        return true;
-      },
-
-      removeObject: (position, width, depth) =>
-        set((state) => {
-          const cells = new Map(state.cells);
-
-          for (let x = position.x; x < position.x + width; x++) {
-            for (let z = position.z; z < position.z + depth; z++) {
-              const key = `${x},${position.y},${z}`;
-              const cell = cells.get(key);
-              if (cell) {
-                cells.set(key, {
-                  ...cell,
-                  occupied: false,
-                  type: "empty",
-                  tankId: undefined,
-                  entranceId: undefined,
-                });
+            for (let x = 0; x < width; x++) {
+              for (let y = 0; y < height; y++) {
+                for (let z = 0; z < depth; z++) {
+                  const key = `${x},${y},${z}`;
+                  cells.set(key, {
+                    x,
+                    y,
+                    z,
+                    occupied: false,
+                    type: "empty",
+                  });
+                }
               }
             }
-          }
 
-          return { cells };
-        }),
+            set({
+              gridSize: { width, height, depth },
+              cells,
+            });
+          },
 
-      getNeighbors: (position) => {
-        const state = get();
-        const neighbors: GridCell[] = [];
+          getCell: (x, y, z) => {
+            return get().cells.get(`${x},${y},${z}`);
+          },
 
-        const directions = [
-          { x: 0, z: 1 }, // North
-          { x: 1, z: 0 }, // East
-          { x: 0, z: -1 }, // South
-          { x: -1, z: 0 }, // West
-          { x: 1, z: 1 }, // Northeast
-          { x: 1, z: -1 }, // Southeast
-          { x: -1, z: -1 }, // Southwest
-          { x: -1, z: 1 }, // Northwest
-        ];
+          setCell: (cell) =>
+            set((state) => {
+              const cells = new Map(state.cells);
+              cells.set(`${cell.x},${cell.y},${cell.z}`, cell);
+              return { cells };
+            }),
 
-        for (const dir of directions) {
-          const cell = state.getCell(
-            position.x + dir.x,
-            position.y,
-            position.z + dir.z,
-          );
-          if (cell) {
-            neighbors.push(cell);
-          }
-        }
+          createExpansionCells: (positions) =>
+            set((state) => {
+              const cells = new Map(state.cells);
 
-        return neighbors;
-      },
+              for (const pos of positions) {
+                const key = `${pos.x},0,${pos.z}`;
+                const newCell = {
+                  x: pos.x,
+                  y: 0,
+                  z: pos.z,
+                  occupied: false,
+                  type: "empty" as const,
+                };
+                cells.set(key, newCell);
+              }
 
-      isWalkable: (x, y, z) => {
-        const cell = get().getCell(x, y, z);
-        if (!cell) {
-          console.log(`No cell at ${x},${y},${z}`);
-          return false;
-        }
+              return { cells };
+            }),
 
-        // First check basic walkability
-        if (
-          (cell.occupied && cell.type !== "entrance") ||
-          (cell.type !== "path" &&
-            cell.type !== "empty" &&
-            cell.type !== "entrance")
-        ) {
-          return false;
-        }
+          canPlaceAt: (position, width, depth) => {
+            const state = get();
 
-        return true;
-      },
+            for (let x = position.x; x < position.x + width; x++) {
+              for (let z = position.z; z < position.z + depth; z++) {
+                const cell = state.getCell(x, position.y, z);
 
-      findPath: (start, end) => {
-        // Simple A* pathfinding implementation
-        const state = get();
-        const openSet = new Set<string>();
-        const closedSet = new Set<string>();
-        const cameFrom = new Map<string, string>();
-        const gScore = new Map<string, number>();
-        const fScore = new Map<string, number>();
-
-        const startKey = state.getCellKey(start.x, start.y, start.z);
-        const endKey = state.getCellKey(end.x, end.y, end.z);
-
-        openSet.add(startKey);
-        gScore.set(startKey, 0);
-        fScore.set(startKey, heuristic(start, end));
-
-        let iterations = 0;
-        const maxIterations = 1000; // Prevent infinite loops
-
-        while (openSet.size > 0 && iterations < maxIterations) {
-          iterations++;
-          let current = "";
-          let lowestF = Infinity;
-
-          for (const key of openSet) {
-            const f = fScore.get(key) || Infinity;
-            if (f < lowestF) {
-              lowestF = f;
-              current = key;
+                // Can place only if cell exists and is not occupied
+                if (!cell || cell.occupied) {
+                  return false;
+                }
+              }
             }
-          }
 
-          if (current === endKey) {
-            return reconstructPath(cameFrom, current, state);
-          }
+            return true;
+          },
 
-          openSet.delete(current);
-          closedSet.add(current);
+          canPlaceEntranceAt: (position) => {
+            const state = get();
 
-          const currentPos = state.parseCellKey(current);
-          const neighbors = state.getNeighbors(currentPos);
+            // First check if the position is valid and not occupied
+            if (!state.canPlaceAt(position, 1, 1)) {
+              return false;
+            }
 
-          for (const neighbor of neighbors) {
-            const neighborKey = state.getCellKey(
-              neighbor.x,
-              neighbor.y,
-              neighbor.z,
-            );
+            // Check if position is on the exterior (perimeter) of the grid
+            const { width, depth } = state.gridSize;
+            const { x, z } = position;
 
+            // Position must be on the edge of the grid
+            const isOnPerimeter =
+              x === 0 || x === width - 1 || z === 0 || z === depth - 1;
+
+            return isOnPerimeter;
+          },
+
+          placeObject: (position, width, depth, type, id) => {
+            const state = get();
+
+            if (!state.canPlaceAt(position, width, depth)) {
+              return false;
+            }
+
+            const cells = new Map(state.cells);
+
+            for (let x = position.x; x < position.x + width; x++) {
+              for (let z = position.z; z < position.z + depth; z++) {
+                const key = `${x},${position.y},${z}`;
+                const cell = cells.get(key);
+
+                if (cell) {
+                  // Update existing grid cell
+                  cells.set(key, {
+                    ...cell,
+                    occupied: true,
+                    type,
+                    tankId: type === "tank" ? id : undefined,
+                    entranceId: type === "entrance" ? id : undefined,
+                  });
+                }
+              }
+            }
+
+            set({ cells });
+            return true;
+          },
+
+          removeObject: (position, width, depth) =>
+            set((state) => {
+              const cells = new Map(state.cells);
+
+              for (let x = position.x; x < position.x + width; x++) {
+                for (let z = position.z; z < position.z + depth; z++) {
+                  const key = `${x},${position.y},${z}`;
+                  const cell = cells.get(key);
+                  if (cell) {
+                    cells.set(key, {
+                      ...cell,
+                      occupied: false,
+                      type: "empty",
+                      tankId: undefined,
+                      entranceId: undefined,
+                    });
+                  }
+                }
+              }
+
+              return { cells };
+            }),
+
+          getNeighbors: (position) => {
+            const state = get();
+            const neighbors: GridCell[] = [];
+
+            const directions = [
+              { x: 0, z: 1 }, // North
+              { x: 1, z: 0 }, // East
+              { x: 0, z: -1 }, // South
+              { x: -1, z: 0 }, // West
+              { x: 1, z: 1 }, // Northeast
+              { x: 1, z: -1 }, // Southeast
+              { x: -1, z: -1 }, // Southwest
+              { x: -1, z: 1 }, // Northwest
+            ];
+
+            for (const dir of directions) {
+              const cell = state.getCell(
+                position.x + dir.x,
+                position.y,
+                position.z + dir.z,
+              );
+              if (cell) {
+                neighbors.push(cell);
+              }
+            }
+
+            return neighbors;
+          },
+
+          isWalkable: (x, y, z) => {
+            const cell = get().getCell(x, y, z);
+            if (!cell) {
+              console.log(`No cell at ${x},${y},${z}`);
+              return false;
+            }
+
+            // First check basic walkability
             if (
-              closedSet.has(neighborKey) ||
-              !state.isWalkable(neighbor.x, neighbor.y, neighbor.z)
+              (cell.occupied && cell.type !== "entrance") ||
+              (cell.type !== "path" &&
+                cell.type !== "empty" &&
+                cell.type !== "entrance")
             ) {
-              continue;
+              return false;
             }
 
-            const tentativeG = (gScore.get(current) || 0) + 1;
+            return true;
+          },
 
-            if (!openSet.has(neighborKey)) {
-              openSet.add(neighborKey);
-            } else if (tentativeG >= (gScore.get(neighborKey) || Infinity)) {
-              continue;
+          findPath: (start, end) => {
+            // Simple A* pathfinding implementation
+            const state = get();
+            const openSet = new Set<string>();
+            const closedSet = new Set<string>();
+            const cameFrom = new Map<string, string>();
+            const gScore = new Map<string, number>();
+            const fScore = new Map<string, number>();
+
+            const startKey = state.getCellKey(start.x, start.y, start.z);
+            const endKey = state.getCellKey(end.x, end.y, end.z);
+
+            openSet.add(startKey);
+            gScore.set(startKey, 0);
+            fScore.set(startKey, heuristic(start, end));
+
+            let iterations = 0;
+            const maxIterations = 1000; // Prevent infinite loops
+
+            while (openSet.size > 0 && iterations < maxIterations) {
+              iterations++;
+              let current = "";
+              let lowestF = Infinity;
+
+              for (const key of openSet) {
+                const f = fScore.get(key) || Infinity;
+                if (f < lowestF) {
+                  lowestF = f;
+                  current = key;
+                }
+              }
+
+              if (current === endKey) {
+                return reconstructPath(cameFrom, current, state);
+              }
+
+              openSet.delete(current);
+              closedSet.add(current);
+
+              const currentPos = state.parseCellKey(current);
+              const neighbors = state.getNeighbors(currentPos);
+
+              for (const neighbor of neighbors) {
+                const neighborKey = state.getCellKey(
+                  neighbor.x,
+                  neighbor.y,
+                  neighbor.z,
+                );
+
+                if (
+                  closedSet.has(neighborKey) ||
+                  !state.isWalkable(neighbor.x, neighbor.y, neighbor.z)
+                ) {
+                  continue;
+                }
+
+                const tentativeG = (gScore.get(current) || 0) + 1;
+
+                if (!openSet.has(neighborKey)) {
+                  openSet.add(neighborKey);
+                } else if (
+                  tentativeG >= (gScore.get(neighborKey) || Infinity)
+                ) {
+                  continue;
+                }
+
+                cameFrom.set(neighborKey, current);
+                gScore.set(neighborKey, tentativeG);
+                fScore.set(neighborKey, tentativeG + heuristic(neighbor, end));
+              }
             }
 
-            cameFrom.set(neighborKey, current);
-            gScore.set(neighborKey, tentativeG);
-            fScore.set(neighborKey, tentativeG + heuristic(neighbor, end));
-          }
-        }
+            if (iterations >= maxIterations) {
+              console.warn(
+                `A* pathfinding hit iteration limit (${maxIterations}) from ${JSON.stringify(start)} to ${JSON.stringify(end)}`,
+              );
+            }
 
-        if (iterations >= maxIterations) {
-          console.warn(
-            `A* pathfinding hit iteration limit (${maxIterations}) from ${JSON.stringify(start)} to ${JSON.stringify(end)}`,
-          );
-        }
+            return null;
+          },
 
-        return null;
-      },
+          getCellKey: (x, y, z) => `${x},${y},${z}`,
 
-      getCellKey: (x, y, z) => `${x},${y},${z}`,
+          parseCellKey: (key) => {
+            const [x, y, z] = key.split(",").map(Number);
+            return { x, y, z };
+          },
 
-      parseCellKey: (key) => {
-        const [x, y, z] = key.split(",").map(Number);
-        return { x, y, z };
-      },
+          getEdgeForPosition: (position) => {
+            const { width, depth } = get().gridSize;
+            const { x, z } = position;
 
-      getEdgeForPosition: (position) => {
-        const { width, depth } = get().gridSize;
-        const { x, z } = position;
+            // Determine which edge this position is on
+            if (z === 0) return "north"; // Top edge
+            if (z === depth - 1) return "south"; // Bottom edge
+            if (x === 0) return "west"; // Left edge
+            if (x === width - 1) return "east"; // Right edge
 
-        // Determine which edge this position is on
-        if (z === 0) return "north"; // Top edge
-        if (z === depth - 1) return "south"; // Bottom edge
-        if (x === 0) return "west"; // Left edge
-        if (x === width - 1) return "east"; // Right edge
+            return null; // Not on an edge
+          },
 
-        return null; // Not on an edge
-      },
-
-      reset: () =>
-        set({
-          cells: new Map(),
+          reset: () =>
+            set({
+              gridSize: { width: 3, height: 1, depth: 3 },
+              cells: new Map(),
+            }),
         }),
-    })),
+        {
+          name: "aquarium-grid-state",
+          partialize: (state) => ({
+            gridSize: state.gridSize,
+            cells: Array.from(state.cells.entries()),
+          }),
+          onRehydrateStorage: () => (state) => {
+            if (state) {
+              // Convert arrays back to Maps
+              state.cells = new Map(state.cells);
+            }
+          },
+        },
+      ),
+    ),
   ),
 );
 

@@ -1,6 +1,6 @@
 import { createSelectors } from "@/stores/utils";
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import { devtools, persist } from "zustand/middleware";
 
 type UIModal =
   | "none"
@@ -123,7 +123,9 @@ interface Notification {
 
 export const useUIStore = createSelectors(
   create<UIStore>()(
-    devtools((set, get) => ({
+    devtools(
+      persist(
+        (set, get) => ({
       selectedTankId: null,
       selectedVisitorId: null,
       selectedEntranceId: null,
@@ -344,6 +346,17 @@ export const useUIStore = createSelectors(
       exitPhotoMode: () => set({ isPhotoMode: false }),
       togglePhotoMode: () =>
         set((state) => ({ isPhotoMode: !state.isPhotoMode })),
-    })),
+    }),
+    {
+      name: "aquarium-ui-state",
+      partialize: (state) => ({
+        showGrid: state.showGrid,
+        showStats: state.showStats,
+        showNotifications: state.showNotifications,
+        isPhotoMode: state.isPhotoMode,
+      }),
+    }
+  )
+    ),
   ),
 );

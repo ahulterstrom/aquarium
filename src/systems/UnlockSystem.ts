@@ -227,4 +227,11 @@ export class UnlockSystem {
   getUnlockable(id: string): Unlockable | undefined {
     return this.unlockables.get(id);
   }
+
+  // Reset system (for new game)
+  reset(): void {
+    this.unlockedItems.clear();
+    this.unlockNotifications = [];
+    // No need to reinitialize unlockables as they're static definitions
+  }
 }
