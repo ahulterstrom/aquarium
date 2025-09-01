@@ -77,67 +77,67 @@ export const UNLOCKABLES: Unlockable[] = [
     dependencies: ["tank_large"],
   },
   // Customization unlockables
-  {
-    id: "floor_marble",
-    category: "customization",
-    name: "Marble Floor",
-    description: "Elegant marble flooring for your aquarium",
-    conditions: [
-      {
-        type: "reputation",
-        target: 60,
-        description: "Reach 60 reputation",
-      },
-    ],
-  },
-  {
-    id: "wall_glass",
-    category: "customization",
-    name: "Glass Walls",
-    description: "Modern glass walls for a contemporary look",
-    conditions: [
-      {
-        type: "money",
-        target: 150,
-        description: "Earn $150",
-      },
-    ],
-  },
+  // {
+  //   id: "floor_marble",
+  //   category: "customization",
+  //   name: "Marble Floor",
+  //   description: "Elegant marble flooring for your aquarium",
+  //   conditions: [
+  //     {
+  //       type: "reputation",
+  //       target: 60,
+  //       description: "Reach 60 reputation",
+  //     },
+  //   ],
+  // },
+  // {
+  //   id: "wall_glass",
+  //   category: "customization",
+  //   name: "Glass Walls",
+  //   description: "Modern glass walls for a contemporary look",
+  //   conditions: [
+  //     {
+  //       type: "money",
+  //       target: 150,
+  //       description: "Earn $150",
+  //     },
+  //   ],
+  // },
   // Building unlockables
-  {
-    id: "entrance_premium",
-    category: "buildings",
-    name: "Premium Entrance",
-    description: "A fancy entrance that attracts more visitors",
-    conditions: [
-      {
-        type: "objective",
-        target: "attract_visitors",
-        description: "Complete 'Growing Popularity' objective",
-      },
-    ],
-  },
+  // {
+  //   id: "entrance_premium",
+  //   category: "buildings",
+  //   name: "Premium Entrance",
+  //   description: "A fancy entrance that attracts more visitors",
+  //   conditions: [
+  //     {
+  //       type: "objective",
+  //       target: "attract_visitors",
+  //       description: "Complete 'Growing Popularity' objective",
+  //     },
+  //   ],
+  // },
   // Mechanics unlockables
-  {
-    id: "auto_feeder",
-    category: "mechanics",
-    name: "Auto Feeder",
-    description: "Automatically feeds your fish",
-    conditions: [
-      {
-        type: "objective",
-        target: "satisfy_visitors",
-        description: "Complete 'Happy Customers' objective",
-      },
-    ],
-    hidden: true,
-  },
+  // {
+  //   id: "auto_feeder",
+  //   category: "mechanics",
+  //   name: "Auto Feeder",
+  //   description: "Automatically feeds your fish",
+  //   conditions: [
+  //     {
+  //       type: "objective",
+  //       target: "satisfy_visitors",
+  //       description: "Complete 'Happy Customers' objective",
+  //     },
+  //   ],
+  //   hidden: true,
+  // },
   // Expansion unlockables - progressive levels
   {
     id: "expansion_level_1",
-    category: "expansions", 
+    category: "expansions",
     name: "First Expansion",
-    description: "Expand beyond your starting 3×3 grid",
+    description: "Expand beyond your starting 3x3 grid",
     conditions: [
       {
         type: "objective",
@@ -147,7 +147,7 @@ export const UNLOCKABLES: Unlockable[] = [
     ],
   },
   {
-    id: "expansion_level_2", 
+    id: "expansion_level_2",
     category: "expansions",
     name: "Level 2 Expansion",
     description: "Continue expanding your aquarium",
@@ -162,7 +162,7 @@ export const UNLOCKABLES: Unlockable[] = [
   },
   {
     id: "expansion_level_3",
-    category: "expansions", 
+    category: "expansions",
     name: "Level 3 Expansion",
     description: "Large scale aquarium expansion",
     conditions: [
