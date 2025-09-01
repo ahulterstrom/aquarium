@@ -54,6 +54,7 @@ import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
 import { StatisticsModal } from "@/components/gameUI/statisticsModal";
 import { SettingsModal } from "@/components/gameUI/settingsModal";
+import { useSound } from "@/contexts/sound/useSound";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -108,6 +109,7 @@ export const SandboxUI = () => {
 
   const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const isDebugging = useGame.use.isDebugging();
+  const { soundController } = useSound();
   const tanks = useGameStore.use.tanks();
   const money = useGameStore.use.money();
   const spendMoney = useGameStore.use.spendMoney();
@@ -459,7 +461,7 @@ export const SandboxUI = () => {
               variant="outline"
               size="sm"
               className="w-full text-xs whitespace-break-spaces"
-              onClick={() => spawnVisitor()}
+              onClick={() => spawnVisitor(undefined, soundController)}
             >
               1 Visitor
             </Button>
@@ -469,7 +471,7 @@ export const SandboxUI = () => {
               className="w-full text-xs whitespace-break-spaces"
               onClick={() => {
                 for (let i = 0; i < 10; i++) {
-                  spawnVisitor();
+                  spawnVisitor(undefined, soundController);
                 }
               }}
             >

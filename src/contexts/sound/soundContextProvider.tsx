@@ -15,21 +15,85 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // register once
     soundController.current.register(
-      "bgm",
+      "crowd",
       {
-        src: "/rainy-day-in-a-recliner-piano.mp3",
+        src: "sounds/crowd.ogg",
         loop: true,
+        volume: 0.4,
+        allowMultiple: false,
+      },
+      "sfx",
+    );
+    soundController.current.register(
+      "bgm1",
+      {
+        src: "sounds/floatinggarden.mp3",
+        loop: false,
         volume: 0.4,
         allowMultiple: false,
       },
       "music",
     );
     soundController.current.register(
-      "punch",
-      { src: "/punch1.mp3", loop: false, volume: 0.4 },
+      "bgm2",
+      {
+        src: "sounds/hearty.mp3",
+        loop: false,
+        volume: 0.4,
+        allowMultiple: false,
+      },
+      "music",
+    );
+    soundController.current.register(
+      "bgm3",
+      {
+        src: "sounds/longnight.mp3",
+        loop: false,
+        volume: 0.4,
+        allowMultiple: false,
+      },
+      "music",
+    );
+    soundController.current.register(
+      "bgm4",
+      {
+        src: "sounds/yesterday.mp3",
+        loop: false,
+        volume: 0.4,
+        allowMultiple: false,
+      },
+      "music",
+    );
+    soundController.current.register(
+      "coinpickup",
+      { src: "/sounds/coinpickup.mp3", loop: false, volume: 0.4 },
       "sfx",
     );
-    // …register other sounds…
+    soundController.current.register(
+      "coinfall1",
+      { src: "/sounds/coinfall1.wav", loop: false, volume: 0.1 },
+      "sfx",
+    );
+    soundController.current.register(
+      "coinfall2",
+      { src: "/sounds/coinfall2.off", loop: false, volume: 0.1 },
+      "sfx",
+    );
+    soundController.current.register(
+      "coinfall3",
+      { src: "/sounds/coinfall3.mp3", loop: false, volume: 0.1 },
+      "sfx",
+    );
+    soundController.current.register(
+      "coinfall4",
+      { src: "/sounds/coinfall4.wav", loop: false, volume: 0.1 },
+      "sfx",
+    );
+    soundController.current.register(
+      "objectivecollect",
+      { src: "/sounds/objectivecollect.wav", loop: false, volume: 0.4 },
+      "sfx",
+    );
   }, []);
 
   useEffect(() => {
@@ -39,8 +103,15 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     soundController.current.setChannelVolume("music", musicVolume);
     soundController.current.setChannelVolume("sfx", sfxVolume);
 
-    // kick off background music
-    soundController.current.play("bgm");
+    // create background music playlist and start playing
+    soundController.current.createPlaylist("bgm", [
+      "bgm1",
+      "bgm2",
+      "bgm3",
+      "bgm4",
+    ]);
+    soundController.current.playPlaylist("bgm");
+    soundController.current.play("crowd");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -6,6 +6,7 @@ import { attemptSpawnVisitors, updateVisitors } from "./visitorSystem";
 import { updateWaterQuality } from "./waterSystem";
 import { getFishSystem, updateFishSystemReferences } from "./fishSystem";
 import { TICK_RATES } from "@/lib/constants";
+import { useSound } from "@/contexts/sound/useSound";
 
 export function GameSystems() {
   const accumulator = useRef({
@@ -19,6 +20,7 @@ export function GameSystems() {
   const gameSpeed = useGameStore.use.gameSpeed();
   const isPaused = useGameStore.use.isPaused();
   const updateGameTime = useGameStore.use.updateGameTime();
+  const { soundController } = useSound();
 
   useFrame((state, delta) => {
     if (isPaused) return;
@@ -30,7 +32,7 @@ export function GameSystems() {
     updateGameTime(dt);
 
     // Update visitors every frame
-    updateVisitors(dt);
+    updateVisitors(dt, soundController);
 
     // Update fish references less frequently (every 100ms) to avoid disruptions
     accumulator.current.fishReferences += dt;
@@ -70,7 +72,7 @@ export function GameSystems() {
     accumulator.current.visitors += dt;
     if (accumulator.current.visitors >= TICK_RATES.visitors) {
       // console.log("Attempting to spawn visitors...");
-      attemptSpawnVisitors();
+      attemptSpawnVisitors(soundController);
       accumulator.current.visitors %= TICK_RATES.visitors;
     }
 

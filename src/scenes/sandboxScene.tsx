@@ -38,6 +38,7 @@ import { useGridStore } from "../stores/gridStore";
 import { useStatisticsStore } from "../stores/statisticsStore";
 import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
+import { useSound } from "@/contexts/sound/useSound";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -70,6 +71,8 @@ export const SandboxScene = () => {
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
   const addMoney = useGameStore.use.addMoney();
+
+  const { soundController } = useSound();
 
   // Global coin interaction handler
   const handleGlobalPointerMove = useCallback(
@@ -136,6 +139,7 @@ export const SandboxScene = () => {
       const coinSystem = getCoinSystem();
       const coin = coinSystem.collectCoin(coinId);
       if (coin) {
+        soundController.play("coinpickup");
         addMoney(coin.value);
         // Track coin collection statistics
         useStatisticsStore.getState().recordCoinCollected(coin.value);
@@ -149,7 +153,7 @@ export const SandboxScene = () => {
     return () => {
       coinInteractionManager.removeClickCallback(handleCoinLogic);
     };
-  }, [addMoney]);
+  }, [addMoney, soundController]);
 
   // Add global event listeners
   useEffect(() => {

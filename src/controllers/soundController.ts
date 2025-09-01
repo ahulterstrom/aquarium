@@ -13,6 +13,7 @@ export class SoundController {
   private sounds = new Map<string, Howl>();
   private soundConfigs = new Map<string, SoundConfig>(); // Store configs for allowMultiple
   private playingInstances = new Map<string, number[]>(); // Track all playing sound IDs per key
+  private playlists = new Map<string, { tracks: string[]; currentIndex: number }>();
   private channels: Record<
     ChannelName,
     { sounds: Set<string>; volume: number; muted: boolean }
@@ -215,6 +216,59 @@ export class SoundController {
         sound.volume(this.computedVolume(key));
       }
     });
+  }
+
+  /** Create a playlist of tracks */
+  createPlaylist(name: string, tracks: string[]) {
+    this.playlists.set(name, { tracks, currentIndex: 0 });
+  }
+
+  /** Start playing a playlist from the beginning */
+  playPlaylist(name: string) {
+    const playlist = this.playlists.get(name);
+    if (!playlist || playlist.tracks.length === 0) {
+      console.warn(`Playlist ${name} not found or empty`);
+      return;
+    }
+
+    playlist.currentIndex = 0;
+    this.playCurrentTrack(name);
+  }
+
+  /** Play the current track in the playlist and set up auto-advance */
+  private playCurrentTrack(playlistName: string) {
+    const playlist = this.playlists.get(playlistName);
+    if (!playlist) return;
+
+    const currentTrack = playlist.tracks[playlist.currentIndex];
+    if (!this.sounds.has(currentTrack)) {
+      console.warn(`Track ${currentTrack} not registered, skipping`);
+      this.nextTrack(playlistName);
+      return;
+    }
+
+    // Stop any currently playing music
+    this.channels.music.sounds.forEach(trackKey => this.stop(trackKey));
+
+    // Play current track
+    this.play(currentTrack);
+
+    // Set up auto-advance to next track when this one ends
+    const sound = this.sounds.get(currentTrack);
+    if (sound) {
+      sound.once('end', () => {
+        this.nextTrack(playlistName);
+      });
+    }
+  }
+
+  /** Advance to the next track in the playlist */
+  nextTrack(playlistName: string) {
+    const playlist = this.playlists.get(playlistName);
+    if (!playlist) return;
+
+    playlist.currentIndex = (playlist.currentIndex + 1) % playlist.tracks.length;
+    this.playCurrentTrack(playlistName);
   }
 
   /** Update volumes for all sounds in a channel */

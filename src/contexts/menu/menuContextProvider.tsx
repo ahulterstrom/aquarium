@@ -26,9 +26,9 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({
           return stack.slice(0, -1);
         }
         // Only the default overlay remains => open settings
-        if (stack[0] === "none") {
-          return ["none", "pause"];
-        }
+        // if (stack[0] === "none") {
+        //   return ["none", "pause"];
+        // }
         // Fallback to default
         return ["none"];
       });

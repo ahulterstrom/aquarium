@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { useUIStore } from "@/stores/uiStore";
 import { useGameStore } from "@/stores/gameStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSound } from "@/contexts/sound/useSound";
 
 export const AnimatedObjectivesPanel = () => {
   return (
@@ -45,6 +46,7 @@ export function ChainedBox() {
   const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const activeObjectives = useGameStore.use.activeObjectives();
   const collectObjectiveReward = useGameStore.use.collectObjectiveReward();
+  const { soundController } = useSound();
 
   const open = showObjectives;
 
@@ -253,6 +255,7 @@ export function ChainedBox() {
                             className="h-6 bg-green-600 px-2 text-xs hover:bg-green-700"
                             onClick={(e) => {
                               e.stopPropagation();
+                              soundController.play("objectivecollect");
                               collectObjectiveReward(objective.id);
                             }}
                           >

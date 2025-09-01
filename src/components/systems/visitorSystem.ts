@@ -2,15 +2,16 @@ import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { VisitorSystem } from "../../systems/VisitorSystem";
 import { getCoinSystem } from "./coinSystem";
+import { SoundController } from "../../controllers/soundController";
 
 // Global visitor system instance
 let visitorSystem: VisitorSystem | null = null;
 
-export function getVisitorSystem(): VisitorSystem {
+export function getVisitorSystem(soundController: SoundController): VisitorSystem {
   if (!visitorSystem) {
     const gridStore = useGridStore.getState();
     const coinSystem = getCoinSystem();
-    visitorSystem = new VisitorSystem(gridStore, coinSystem);
+    visitorSystem = new VisitorSystem(gridStore, coinSystem, soundController);
   }
   return visitorSystem;
 }
@@ -18,9 +19,9 @@ export function getVisitorSystem(): VisitorSystem {
 /**
  * Update all visitors (called every frame)
  */
-export function updateVisitors(deltaTime: number) {
+export function updateVisitors(deltaTime: number, soundController: SoundController) {
   const state = useGameStore.getState();
-  const system = getVisitorSystem();
+  const system = getVisitorSystem(soundController);
 
   // Update system with current game state
   system.updateReferences(state.tanks, state.entrances);
@@ -36,9 +37,9 @@ export function updateVisitors(deltaTime: number) {
 /**
  * Spawn a visitor at a specific entrance (guaranteed spawn)
  */
-export function spawnVisitor(entranceId?: string) {
+export function spawnVisitor(entranceId?: string, soundController: SoundController) {
   const state = useGameStore.getState();
-  const system = getVisitorSystem();
+  const system = getVisitorSystem(soundController);
 
   // Update system with current game state
   system.updateReferences(state.tanks, state.entrances);
@@ -78,9 +79,9 @@ export function spawnVisitor(entranceId?: string) {
 /**
  * Attempt to spawn visitors based on reputation and available entrances
  */
-export function attemptSpawnVisitors() {
+export function attemptSpawnVisitors(soundController: SoundController) {
   const state = useGameStore.getState();
-  const system = getVisitorSystem();
+  const system = getVisitorSystem(soundController);
 
   // Update system with current game state
   system.updateReferences(state.tanks, state.entrances);
@@ -105,6 +106,6 @@ export function attemptSpawnVisitors() {
 
   // Random chance to spawn
   if (Math.random() < finalSpawnChance) {
-    spawnVisitor(); // Spawn at random entrance
+    spawnVisitor(undefined, soundController); // Spawn at random entrance
   }
 }

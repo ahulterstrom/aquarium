@@ -17,6 +17,7 @@ import { GridStore as GridStoreInterface } from "../stores/gridStore";
 import { CoinSystem } from "./CoinSystem";
 import { generateWeightedSkinTone } from "../utils/skinTones";
 import { hairColorGenerator } from "../utils/hairColorGenerator";
+import { SoundController } from "../controllers/soundController";
 
 // Consistent floor height for all visitor positions
 export const FLOOR_HEIGHT = 0;
@@ -29,10 +30,11 @@ export class VisitorSystem {
   private poiSystem: POISystem;
   private pathSmoother: PathSmoother;
   private coinSystem: CoinSystem;
+  private soundController: SoundController;
   private totalVisitorsCreated: number = 0;
   private satisfiedVisitors: number = 0;
 
-  constructor(gridStore: GridStoreInterface, coinSystem: CoinSystem) {
+  constructor(gridStore: GridStoreInterface, coinSystem: CoinSystem, soundController: SoundController) {
     this.visitors = new Map();
     this.tanks = new Map();
     this.entrances = new Map();
@@ -40,6 +42,7 @@ export class VisitorSystem {
     this.poiSystem = new POISystem(gridStore);
     this.pathSmoother = new PathSmoother(gridStore);
     this.coinSystem = coinSystem;
+    this.soundController = soundController;
   }
 
   // Update references from game state
@@ -634,6 +637,8 @@ export class VisitorSystem {
     // Drop coin when leaving viewing state
     if (previousState === "viewing" && newState !== "viewing") {
       this.coinSystem.dropCoin(visitor.position, 1, visitor.id);
+      const randomCoinfall = `coinfall${Math.floor(Math.random() * 4) + 1}`;
+      this.soundController.play(randomCoinfall);
     }
 
     // Track satisfied visitors
