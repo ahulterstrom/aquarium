@@ -4,6 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useWallStyle } from "./WallTextureProvider";
+import { useUIStore } from "@/stores/uiStore";
 
 const WallSegment = ({
   position,
@@ -42,6 +43,12 @@ const WallSegment = ({
       case "east":
         shouldRender = directionRef.current.x > 0;
         break;
+    }
+
+    // if we are in expansion mode or build mode we should not render walls
+    const placementMode = useUIStore.getState().placementMode;
+    if (placementMode === "expansion" || placementMode === "tank") {
+      shouldRender = false;
     }
 
     meshRef.current.visible = shouldRender;
