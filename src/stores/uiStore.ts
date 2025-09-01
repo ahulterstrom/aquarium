@@ -58,6 +58,7 @@ interface UIStore {
   showObjectives: boolean;
   showAllObjectives: boolean;
   showStatistics: boolean;
+  showSettingsModal: boolean;
 
   // Photo mode
   isPhotoMode: boolean;
@@ -81,6 +82,7 @@ interface UIStore {
   setShowObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
   setShowAllObjectives: (value: boolean | ((prev: boolean) => boolean)) => void;
   setShowStatistics: (value: boolean | ((prev: boolean) => boolean)) => void;
+  setShowSettingsModal: (show: boolean) => void;
 
   // Photo mode actions
   enterPhotoMode: () => void;
@@ -126,237 +128,246 @@ export const useUIStore = createSelectors(
     devtools(
       persist(
         (set, get) => ({
-      selectedTankId: null,
-      selectedVisitorId: null,
-      selectedEntranceId: null,
-      selectedFishId: null,
-      hoveredEntityId: null,
-      selectedEntityType: null,
-
-      showFishShop: false,
-      showSellConfirmation: false,
-      showTileExpansion: false,
-      showCustomization: false,
-      showBuild: false,
-      showObjectives: false,
-      showAllObjectives: false,
-      showStatistics: false,
-
-      isPhotoMode: false,
-
-      activeModal: "none",
-      modalData: null,
-
-      placementMode: "none",
-      placementPreview: null,
-      placementRotation: 0,
-      expansionSelectedTiles: new Set(),
-
-      showGrid: true,
-      showStats: false,
-      showNotifications: true,
-      notifications: [],
-
-      selectTank: (id) =>
-        set({
-          selectedTankId: id,
-          selectedVisitorId: null,
-          selectedEntranceId: null,
-          selectedFishId: null,
-          selectedEntityType: id ? "tank" : null,
-        }),
-
-      selectVisitor: (id) =>
-        set({
-          selectedVisitorId: id,
-          selectedTankId: null,
-          selectedEntranceId: null,
-          selectedFishId: null,
-          selectedEntityType: id ? "visitor" : null,
-        }),
-
-      selectEntrance: (id) =>
-        set({
-          selectedEntranceId: id,
-          selectedTankId: null,
-          selectedVisitorId: null,
-          selectedFishId: null,
-          selectedEntityType: id ? "entrance" : null,
-        }),
-
-      selectFish: (id) =>
-        set({
-          selectedFishId: id,
-          selectedTankId: null,
-          selectedVisitorId: null,
-          selectedEntranceId: null,
-          selectedEntityType: id ? "tank" : null, // Fish selection still shows tank panel
-        }),
-
-      clearSelection: () =>
-        set({
           selectedTankId: null,
           selectedVisitorId: null,
           selectedEntranceId: null,
           selectedFishId: null,
+          hoveredEntityId: null,
           selectedEntityType: null,
-        }),
 
-      setHoveredEntity: (id) => set({ hoveredEntityId: id }),
+          showFishShop: false,
+          showSellConfirmation: false,
+          showTileExpansion: false,
+          showCustomization: false,
+          showBuild: false,
+          showObjectives: false,
+          showAllObjectives: false,
+          showStatistics: false,
+          showSettingsModal: false,
 
-      openModal: (modal, data) =>
-        set({
-          activeModal: modal,
-          modalData: data,
-        }),
+          isPhotoMode: false,
 
-      closeModal: () =>
-        set({
           activeModal: "none",
           modalData: null,
-        }),
 
-      setShowFishShop: (show) => set({ showFishShop: show }),
-      setShowSellConfirmation: (show) => set({ showSellConfirmation: show }),
-      setShowTileExpansion: (show) => set({ showTileExpansion: show }),
-      setShowCustomization: (show) => set({ showCustomization: show }),
-      setShowBuild: (show) => set({ showBuild: show }),
-      setShowObjectives: (show) =>
-        set((state) => ({
-          showObjectives:
-            typeof show === "function" ? show(state.showObjectives) : show,
-        })),
-      setShowAllObjectives: (show) =>
-        set((state) => ({
-          showAllObjectives:
-            typeof show === "function" ? show(state.showAllObjectives) : show,
-        })),
-      setShowStatistics: (show) =>
-        set((state) => ({
-          showStatistics:
-            typeof show === "function" ? show(state.showStatistics) : show,
-        })),
-      setPlacementMode: (mode, preview) =>
-        set((state) => ({
-          placementMode: mode,
-          placementPreview: { ...preview, rotation: state.placementRotation },
-          // Reset rotation when entering new placement mode
-          placementRotation: mode !== "none" ? 0 : state.placementRotation,
-          // Clear expansion selection when exiting expansion mode
-          ...(state.placementMode === "expansion" && mode !== "expansion"
-            ? { expansionSelectedTiles: new Set() }
-            : {}),
-          // Only clear selections when entering placement mode, not when exiting
-          ...(mode !== "none"
-            ? {
-                selectedTankId: null,
-                selectedVisitorId: null,
-                selectedEntranceId: null,
-                selectedFishId: null,
-                selectedEntityType: null,
-              }
-            : {}),
-        })),
-
-      cancelPlacement: () =>
-        set({
           placementMode: "none",
           placementPreview: null,
           placementRotation: 0,
           expansionSelectedTiles: new Set(),
+
+          showGrid: true,
+          showStats: false,
+          showNotifications: true,
+          notifications: [],
+
+          selectTank: (id) =>
+            set({
+              selectedTankId: id,
+              selectedVisitorId: null,
+              selectedEntranceId: null,
+              selectedFishId: null,
+              selectedEntityType: id ? "tank" : null,
+            }),
+
+          selectVisitor: (id) =>
+            set({
+              selectedVisitorId: id,
+              selectedTankId: null,
+              selectedEntranceId: null,
+              selectedFishId: null,
+              selectedEntityType: id ? "visitor" : null,
+            }),
+
+          selectEntrance: (id) =>
+            set({
+              selectedEntranceId: id,
+              selectedTankId: null,
+              selectedVisitorId: null,
+              selectedFishId: null,
+              selectedEntityType: id ? "entrance" : null,
+            }),
+
+          selectFish: (id) =>
+            set({
+              selectedFishId: id,
+              selectedTankId: null,
+              selectedVisitorId: null,
+              selectedEntranceId: null,
+              selectedEntityType: id ? "tank" : null, // Fish selection still shows tank panel
+            }),
+
+          clearSelection: () =>
+            set({
+              selectedTankId: null,
+              selectedVisitorId: null,
+              selectedEntranceId: null,
+              selectedFishId: null,
+              selectedEntityType: null,
+            }),
+
+          setHoveredEntity: (id) => set({ hoveredEntityId: id }),
+
+          openModal: (modal, data) =>
+            set({
+              activeModal: modal,
+              modalData: data,
+            }),
+
+          closeModal: () =>
+            set({
+              activeModal: "none",
+              modalData: null,
+            }),
+
+          setShowFishShop: (show) => set({ showFishShop: show }),
+          setShowSellConfirmation: (show) =>
+            set({ showSellConfirmation: show }),
+          setShowTileExpansion: (show) => set({ showTileExpansion: show }),
+          setShowCustomization: (show) => set({ showCustomization: show }),
+          setShowBuild: (show) => set({ showBuild: show }),
+          setShowObjectives: (show) =>
+            set((state) => ({
+              showObjectives:
+                typeof show === "function" ? show(state.showObjectives) : show,
+            })),
+          setShowAllObjectives: (show) =>
+            set((state) => ({
+              showAllObjectives:
+                typeof show === "function"
+                  ? show(state.showAllObjectives)
+                  : show,
+            })),
+          setShowStatistics: (show) =>
+            set((state) => ({
+              showStatistics:
+                typeof show === "function" ? show(state.showStatistics) : show,
+            })),
+          setPlacementMode: (mode, preview) =>
+            set((state) => ({
+              placementMode: mode,
+              placementPreview: {
+                ...preview,
+                rotation: state.placementRotation,
+              },
+              // Reset rotation when entering new placement mode
+              placementRotation: mode !== "none" ? 0 : state.placementRotation,
+              // Clear expansion selection when exiting expansion mode
+              ...(state.placementMode === "expansion" && mode !== "expansion"
+                ? { expansionSelectedTiles: new Set() }
+                : {}),
+              // Only clear selections when entering placement mode, not when exiting
+              ...(mode !== "none"
+                ? {
+                    selectedTankId: null,
+                    selectedVisitorId: null,
+                    selectedEntranceId: null,
+                    selectedFishId: null,
+                    selectedEntityType: null,
+                  }
+                : {}),
+            })),
+          setShowSettingsModal: (show) => set({ showSettingsModal: show }),
+
+          cancelPlacement: () =>
+            set({
+              placementMode: "none",
+              placementPreview: null,
+              placementRotation: 0,
+              expansionSelectedTiles: new Set(),
+            }),
+
+          rotatePlacementCCW: () =>
+            set((state) => {
+              if (state.placementMode === "none") return state;
+              const newRotation = (state.placementRotation - 90 + 360) % 360;
+              return {
+                placementRotation: newRotation,
+                placementPreview: state.placementPreview
+                  ? { ...state.placementPreview, rotation: newRotation }
+                  : null,
+              };
+            }),
+
+          rotatePlacementCW: () =>
+            set((state) => {
+              if (state.placementMode === "none") return state;
+              const newRotation = (state.placementRotation + 90) % 360;
+              return {
+                placementRotation: newRotation,
+                placementPreview: state.placementPreview
+                  ? { ...state.placementPreview, rotation: newRotation }
+                  : null,
+              };
+            }),
+
+          setExpansionSelectedTiles: (tiles) =>
+            set({ expansionSelectedTiles: tiles }),
+
+          toggleExpansionTileSelection: (x, z, maxTiles) =>
+            set((state) => {
+              const posKey = `${x},${z}`;
+              const newSelection = new Set(state.expansionSelectedTiles);
+
+              if (newSelection.has(posKey)) {
+                newSelection.delete(posKey);
+              } else if (newSelection.size < maxTiles) {
+                newSelection.add(posKey);
+              }
+
+              return { expansionSelectedTiles: newSelection };
+            }),
+
+          clearExpansionSelection: () =>
+            set({ expansionSelectedTiles: new Set() }),
+
+          toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+          toggleStats: () => set((state) => ({ showStats: !state.showStats })),
+          toggleNotifications: () =>
+            set((state) => ({ showNotifications: !state.showNotifications })),
+
+          addNotification: (notification) => {
+            const id = Date.now().toString();
+            const newNotification: Notification = {
+              ...notification,
+              id,
+              timestamp: Date.now(),
+              duration: notification.duration || 5000,
+            };
+
+            set((state) => ({
+              notifications: [...state.notifications, newNotification],
+            }));
+
+            if (newNotification.duration && newNotification.duration > 0) {
+              setTimeout(() => {
+                get().removeNotification(id);
+              }, newNotification.duration);
+            }
+          },
+
+          removeNotification: (id) =>
+            set((state) => ({
+              notifications: state.notifications.filter((n) => n.id !== id),
+            })),
+
+          clearNotifications: () => set({ notifications: [] }),
+
+          // Photo mode actions
+          enterPhotoMode: () => set({ isPhotoMode: true }),
+          exitPhotoMode: () => set({ isPhotoMode: false }),
+          togglePhotoMode: () =>
+            set((state) => ({ isPhotoMode: !state.isPhotoMode })),
         }),
-
-      rotatePlacementCCW: () =>
-        set((state) => {
-          if (state.placementMode === "none") return state;
-          const newRotation = (state.placementRotation - 90 + 360) % 360;
-          return {
-            placementRotation: newRotation,
-            placementPreview: state.placementPreview
-              ? { ...state.placementPreview, rotation: newRotation }
-              : null,
-          };
-        }),
-
-      rotatePlacementCW: () =>
-        set((state) => {
-          if (state.placementMode === "none") return state;
-          const newRotation = (state.placementRotation + 90) % 360;
-          return {
-            placementRotation: newRotation,
-            placementPreview: state.placementPreview
-              ? { ...state.placementPreview, rotation: newRotation }
-              : null,
-          };
-        }),
-
-      setExpansionSelectedTiles: (tiles) =>
-        set({ expansionSelectedTiles: tiles }),
-
-      toggleExpansionTileSelection: (x, z, maxTiles) =>
-        set((state) => {
-          const posKey = `${x},${z}`;
-          const newSelection = new Set(state.expansionSelectedTiles);
-
-          if (newSelection.has(posKey)) {
-            newSelection.delete(posKey);
-          } else if (newSelection.size < maxTiles) {
-            newSelection.add(posKey);
-          }
-
-          return { expansionSelectedTiles: newSelection };
-        }),
-
-      clearExpansionSelection: () => set({ expansionSelectedTiles: new Set() }),
-
-      toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
-      toggleStats: () => set((state) => ({ showStats: !state.showStats })),
-      toggleNotifications: () =>
-        set((state) => ({ showNotifications: !state.showNotifications })),
-
-      addNotification: (notification) => {
-        const id = Date.now().toString();
-        const newNotification: Notification = {
-          ...notification,
-          id,
-          timestamp: Date.now(),
-          duration: notification.duration || 5000,
-        };
-
-        set((state) => ({
-          notifications: [...state.notifications, newNotification],
-        }));
-
-        if (newNotification.duration && newNotification.duration > 0) {
-          setTimeout(() => {
-            get().removeNotification(id);
-          }, newNotification.duration);
-        }
-      },
-
-      removeNotification: (id) =>
-        set((state) => ({
-          notifications: state.notifications.filter((n) => n.id !== id),
-        })),
-
-      clearNotifications: () => set({ notifications: [] }),
-
-      // Photo mode actions
-      enterPhotoMode: () => set({ isPhotoMode: true }),
-      exitPhotoMode: () => set({ isPhotoMode: false }),
-      togglePhotoMode: () =>
-        set((state) => ({ isPhotoMode: !state.isPhotoMode })),
-    }),
-    {
-      name: "aquarium-ui-state",
-      partialize: (state) => ({
-        showGrid: state.showGrid,
-        showStats: state.showStats,
-        showNotifications: state.showNotifications,
-        isPhotoMode: state.isPhotoMode,
-      }),
-    }
-  )
+        {
+          name: "aquarium-ui-state",
+          partialize: (state) => ({
+            showGrid: state.showGrid,
+            showStats: state.showStats,
+            showNotifications: state.showNotifications,
+            isPhotoMode: state.isPhotoMode,
+          }),
+        },
+      ),
     ),
   ),
 );

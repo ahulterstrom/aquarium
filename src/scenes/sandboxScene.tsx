@@ -1,14 +1,14 @@
+import { Coins } from "@/components/coins";
 import { Entrances } from "@/components/entrances";
+import { FishRenderer } from "@/components/fish";
+import { FloorGrid } from "@/components/floor/FloorGrid";
+import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
+import { ExpansionGrid } from "@/components/game/ExpansionGrid";
+import { CanvasCapture } from "@/components/screenshot/CanvasCapture";
 import { Tanks } from "@/components/tanks";
 import { Visitors } from "@/components/visitors";
-import { Coins } from "@/components/coins";
-import { FishRenderer } from "@/components/fish";
-import { ExpansionGrid } from "@/components/game/ExpansionGrid";
 import { WallSystem } from "@/components/walls/WallSystem";
 import { WallTextureProvider } from "@/components/walls/WallTextureProvider";
-import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
-import { FloorGrid } from "@/components/floor/FloorGrid";
-import { CanvasCapture } from "@/components/screenshot/CanvasCapture";
 import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
 import { getRotatedDimensions } from "@/lib/utils/placement";
 import {
@@ -16,22 +16,28 @@ import {
   MapControls,
   OrthographicCamera,
 } from "@react-three/drei";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useThree, useFrame } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
+import { nanoid } from "nanoid";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Grid } from "../components/game/Grid";
 import { GameSystems } from "../components/systems/GameSystems";
-import { initializeCoinSystem } from "../components/systems/coinSystem";
-import { initializeFishSystem, addFishToSystem, updateFishSystemReferences } from "../components/systems/fishSystem";
-import { getCoinSystem } from "../components/systems/coinSystem";
+import {
+  getCoinSystem,
+  initializeCoinSystem,
+} from "../components/systems/coinSystem";
+import {
+  addFishToSystem,
+  initializeFishSystem,
+  updateFishSystemReferences,
+} from "../components/systems/fishSystem";
 import { coinInteractionManager } from "../lib/coinInteraction";
+import { useEconomyStore } from "../stores/economyStore";
 import { useGameStore } from "../stores/gameStore";
 import { useGridStore } from "../stores/gridStore";
-import { useUIStore } from "../stores/uiStore";
 import { useStatisticsStore } from "../stores/statisticsStore";
-import { useEconomyStore } from "../stores/economyStore";
+import { useUIStore } from "../stores/uiStore";
 import { Entrance, Tank as TankType } from "../types/game.types";
-import { nanoid } from "nanoid";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -66,53 +72,63 @@ export const SandboxScene = () => {
   const addMoney = useGameStore.use.addMoney();
 
   // Global coin interaction handler
-  const handleGlobalPointerMove = useCallback((event: PointerEvent) => {
-    if (placementMode !== "none") return; // Don't interfere with placement mode
-    
-    const pointer = new THREE.Vector2();
-    const rect = gl.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  const handleGlobalPointerMove = useCallback(
+    (event: PointerEvent) => {
+      if (placementMode !== "none") return; // Don't interfere with placement mode
 
-    raycaster.current.setFromCamera(pointer, camera);
-    
-    // Only raycast against coin meshes
-    const coinObjects = coinInteractionManager.getCoinMeshes();
-    const intersects = raycaster.current.intersectObjects(coinObjects, true);
-    
-    if (intersects.length > 0) {
-      document.body.style.cursor = "pointer";
-      // Collect coin on hover
-      const coinId = coinInteractionManager.findCoinIdFromMesh(intersects[0].object);
-      if (coinId) {
-        coinInteractionManager.handleCoinClick(coinId);
+      const pointer = new THREE.Vector2();
+      const rect = gl.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.current.setFromCamera(pointer, camera);
+
+      // Only raycast against coin meshes
+      const coinObjects = coinInteractionManager.getCoinMeshes();
+      const intersects = raycaster.current.intersectObjects(coinObjects, true);
+
+      if (intersects.length > 0) {
+        document.body.style.cursor = "pointer";
+        // Collect coin on hover
+        const coinId = coinInteractionManager.findCoinIdFromMesh(
+          intersects[0].object,
+        );
+        if (coinId) {
+          coinInteractionManager.handleCoinClick(coinId);
+        }
+      } else {
+        document.body.style.cursor = "default";
       }
-    } else {
-      document.body.style.cursor = "default";
-    }
-  }, [camera, gl, placementMode]);
+    },
+    [camera, gl, placementMode],
+  );
 
-  const handleGlobalClick = useCallback((event: MouseEvent) => {
-    if (placementMode !== "none") return; // Don't interfere with placement mode
-    
-    const pointer = new THREE.Vector2();
-    const rect = gl.domElement.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  const handleGlobalClick = useCallback(
+    (event: MouseEvent) => {
+      if (placementMode !== "none") return; // Don't interfere with placement mode
 
-    raycaster.current.setFromCamera(pointer, camera);
-    
-    // Only raycast against coin meshes
-    const coinObjects = coinInteractionManager.getCoinMeshes();
-    const intersects = raycaster.current.intersectObjects(coinObjects, true);
-    
-    if (intersects.length > 0) {
-      const coinId = coinInteractionManager.findCoinIdFromMesh(intersects[0].object);
-      if (coinId) {
-        coinInteractionManager.handleCoinClick(coinId);
+      const pointer = new THREE.Vector2();
+      const rect = gl.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.current.setFromCamera(pointer, camera);
+
+      // Only raycast against coin meshes
+      const coinObjects = coinInteractionManager.getCoinMeshes();
+      const intersects = raycaster.current.intersectObjects(coinObjects, true);
+
+      if (intersects.length > 0) {
+        const coinId = coinInteractionManager.findCoinIdFromMesh(
+          intersects[0].object,
+        );
+        if (coinId) {
+          coinInteractionManager.handleCoinClick(coinId);
+        }
       }
-    }
-  }, [camera, gl, placementMode]);
+    },
+    [camera, gl, placementMode],
+  );
 
   // Set up coin click handling for money/game logic
   useEffect(() => {
@@ -138,12 +154,12 @@ export const SandboxScene = () => {
   // Add global event listeners
   useEffect(() => {
     const canvas = gl.domElement;
-    canvas.addEventListener('pointermove', handleGlobalPointerMove);
-    canvas.addEventListener('click', handleGlobalClick);
-    
+    canvas.addEventListener("pointermove", handleGlobalPointerMove);
+    canvas.addEventListener("click", handleGlobalClick);
+
     return () => {
-      canvas.removeEventListener('pointermove', handleGlobalPointerMove);
-      canvas.removeEventListener('click', handleGlobalClick);
+      canvas.removeEventListener("pointermove", handleGlobalPointerMove);
+      canvas.removeEventListener("click", handleGlobalClick);
     };
   }, [gl, handleGlobalPointerMove, handleGlobalClick]);
 
@@ -163,7 +179,10 @@ export const SandboxScene = () => {
         try {
           addFishToSystem(fish);
         } catch (error) {
-          console.warn("Failed to add fish to system during scene initialization:", error);
+          console.warn(
+            "Failed to add fish to system during scene initialization:",
+            error,
+          );
         }
       });
       updateFishSystemReferences();

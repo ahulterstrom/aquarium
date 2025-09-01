@@ -21,6 +21,7 @@ import {
   Paintbrush,
   Pause,
   Play,
+  Settings,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
@@ -52,6 +53,7 @@ import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
 import { StatisticsModal } from "@/components/gameUI/statisticsModal";
+import { SettingsModal } from "@/components/gameUI/settingsModal";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -132,6 +134,8 @@ export const SandboxUI = () => {
   const setShowBuild = useUIStore.use.setShowBuild();
   const showStatistics = useUIStore.use.showStatistics();
   const setShowStatistics = useUIStore.use.setShowStatistics();
+  const showSettingsModal = useUIStore.use.showSettingsModal();
+  const setShowSettingsModal = useUIStore.use.setShowSettingsModal();
   const placementMode = useUIStore.use.placementMode();
   const isInPlacementMode = placementMode !== "none";
   const selectedTankId = useUIStore.use.selectedTankId();
@@ -303,11 +307,15 @@ export const SandboxUI = () => {
                   >
                     <ChartLine />
                   </Button>
-                  <Separator orientation="vertical" />
+                  <Button
+                    variant="onGlass"
+                    onClick={() => setShowSettingsModal(!showSettingsModal)}
+                  >
+                    <Settings />
+                  </Button>
 
                   <Button
-                    size="sm"
-                    variant={isPaused ? "default" : "outline"}
+                    variant={isPaused ? "default" : "onGlass"}
                     onClick={() => setPaused(!isPaused)}
                   >
                     {isPaused ? (
@@ -786,6 +794,9 @@ export const SandboxUI = () => {
 
         {/* Statistics Modal */}
         <StatisticsModal />
+
+        {/* Settings Modal */}
+        <SettingsModal />
       </div>
     </div>
   );
