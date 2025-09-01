@@ -57,14 +57,17 @@ export const TileExpansionPanel = () => {
     isInPlacementMode ? selectedTiles : undefined,
   );
 
-  // Dynamic expansion pack info - based on total tiles owned (placed + inventory)
-  const totalTilesOwned = cells.size + expansionTiles;
-  const expansionInfo = getNextExpansionInfo(totalTilesOwned);
+  // Dynamic expansion pack info - based on highest purchased expansion level
+  const maxPurchasedLevel = purchasedExpansionLevels.size > 0 
+    ? Math.max(...Array.from(purchasedExpansionLevels))
+    : 0;
+  const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
+  const expansionInfo = getNextExpansionInfo(totalPurchasedTiles);
   const nextPackCost = getNextExpansionCost(
-    totalTilesOwned,
+    totalPurchasedTiles,
     EXPANSION_BASE_COST,
   );
-  const nextPackSize = getNextExpansionPackSize(totalTilesOwned);
+  const nextPackSize = getNextExpansionPackSize(totalPurchasedTiles);
 
   const canAffordExpansion = money >= nextPackCost;
   const hasAvailableTiles = expansionTiles > 0;
@@ -220,7 +223,7 @@ export const TileExpansionPanel = () => {
                 </Badge>
               </div>
 
-              {!expansionUnlocked && nextExpansionUnlock && (
+              {!expansionUnlocked && nextExpansionUnlock && expansionInfo.nextLevel <= 3 && (
                 <div className="mb-3 flex items-center gap-2 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
                   <span className="text-sm">

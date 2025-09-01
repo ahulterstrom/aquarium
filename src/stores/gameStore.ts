@@ -519,9 +519,24 @@ export const useGameStore = createSelectors(
             // Expansion system implementations
             buyExpansionPack: () => {
               const state = get();
-              const gridState = useGridStore.getState();
-              const currentTiles = gridState.cells.size;
-              const currentLevel = getCurrentExpansionLevel(currentTiles);
+              
+              // Calculate total purchased tiles based on expansion levels purchased
+              // Level 0: 3x3 = 9 tiles (initial)
+              // Level 1: 4x4 = 16 tiles total
+              // Level 2: 5x5 = 25 tiles total
+              // Level 3: 6x6 = 36 tiles total, etc.
+              const INITIAL_GRID_SIZE = 9; // 3x3 starting grid
+              
+              // Find the highest purchased level
+              const maxPurchasedLevel = state.purchasedExpansionLevels.size > 0 
+                ? Math.max(...Array.from(state.purchasedExpansionLevels))
+                : 0;
+              
+              // Calculate total tiles for the highest purchased level
+              // Formula: (level + 3)² gives total tiles at that level
+              const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
+              
+              const currentLevel = getCurrentExpansionLevel(totalPurchasedTiles);
               const nextLevel = currentLevel + 1;
 
               // Check if this level has already been purchased
@@ -530,10 +545,10 @@ export const useGameStore = createSelectors(
               }
 
               const packCost = getNextExpansionCost(
-                currentTiles,
+                totalPurchasedTiles,
                 EXPANSION_BASE_COST,
               );
-              const packSize = getNextExpansionPackSize(currentTiles);
+              const packSize = getNextExpansionPackSize(totalPurchasedTiles);
 
               if (state.money >= packCost) {
                 set((state) => ({
@@ -551,9 +566,17 @@ export const useGameStore = createSelectors(
 
             canBuyExpansion: () => {
               const state = get();
-              const gridState = useGridStore.getState();
-              const currentTiles = gridState.cells.size;
-              const currentLevel = getCurrentExpansionLevel(currentTiles);
+              
+              // Find the highest purchased level
+              const maxPurchasedLevel = state.purchasedExpansionLevels.size > 0 
+                ? Math.max(...Array.from(state.purchasedExpansionLevels))
+                : 0;
+              
+              // Calculate total tiles for the highest purchased level
+              // Formula: (level + 3)² gives total tiles at that level
+              const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
+              
+              const currentLevel = getCurrentExpansionLevel(totalPurchasedTiles);
               const nextLevel = currentLevel + 1;
 
               // Check if this level has already been purchased
@@ -561,9 +584,14 @@ export const useGameStore = createSelectors(
                 return false; // Already purchased this level
               }
 
-              // Check if next expansion level is unlocked
-              const nextLevelUnlockId = `expansion_level_${nextLevel}`;
-              return state.unlockSystem.isUnlocked(nextLevelUnlockId);
+              // For levels 1-3, check unlock requirements
+              if (nextLevel <= 3) {
+                const nextLevelUnlockId = `expansion_level_${nextLevel}`;
+                return state.unlockSystem.isUnlocked(nextLevelUnlockId);
+              }
+              
+              // For levels 4+, always allow purchase (no unlock requirements)
+              return true;
             },
 
             placeExpansionTiles: (positions) => {
