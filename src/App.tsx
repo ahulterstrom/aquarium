@@ -48,7 +48,7 @@ function App() {
                 <SceneManager />
               </Suspense>
             </Canvas>
-            <Loader />
+            {/* <Loader /> */}
             <Leva hidden={true} collapsed flat />
           </MenuProvider>
         </SceneProvider>
