@@ -34,7 +34,11 @@ export class VisitorSystem {
   private totalVisitorsCreated: number = 0;
   private satisfiedVisitors: number = 0;
 
-  constructor(gridStore: GridStoreInterface, coinSystem: CoinSystem, soundController: SoundController) {
+  constructor(
+    gridStore: GridStoreInterface,
+    coinSystem: CoinSystem,
+    soundController: SoundController,
+  ) {
     this.visitors = new Map();
     this.tanks = new Map();
     this.entrances = new Map();
@@ -230,10 +234,10 @@ export class VisitorSystem {
 
     // After thinking time, decide what to do next
     if (visitor.stateTimer > visitor.thinkingDuration) {
-      console.log("Done thinking");
+      // console.log("Done thinking");
       // Random choice between exploring and viewing a POI
       if (Math.random() < 0.3) {
-        console.log("Choosing to explore");
+        // console.log("Choosing to explore");
         // Choose to explore
         this.transitionToState(visitor, "exploring");
       } else {

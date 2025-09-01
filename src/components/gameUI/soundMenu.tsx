@@ -40,31 +40,26 @@ export const SoundMenu = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between rounded-lg bg-gray-900/60 p-4 transition-colors hover:bg-gray-900/80">
+      <div className="glass flex items-center justify-between rounded-lg p-4">
         <div className="space-y-1">
-          <Label
-            htmlFor="mute-toggle"
-            className="text-lg font-medium text-white"
-          >
+          <Label htmlFor="mute-toggle" className="text-lg font-medium">
             Mute All Sound
           </Label>
-          <p className="text-sm text-gray-400">Disable all game audio</p>
+          <p className="text-foreground-muted text-sm">
+            Disable all game audio
+          </p>
         </div>
         <Switch
           id="mute-toggle"
           checked={isMuted}
           onCheckedChange={toggleMute}
-          className="data-[state=checked]:bg-purple-600"
         />
       </div>
 
       {/* Master Volume */}
-      <div className="space-y-3 rounded-lg bg-gray-900/60 p-4 transition-colors hover:bg-gray-900/80">
+      <div className="glass space-y-3 rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <Label
-            htmlFor="master-volume"
-            className="text-lg font-medium text-white"
-          >
+          <Label htmlFor="master-volume" className="text-lg font-medium">
             Master Volume
           </Label>
           <div className="flex items-center gap-2">
@@ -86,12 +81,9 @@ export const SoundMenu = () => {
       </div>
 
       {/* Music Volume */}
-      <div className="space-y-3 rounded-lg bg-gray-900/60 p-4 transition-colors hover:bg-gray-900/80">
+      <div className="glass space-y-3 rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <Label
-            htmlFor="music-volume"
-            className="text-lg font-medium text-white"
-          >
+          <Label htmlFor="music-volume" className="text-lg font-medium">
             Music Volume
           </Label>
           <div className="flex items-center gap-2">
@@ -113,12 +105,9 @@ export const SoundMenu = () => {
       </div>
 
       {/* Sound Effects Volume */}
-      <div className="space-y-3 rounded-lg bg-gray-900/60 p-4 transition-colors hover:bg-gray-900/80">
+      <div className="glass space-y-3 rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <Label
-            htmlFor="sfx-volume"
-            className="text-lg font-medium text-white"
-          >
+          <Label htmlFor="sfx-volume" className="text-lg font-medium">
             Sound Effects
           </Label>
           <div className="flex items-center gap-2">

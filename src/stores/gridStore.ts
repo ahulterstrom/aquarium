@@ -223,7 +223,7 @@ export const useGridStore = createSelectors(
           isWalkable: (x, y, z) => {
             const cell = get().getCell(x, y, z);
             if (!cell) {
-              console.log(`No cell at ${x},${y},${z}`);
+              // console.log(`No cell at ${x},${y},${z}`);
               return false;
             }
 

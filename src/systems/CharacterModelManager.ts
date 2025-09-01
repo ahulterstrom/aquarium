@@ -71,10 +71,6 @@ export class CharacterModelManager {
         (gltf: GLTF) => {
           // Process animations
           const animations = new Map<string, THREE.AnimationClip>();
-          console.log(
-            `Found ${gltf.animations.length} animations in ${characterModel.name}:`,
-            gltf.animations.map((clip) => clip.name),
-          );
           gltf.animations.forEach((clip) => {
             animations.set(clip.name, clip);
           });
@@ -104,9 +100,9 @@ export class CharacterModelManager {
         },
         // Progress callback
         (progress) => {
-          console.log(
-            `Loading ${characterModel.name}: ${((progress.loaded / progress.total) * 100).toFixed(0)}%`,
-          );
+          // console.log(
+          //   `Loading ${characterModel.name}: ${((progress.loaded / progress.total) * 100).toFixed(0)}%`,
+          // );
         },
         // Error callback
         (error) => {
@@ -224,18 +220,6 @@ export class CharacterModelManager {
         }
       }
     });
-
-    // Log results
-    if (skinAppliedCount > 0) {
-      console.log(
-        `Applied skin tone ${skinToneId} to ${skinAppliedCount} materials`,
-      );
-    }
-    if (hairAppliedCount > 0) {
-      console.log(
-        `Applied hair color ${hairColorId} to ${hairAppliedCount} materials`,
-      );
-    }
   }
 
   // Get animations for a model

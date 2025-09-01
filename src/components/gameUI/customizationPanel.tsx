@@ -59,7 +59,11 @@ export const CustomizationPanel = () => {
   return (
     <>
       <Sheet open={showCustomization} onOpenChange={setShowCustomization}>
-        <SheetContent side="left" className="mx-auto max-w-2xl">
+        <SheetContent
+          side="left"
+          className="mx-auto max-w-2xl"
+          withOverlay={false}
+        >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Paintbrush className="h-6 w-6 text-purple-600" />
@@ -91,7 +95,10 @@ export const CustomizationPanel = () => {
                   </span>
                 </div>
                 <Button
-                  onClick={() => setShowWallModal(true)}
+                  onClick={() => {
+                    setShowWallModal(true);
+                    setShowCustomization(false);
+                  }}
                   variant="outline"
                 >
                   <Paintbrush className="mr-2 h-4 w-4" />
@@ -119,7 +126,10 @@ export const CustomizationPanel = () => {
                   </span>
                 </div>
                 <Button
-                  onClick={() => setShowFloorModal(true)}
+                  onClick={() => {
+                    setShowFloorModal(true);
+                    setShowCustomization(false);
+                  }}
                   variant="outline"
                 >
                   <Paintbrush className="mr-2 h-4 w-4" />
@@ -143,7 +153,7 @@ export const CustomizationPanel = () => {
               <button
                 key={style.id}
                 onClick={() => handleWallStyleSelect(style.id)}
-                className={`rounded-lg border-2 p-4 transition-all ${
+                className={`glass rounded-lg border-2 !bg-white/50 p-4 transition-all ${
                   selectedWallStyle === style.id
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
@@ -155,9 +165,11 @@ export const CustomizationPanel = () => {
                     backgroundImage: `url(${style.textures.baseColor})`,
                   }}
                 />
-                <div className="text-sm font-medium">{style.name}</div>
+                <div className="text-sm font-medium text-foreground">
+                  {style.name}
+                </div>
                 {style.description && (
-                  <div className="mt-1 text-xs text-gray-500">
+                  <div className="text-foreground-muted mt-1 text-xs">
                     {style.description}
                   </div>
                 )}
@@ -166,7 +178,13 @@ export const CustomizationPanel = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowWallModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowWallModal(false);
+                setShowCustomization(true);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={applyWallStyle}>Apply</Button>
@@ -186,7 +204,7 @@ export const CustomizationPanel = () => {
               <button
                 key={style.id}
                 onClick={() => handleFloorStyleSelect(style.id)}
-                className={`rounded-lg border-2 p-4 transition-all ${
+                className={`glass rounded-lg border-2 !bg-white/50 p-4 transition-all ${
                   selectedFloorStyle === style.id
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
@@ -198,9 +216,11 @@ export const CustomizationPanel = () => {
                     backgroundImage: `url(${style.textures.baseColor})`,
                   }}
                 />
-                <div className="text-sm font-medium">{style.name}</div>
+                <div className="text-sm font-medium text-foreground">
+                  {style.name}
+                </div>
                 {style.description && (
-                  <div className="mt-1 text-xs text-gray-500">
+                  <div className="text-foreground-muted mt-1 text-xs">
                     {style.description}
                   </div>
                 )}
@@ -209,7 +229,13 @@ export const CustomizationPanel = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowFloorModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowFloorModal(false);
+                setShowCustomization(true);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={applyFloorStyle}>Apply</Button>

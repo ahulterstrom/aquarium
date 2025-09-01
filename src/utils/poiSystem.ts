@@ -153,16 +153,16 @@ export class POISystem {
           viewingGridPos.z * 2 + offsetZ,
         );
 
-        console.log(
-          `Found valid viewing position at grid (${viewingGridPos.x}, ${viewingGridPos.z}), world (${worldPos.x}, ${worldPos.z})`,
-        );
+        // console.log(
+        //   `Found valid viewing position at grid (${viewingGridPos.x}, ${viewingGridPos.z}), world (${worldPos.x}, ${worldPos.z})`,
+        // );
         return worldPos;
       }
     }
 
-    console.error(
-      `No valid viewing position found for tank at grid (${tank.position.x}, ${tank.position.z})`,
-    );
+    // console.error(
+    //   `No valid viewing position found for tank at grid (${tank.position.x}, ${tank.position.z})`,
+    // );
     return null;
   }
 

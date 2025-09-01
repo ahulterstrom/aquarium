@@ -70,7 +70,7 @@ export const StatisticsModal = () => {
 
   return (
     <Dialog open={showStatistics} onOpenChange={setShowStatistics}>
-      <DialogContent className="max-w-2xl" showOverlay>
+      <DialogContent className="max-w-2xl !bg-white/50" showOverlay>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             Statistics
