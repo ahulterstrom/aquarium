@@ -344,6 +344,16 @@ export const useGameStore = createSelectors(
 
                 // Remove all fish in this tank
                 tank.fishIds.forEach((fishId) => {
+                  // Remove from visual system first
+                  try {
+                    removeFishFromSystem(fishId);
+                  } catch (error) {
+                    console.warn(
+                      "Fish system not initialized when removing fish from tank:",
+                      error,
+                    );
+                  }
+                  // Then remove from state
                   fishMap.delete(fishId);
                 });
 
