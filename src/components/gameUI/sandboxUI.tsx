@@ -10,51 +10,30 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertTriangle,
-  ChartLine,
-  DollarSign,
-  Expand,
-  Fish,
-  Hammer,
-  Lock,
-  Paintbrush,
-  Pause,
-  Play,
-  Settings,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, DollarSign, Fish, Lock, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 // Import game stores and types
 import { AllObjectivesModal } from "@/components/gameUI/allObjectivesModal";
 import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesPanel";
+import { BottomPanel } from "@/components/gameUI/bottomPanel";
 import { BuildPanel } from "@/components/gameUI/buildPanel";
 import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
-import { DateTimeDisplay } from "@/components/gameUI/dateTimeDisplay";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
-import { MoneyDisplay } from "@/components/gameUI/moneyDisplay";
 import { PlacementControls } from "@/components/gameUI/placementControls";
+import { SettingsModal } from "@/components/gameUI/settingsModal";
+import { StatisticsModal } from "@/components/gameUI/statisticsModal";
 import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
-import { VisitorCountDisplay } from "@/components/gameUI/visitorCountDisplay";
+import { TopPanel } from "@/components/gameUI/topPanel";
 import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
 import { spawnVisitor } from "@/components/systems/visitorSystem";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { ENTRANCE_COST, TANK_COST } from "@/lib/constants";
+import { useSound } from "@/contexts/sound/useSound";
 import { useGame } from "@/stores/useGame";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
 import { useGridStore } from "../../stores/gridStore";
 import { useUIStore } from "../../stores/uiStore";
 import { FishSpecies, Fish as FishType } from "../../types/game.types";
-import { StatisticsModal } from "@/components/gameUI/statisticsModal";
-import { SettingsModal } from "@/components/gameUI/settingsModal";
-import { useSound } from "@/contexts/sound/useSound";
 
 // Fish species available for purchase
 const FISH_SPECIES: FishSpecies[] = [
@@ -107,7 +86,6 @@ const FISH_SPECIES: FishSpecies[] = [
 export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
 
-  const setShowAllObjectives = useUIStore.use.setShowAllObjectives();
   const isDebugging = useGame.use.isDebugging();
   const { soundController } = useSound();
   const tanks = useGameStore.use.tanks();
@@ -116,11 +94,6 @@ export const SandboxUI = () => {
   const addFish = useGameStore.use.addFish();
   const updateTank = useGameStore.use.updateTank();
   const removeTank = useGameStore.use.removeTank();
-  const gameSpeed = useGameStore.use.gameSpeed();
-  const setGameSpeed = useGameStore.use.setGameSpeed();
-  const isPaused = useGameStore.use.isPaused();
-  const setPaused = useGameStore.use.setPaused();
-  const activeObjectives = useGameStore.use.activeObjectives();
   const isUnlocked = useGameStore.use.isUnlocked();
 
   const removeObject = useGridStore.use.removeObject();
@@ -128,21 +101,9 @@ export const SandboxUI = () => {
   const setShowFishShop = useUIStore.use.setShowFishShop();
   const showSellConfirmation = useUIStore.use.showSellConfirmation();
   const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
-  const showTileExpansion = useUIStore.use.showTileExpansion();
-  const setShowTileExpansion = useUIStore.use.setShowTileExpansion();
-  const showCustomization = useUIStore.use.showCustomization();
-  const setShowCustomization = useUIStore.use.setShowCustomization();
-  const showBuild = useUIStore.use.showBuild();
-  const setShowBuild = useUIStore.use.setShowBuild();
-  const showStatistics = useUIStore.use.showStatistics();
-  const setShowStatistics = useUIStore.use.setShowStatistics();
-  const showSettingsModal = useUIStore.use.showSettingsModal();
-  const setShowSettingsModal = useUIStore.use.setShowSettingsModal();
-  const placementMode = useUIStore.use.placementMode();
-  const isInPlacementMode = placementMode !== "none";
+
   const selectedTankId = useUIStore.use.selectedTankId();
   const selectTank = useUIStore.use.selectTank();
-  const isPhotoMode = useUIStore.use.isPhotoMode();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
@@ -266,194 +227,13 @@ export const SandboxUI = () => {
     }
   };
 
-  const shouldShowMenus =
-    !showTileExpansion &&
-    !isInPlacementMode &&
-    !showCustomization &&
-    !showBuild &&
-    !isPhotoMode;
-
-  const shouldShowTopPanel = !isPhotoMode;
-
   return (
     <div className="fixed inset-0">
       {/* Main UI Overlay */}
       <div className="relative h-full p-4">
-        {/* Top Center Panel */}
-        <Sheet open={shouldShowTopPanel}>
-          <SheetContent
-            withOverlay={false}
-            withCloseButton={false}
-            side="top"
-            style={{
-              pointerEvents: "none",
-            }}
-            className="border-none bg-transparent shadow-none"
-          >
-            <SheetTitle className="sr-only">Game Status</SheetTitle>
-            <SheetDescription className="sr-only">
-              Current status of the game
-            </SheetDescription>
-            <div className="flex w-full justify-center p-4">
-              <Card className="pointer-events-auto p-2">
-                <CardContent className="flex h-8 items-center justify-center gap-4">
-                  <MoneyDisplay />
-                  <Separator orientation="vertical" />
-                  <DateTimeDisplay />
-                  <Separator orientation="vertical" />
-                  <VisitorCountDisplay />
-                  <Separator orientation="vertical" />
-                  <Button
-                    variant="onGlass"
-                    onClick={() => setShowStatistics(!showStatistics)}
-                  >
-                    <ChartLine />
-                  </Button>
-                  <Button
-                    variant="onGlass"
-                    onClick={() => setShowSettingsModal(!showSettingsModal)}
-                  >
-                    <Settings />
-                  </Button>
+        <TopPanel />
 
-                  <Button
-                    variant={isPaused ? "default" : "onGlass"}
-                    onClick={() => setPaused(!isPaused)}
-                  >
-                    {isPaused ? (
-                      <Play className="h-4 w-4" />
-                    ) : (
-                      <Pause className="h-4 w-4" />
-                    )}
-                  </Button>
-                  {/* 
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant={gameSpeed === 1 ? "default" : "outline"}
-                      onClick={() => setGameSpeed(1)}
-                      disabled={isPaused}
-                    >
-                      1x
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={gameSpeed === 2 ? "default" : "outline"}
-                      onClick={() => setGameSpeed(2)}
-                      disabled={isPaused}
-                    >
-                      2x
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={gameSpeed === 3 ? "default" : "outline"}
-                      onClick={() => setGameSpeed(3)}
-                      disabled={isPaused}
-                    >
-                      3x
-                    </Button>
-                  </div> */}
-                </CardContent>
-              </Card>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        <Sheet open={shouldShowMenus} onOpenChange={setShowTileExpansion}>
-          <SheetContent
-            withOverlay={false}
-            withCloseButton={false}
-            side="bottom"
-            style={{
-              pointerEvents: "none",
-            }}
-            className="border-none bg-transparent shadow-none"
-          >
-            <SheetTitle className="sr-only">Game UI</SheetTitle>
-            <SheetDescription className="sr-only">
-              Common functions to manage your aquarium
-            </SheetDescription>
-            <div className="flex w-full justify-center gap-4 p-4">
-              {/* Build Button */}
-              <Button
-                onClick={() => setShowBuild(true)}
-                className="pointer-events-auto flex size-16 flex-col"
-                variant={
-                  activeObjectives.some(
-                    (obj) =>
-                      (obj.type === "place_entrance" ||
-                        obj.type === "build_first_tank") &&
-                      !obj.completed,
-                  )
-                    ? "glow"
-                    : "sidePanel"
-                }
-                size="default"
-              >
-                <Hammer className="size-5" />
-                <p className="text-xs">Build</p>
-              </Button>
-
-              {/* Tile Expansion Button */}
-              <Button
-                onClick={() => setShowTileExpansion(true)}
-                className="pointer-events-auto flex size-16 flex-col"
-                variant="sidePanel"
-                size="default"
-              >
-                <Expand className="size-5" />
-                <p className="text-xs">Expand</p>
-              </Button>
-
-              {/* Customization Button */}
-              <Button
-                onClick={() => setShowCustomization(true)}
-                className="pointer-events-auto flex size-16 flex-col"
-                variant="sidePanel"
-                size="default"
-              >
-                <Paintbrush className="size-5" />
-                <p className="text-xs">Style</p>
-              </Button>
-
-              {/* Context Message Area */}
-              {contextMessage && (
-                <div
-                  className={`rounded-lg p-3 text-sm ${
-                    contextMessage.includes("Not enough") ||
-                    contextMessage.includes("maximum")
-                      ? "border border-red-200 bg-red-50 text-red-700"
-                      : contextMessage.includes("Click on")
-                        ? "border border-yellow-200 bg-yellow-50 text-yellow-700"
-                        : "border border-green-200 bg-green-50 text-green-700"
-                  }`}
-                >
-                  {(contextMessage.includes("Not enough") ||
-                    contextMessage.includes("maximum")) && (
-                    <AlertTriangle className="mr-2 inline h-4 w-4" />
-                  )}
-                  {contextMessage}
-                </div>
-              )}
-
-              {/* Placement Instructions */}
-              {placementMode === "tank" &&
-                money >= TANK_COST &&
-                !contextMessage && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                    Click on a grid cell to place a tank
-                  </div>
-                )}
-              {placementMode === "entrance" &&
-                money >= ENTRANCE_COST &&
-                !contextMessage && (
-                  <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 text-sm text-purple-700">
-                    Click on a grid cell to place an entrance
-                  </div>
-                )}
-            </div>
-          </SheetContent>
-        </Sheet>
+        <BottomPanel />
 
         {isDebugging && (
           <div className="pointer-events-auto absolute top-0 left-0 w-30 space-y-2 bg-orange-400/50 p-2">
