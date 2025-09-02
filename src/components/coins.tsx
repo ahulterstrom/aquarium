@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { getCoinSystem } from "@/components/systems/coinSystem";
 import { coinInteractionManager } from "@/lib/coinInteraction";
+import { useUIStore } from "@/stores/uiStore";
 
 const COIN_RADIUS = 0.16;
 
@@ -134,21 +135,21 @@ const CoinMesh = ({
   });
 
   return (
-    <>
-      <group ref={meshRef}>
-        {/* Invisible larger hitbox for interaction */}
-        <mesh ref={hitboxRef} position={[0, COIN_RADIUS, 0]}>
-          <boxGeometry args={[COIN_RADIUS * 3, COIN_RADIUS * 3, COIN_RADIUS * 3]} />
-          <meshBasicMaterial visible={false} />
-        </mesh>
-        
-        {/* Visual coin mesh */}
-        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, COIN_RADIUS, 0]}>
-          <cylinderGeometry args={[COIN_RADIUS, COIN_RADIUS, 0.08, 12]} />
-          <meshLambertMaterial color={0xffd700} />
-        </mesh>
-      </group>
-    </>
+    <group ref={meshRef}>
+      {/* Invisible larger hitbox for interaction */}
+      <mesh ref={hitboxRef} position={[0, COIN_RADIUS, 0]} visible={false}>
+        <boxGeometry
+          args={[COIN_RADIUS * 3, COIN_RADIUS * 3, COIN_RADIUS * 3]}
+        />
+        <meshBasicMaterial />
+      </mesh>
+
+      {/* Visual coin mesh */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, COIN_RADIUS, 0]}>
+        <cylinderGeometry args={[COIN_RADIUS, COIN_RADIUS, 0.08, 12]} />
+        <meshLambertMaterial color={0xffd700} />
+      </mesh>
+    </group>
   );
 };
 
@@ -183,6 +184,15 @@ export const Coins = () => {
         setCoinIds(currentIds);
       }
     }
+
+    const placementMode = useUIStore.getState().placementMode;
+    const visible = placementMode !== "moveTank" && placementMode !== "tank";
+    coinInteractionManager.getCoinMeshes().forEach((mesh) => {
+      const parentMesh = mesh.parent;
+      if (parentMesh) {
+        parentMesh.visible = visible;
+      }
+    });
   });
 
   // Combine coinIds with animatingCoins to keep coins visible during animation
