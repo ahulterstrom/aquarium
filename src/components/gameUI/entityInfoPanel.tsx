@@ -4,22 +4,19 @@ import { Progress } from "@/components/ui/progress";
 import { useGameStore } from "@/stores/gameStore";
 import { useUIStore } from "@/stores/uiStore";
 import {
-  DollarSign,
   DoorOpen,
   Droplets,
-  Eye,
-  Heart,
   MapPin,
+  Move,
   ShoppingCart,
-  Smile,
   Thermometer,
   Trash2,
   Users,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-// Import game stores and types
+import { VisitorInfo } from "@/components/gameUI/visitorInfo";
 import {
   Sheet,
   SheetContent,
@@ -27,24 +24,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { VisitorInfo } from "@/components/gameUI/visitorInfo";
 
 export const EntityInfoPanel = () => {
   const tanks = useGameStore.use.tanks();
   const entrances = useGameStore.use.entrances();
 
-  const showFishShop = useUIStore.use.showFishShop();
   const setShowFishShop = useUIStore.use.setShowFishShop();
-  const showSellConfirmation = useUIStore.use.showSellConfirmation();
   const setShowSellConfirmation = useUIStore.use.setShowSellConfirmation();
   const placementMode = useUIStore.use.placementMode();
-  const setPlacementMode = useUIStore.use.setPlacementMode();
   const selectedTankId = useUIStore.use.selectedTankId();
-  const selectedVisitorId = useUIStore.use.selectedVisitorId();
   const selectedEntranceId = useUIStore.use.selectedEntranceId();
   const selectedEntityType = useUIStore.use.selectedEntityType();
-  const selectTank = useUIStore.use.selectTank();
   const clearSelection = useUIStore.use.clearSelection();
+  const startMovingTank = useUIStore.use.startMovingTank();
 
   // Get the selected entities from the store
   const selectedTank = selectedTankId ? tanks.get(selectedTankId) : null;
@@ -80,7 +72,7 @@ export const EntityInfoPanel = () => {
   }, [selectedEntityType]);
 
   return (
-    <Sheet open={!!selectedEntityType}>
+    <Sheet open={!!selectedEntityType && placementMode !== "moveTank"}>
       <SheetContent
         withOverlay={false}
         withCloseButton={false}
@@ -205,6 +197,17 @@ export const EntityInfoPanel = () => {
                 {lastSelectedTank.fishIds.length >= lastSelectedTank.capacity
                   ? "Tank Full"
                   : "Buy Fish"}
+              </Button>
+
+              <Button
+                onClick={() => {
+                  startMovingTank(lastSelectedTank.id);
+                }}
+                variant="outline"
+                className="w-full"
+              >
+                <Move className="mr-2 h-4 w-4" />
+                Move Tank
               </Button>
 
               <Button

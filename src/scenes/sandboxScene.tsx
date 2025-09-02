@@ -70,7 +70,11 @@ export const SandboxScene = () => {
   const placementRotation = useUIStore.use.placementRotation();
   const clearSelection = useUIStore.use.clearSelection();
   const setPlacementMode = useUIStore.use.setPlacementMode();
+  const movingTankId = useUIStore.use.movingTankId();
+  const cancelMoveTank = useUIStore.use.cancelMoveTank();
   const addMoney = useGameStore.use.addMoney();
+  const moveTankToPosition = useGameStore.use.moveTankToPosition();
+  const tanks = useGameStore.use.tanks();
 
   const { soundController } = useSound();
 
@@ -235,6 +239,19 @@ export const SandboxScene = () => {
           setPlacementMode("none");
         }
       }
+    } else if (placementMode === "moveTank" && movingTankId) {
+      // Handle tank movement
+      const tankToMove = tanks.get(movingTankId);
+      if (tankToMove) {
+        const success = moveTankToPosition(
+          movingTankId,
+          { x, y: 0, z },
+          placementRotation,
+        );
+        if (success) {
+          cancelMoveTank();
+        }
+      }
     } else if (placementMode === "entrance") {
       if (canPlaceEntranceAt({ x, y: 0, z })) {
         if (spendMoney(ENTRANCE_COST)) {
@@ -305,10 +322,16 @@ export const SandboxScene = () => {
       </WallTextureProvider>
 
       {/* Grid - includes both original and expansion tiles */}
-      {(placementMode === "tank" || placementMode === "entrance") && (
+      {(placementMode === "tank" ||
+        placementMode === "entrance" ||
+        placementMode === "moveTank") && (
         <group
           onPointerMove={(e) => {
-            if (placementMode === "tank" || placementMode === "entrance") {
+            if (
+              placementMode === "tank" ||
+              placementMode === "entrance" ||
+              placementMode === "moveTank"
+            ) {
               const point = e.point;
               const gridX = Math.floor((point.x + 1) / 2);
               const gridZ = Math.floor((point.z + 1) / 2);

@@ -47,6 +47,24 @@ export const CreditsMenu = () => {
                   License: Creative Commons 0
                 </span>
               </div>
+
+              <div>
+                <span className="font-medium">Ultimate RPG Pack</span> by
+                Quaternius
+                <br />
+                <a
+                  href="https://quaternius.com/packs/ultimaterpg.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-800 hover:underline"
+                >
+                  quaternius.com
+                </a>
+                <br />
+                <span className="text-gray-600">
+                  License: Creative Commons 0
+                </span>
+              </div>
             </div>
           </section>
 

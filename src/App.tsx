@@ -14,10 +14,13 @@ import { UIManager } from "@/managers/uiManager";
 import { useUIStore } from "@/stores/uiStore";
 import { Toaster } from "@/components/ui/sonner";
 import { LandscapeRequired } from "@/components/ui/LandscapeRequired";
+import { useGame } from "@/stores/useGame";
 import "./App.css";
 
 function App() {
-  const { placementMode, selectTank } = useUIStore();
+  const placementMode = useUIStore.use.placementMode();
+  const selectTank = useUIStore.use.selectTank();
+  const isDebugging = useGame.use.isDebugging();
 
   return (
     <>
@@ -43,13 +46,11 @@ function App() {
               <color attach="background" args={["skyblue"]} />
               <Suspense fallback={null}>
                 <DebugControls />
-                {/* <PerspectiveCamera makeDefault position={[0, 0, 5]} />
-                  <CustomCameraControls /> */}
                 <SceneManager />
               </Suspense>
             </Canvas>
             {/* <Loader /> */}
-            <Leva hidden={true} collapsed flat />
+            <Leva hidden={!isDebugging} collapsed flat />
           </MenuProvider>
         </SceneProvider>
       </SoundProvider>

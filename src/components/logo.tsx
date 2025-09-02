@@ -7,6 +7,7 @@ import React, { useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFrame, useThree } from "@react-three/fiber";
+import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -22,7 +23,7 @@ export function Logo(props: JSX.IntrinsicElements["group"]) {
   const { pointer } = useThree();
 
   // Track mouse position and smoothly rotate the logo
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!groupRef.current) return;
 
     // Calculate tilt based on mouse position (-1 to 1 range)
@@ -30,21 +31,25 @@ export function Logo(props: JSX.IntrinsicElements["group"]) {
     const targetRotationY = -pointer.x * 0.02;
     const targetRotationZ = -pointer.x * 0.15;
 
-    // Smooth interpolation
+    // Smooth interpolation with delta time
+    const clampedDelta = Math.min(delta, MAX_FRAME_DELTA);
+    const lerpSpeed = 6.0; // Interpolation speed per second
+    const factor = Math.min(1.0, lerpSpeed * clampedDelta);
+    
     groupRef.current.rotation.x = THREE.MathUtils.lerp(
       groupRef.current.rotation.x,
       targetRotationX,
-      0.1,
+      factor,
     );
     groupRef.current.rotation.y = THREE.MathUtils.lerp(
       groupRef.current.rotation.y,
       targetRotationY,
-      0.1,
+      factor,
     );
     groupRef.current.rotation.z = THREE.MathUtils.lerp(
       groupRef.current.rotation.z,
       targetRotationZ,
-      0.1,
+      factor,
     );
   });
 

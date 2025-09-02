@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { CharacterModel } from "@/types/character.types";
 import { CharacterModelManager } from "@/systems/CharacterModelManager";
 import { useCharacterAnimation } from "@/hooks/useCharacterAnimation";
+import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -118,7 +119,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
   }, [modelLoaded, initializeMixer]);
 
   // Update visitor data and position every frame
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!groupRef.current) return;
 
     const visitorSystem = getVisitorSystem();
@@ -163,7 +164,8 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
       const currentAngle = groupRef.current.rotation.y;
       const rotationSpeed =
         currentVisitor.velocity.length() <= 0.05 ? 3.3 : 6.6;
-      const factor = Math.min(1.0, rotationSpeed * (1 / 60));
+      const clampedDelta = Math.min(delta, MAX_FRAME_DELTA);
+      const factor = Math.min(1.0, rotationSpeed * clampedDelta);
       groupRef.current.rotation.y = lerpAngle(
         currentAngle,
         targetAngle,
@@ -174,17 +176,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     if (groupRef.current) {
       const placementMode = useUIStore.getState().placementMode;
       const visible = placementMode !== "moveTank" && placementMode !== "tank";
-      groupRef.current.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((mat) => {
-              mat.visible = visible;
-            });
-          } else {
-            child.material.visible = visible;
-          }
-        }
-      });
+      groupRef.current.visible = visible;
     }
   });
 

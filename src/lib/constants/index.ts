@@ -5,3 +5,4 @@ export * from "./unlockables";
 export * from "./objectives";
 export * from "./floors";
 export * from "./walls";
+export * from "./misc";

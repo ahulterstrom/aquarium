@@ -36,8 +36,6 @@ export const TileExpansionPanel = () => {
   const getUnlockablesByCategory = useGameStore.use.getUnlockablesByCategory();
   const purchasedExpansionLevels = useGameStore.use.purchasedExpansionLevels();
 
-  console.log("canBuyExpansion:", canBuyExpansion());
-
   // Grid store
   const cells = useGridStore.use.cells();
   const currentGridSize = cells.size;
@@ -58,9 +56,10 @@ export const TileExpansionPanel = () => {
   );
 
   // Dynamic expansion pack info - based on highest purchased expansion level
-  const maxPurchasedLevel = purchasedExpansionLevels.size > 0 
-    ? Math.max(...Array.from(purchasedExpansionLevels))
-    : 0;
+  const maxPurchasedLevel =
+    purchasedExpansionLevels.size > 0
+      ? Math.max(...Array.from(purchasedExpansionLevels))
+      : 0;
   const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
   const expansionInfo = getNextExpansionInfo(totalPurchasedTiles);
   const nextPackCost = getNextExpansionCost(
@@ -223,17 +222,19 @@ export const TileExpansionPanel = () => {
                 </Badge>
               </div>
 
-              {!expansionUnlocked && nextExpansionUnlock && expansionInfo.nextLevel <= 3 && (
-                <div className="mb-3 flex items-center gap-2 text-amber-600">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span className="text-sm">
-                    Unlock requirements:{" "}
-                    {nextExpansionUnlock.conditions
-                      .map((c) => c.description)
-                      .join(", ")}
-                  </span>
-                </div>
-              )}
+              {!expansionUnlocked &&
+                nextExpansionUnlock &&
+                expansionInfo.nextLevel <= 3 && (
+                  <div className="mb-3 flex items-center gap-2 text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm">
+                      Unlock requirements:{" "}
+                      {nextExpansionUnlock.conditions
+                        .map((c) => c.description)
+                        .join(", ")}
+                    </span>
+                  </div>
+                )}
 
               {alreadyPurchased && (
                 <div className="mb-3 flex items-center gap-2 text-green-600">

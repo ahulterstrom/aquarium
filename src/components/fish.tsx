@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { getFishSystem } from "@/components/systems/fishSystem";
+import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
 
 const FishMesh = ({ fishId }: { fishId: string }) => {
   const meshRef = useRef<THREE.Group>(null);
@@ -36,7 +37,7 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
   };
 
   // Update fish position and appearance imperatively every frame
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!meshRef.current) return;
 
     try {
@@ -69,7 +70,10 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
         if (rotationDiff > Math.PI) rotationDiff -= 2 * Math.PI;
         if (rotationDiff < -Math.PI) rotationDiff += 2 * Math.PI;
 
-        meshRef.current.rotation.y += rotationDiff * 0.1; // Smooth rotation
+        const clampedDelta = Math.min(delta, MAX_FRAME_DELTA);
+        const rotationSpeed = 6.0; // Radians per second
+        const factor = Math.min(1.0, rotationSpeed * clampedDelta);
+        meshRef.current.rotation.y += rotationDiff * factor;
       }
 
       // Update material color based on species

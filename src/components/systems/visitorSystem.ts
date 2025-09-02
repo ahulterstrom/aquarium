@@ -8,7 +8,7 @@ import { SoundController } from "../../controllers/soundController";
 let visitorSystem: VisitorSystem | null = null;
 
 export function getVisitorSystem(
-  soundController: SoundController,
+  soundController?: SoundController,
 ): VisitorSystem {
   if (!visitorSystem) {
     const gridStore = useGridStore.getState();

@@ -1,6 +1,7 @@
 import { Arrow } from "@/components/arrow";
 import { AnimatedCharacter } from "@/components/characters/AnimatedCharacter";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
+import { MAX_FRAME_DELTA } from "@/lib/constants";
 import {
   CHARACTER_MODELS,
   getRandomCharacter,
@@ -71,7 +72,8 @@ const VisitorMesh = ({
   };
 
   // Update position and color imperatively every frame
-  useFrame(() => {
+  useFrame((_, delta) => {
+    const clampedDelta = Math.min(delta, MAX_FRAME_DELTA); // Clamp to max 10fps equivalent
     if (!meshRef.current) return;
 
     const visitorSystem = getVisitorSystem();
@@ -114,7 +116,7 @@ const VisitorMesh = ({
       } else {
         rotationSpeed = 6.6; // Radians per second
       }
-      const factor = Math.min(1.0, rotationSpeed * (1 / 60)); // Assuming 60fps
+      const factor = Math.min(1.0, rotationSpeed * clampedDelta);
       meshRef.current.rotation.y = lerpAngle(currentAngle, targetAngle, factor);
     }
 

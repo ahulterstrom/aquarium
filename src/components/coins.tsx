@@ -4,6 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { getCoinSystem } from "@/components/systems/coinSystem";
 import { coinInteractionManager } from "@/lib/coinInteraction";
 import { useUIStore } from "@/stores/uiStore";
+import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
 
 const COIN_RADIUS = 0.16;
 
@@ -136,6 +137,7 @@ export const Coins = () => {
     const visible = placementMode !== "moveTank" && placementMode !== "tank";
 
     // Update all coin animations
+    const clampedDelta = Math.min(delta, MAX_FRAME_DELTA);
     for (const [coinId, coinMeshData] of coinMeshes.current.entries()) {
       const { group, material, animationState: anim } = coinMeshData;
       
@@ -153,9 +155,9 @@ export const Coins = () => {
         group.position.copy(anim.coinPosition);
       }
 
-      // Update rotation
-      const spinSpeed = anim.isCollected ? 0.15 : 0.02;
-      anim.rotation += spinSpeed;
+      // Update rotation with delta time
+      const spinSpeed = anim.isCollected ? 9.0 : 1.2; // Radians per second
+      anim.rotation += spinSpeed * clampedDelta;
       group.rotation.y = anim.rotation;
 
       // Handle collection animation

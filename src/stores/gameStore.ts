@@ -1,32 +1,35 @@
-import { create } from "zustand";
-import { devtools, subscribeWithSelector, persist } from "zustand/middleware";
-import * as THREE from "three";
-import {
-  GameState,
-  Tank,
-  Fish,
-  Entrance,
-  Coin,
-  Objective,
-  Unlockable,
-  UnlockCategory,
-} from "../types/game.types";
+import { toast } from "@/components/ui/sonner";
 import { createSelectors } from "@/stores/utils";
+import * as THREE from "three";
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 import {
   addFishToSystem,
   removeFishFromSystem,
+  updateFishSystemReferences,
 } from "../components/systems/fishSystem";
 import { EXPANSION_BASE_COST } from "../lib/constants";
 import {
-  getNextExpansionPackSize,
-  getNextExpansionCost,
   getCurrentExpansionLevel,
+  getNextExpansionCost,
+  getNextExpansionPackSize,
 } from "../lib/utils/expansion";
-import { useGridStore } from "./gridStore";
-import { useEconomyStore } from "./economyStore";
+import { getRotatedDimensions } from "../lib/utils/placement";
 import { ObjectiveSystem } from "../systems/ObjectiveSystem";
 import { UnlockSystem } from "../systems/UnlockSystem";
-import { toast } from "@/components/ui/sonner";
+import {
+  Coin,
+  Entrance,
+  Fish,
+  GameState,
+  GridPosition,
+  Objective,
+  Tank,
+  Unlockable,
+  UnlockCategory,
+} from "../types/game.types";
+import { useEconomyStore } from "./economyStore";
+import { useGridStore } from "./gridStore";
 import { useStatisticsStore } from "./statisticsStore";
 
 interface GameStore extends GameState {
@@ -81,6 +84,11 @@ interface GameStore extends GameState {
   addTank: (tank: Tank) => void;
   removeTank: (id: string) => void;
   updateTank: (id: string, updates: Partial<Tank>) => void;
+  moveTankToPosition: (
+    tankId: string,
+    newPosition: GridPosition,
+    newRotation: number,
+  ) => boolean;
 
   addFish: (fish: Fish) => void;
   removeFish: (id: string) => void;
@@ -529,24 +537,26 @@ export const useGameStore = createSelectors(
             // Expansion system implementations
             buyExpansionPack: () => {
               const state = get();
-              
+
               // Calculate total purchased tiles based on expansion levels purchased
               // Level 0: 3x3 = 9 tiles (initial)
               // Level 1: 4x4 = 16 tiles total
               // Level 2: 5x5 = 25 tiles total
               // Level 3: 6x6 = 36 tiles total, etc.
               const INITIAL_GRID_SIZE = 9; // 3x3 starting grid
-              
+
               // Find the highest purchased level
-              const maxPurchasedLevel = state.purchasedExpansionLevels.size > 0 
-                ? Math.max(...Array.from(state.purchasedExpansionLevels))
-                : 0;
-              
+              const maxPurchasedLevel =
+                state.purchasedExpansionLevels.size > 0
+                  ? Math.max(...Array.from(state.purchasedExpansionLevels))
+                  : 0;
+
               // Calculate total tiles for the highest purchased level
               // Formula: (level + 3)² gives total tiles at that level
               const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
-              
-              const currentLevel = getCurrentExpansionLevel(totalPurchasedTiles);
+
+              const currentLevel =
+                getCurrentExpansionLevel(totalPurchasedTiles);
               const nextLevel = currentLevel + 1;
 
               // Check if this level has already been purchased
@@ -576,17 +586,19 @@ export const useGameStore = createSelectors(
 
             canBuyExpansion: () => {
               const state = get();
-              
+
               // Find the highest purchased level
-              const maxPurchasedLevel = state.purchasedExpansionLevels.size > 0 
-                ? Math.max(...Array.from(state.purchasedExpansionLevels))
-                : 0;
-              
+              const maxPurchasedLevel =
+                state.purchasedExpansionLevels.size > 0
+                  ? Math.max(...Array.from(state.purchasedExpansionLevels))
+                  : 0;
+
               // Calculate total tiles for the highest purchased level
               // Formula: (level + 3)² gives total tiles at that level
               const totalPurchasedTiles = Math.pow(maxPurchasedLevel + 3, 2);
-              
-              const currentLevel = getCurrentExpansionLevel(totalPurchasedTiles);
+
+              const currentLevel =
+                getCurrentExpansionLevel(totalPurchasedTiles);
               const nextLevel = currentLevel + 1;
 
               // Check if this level has already been purchased
@@ -599,7 +611,7 @@ export const useGameStore = createSelectors(
                 const nextLevelUnlockId = `expansion_level_${nextLevel}`;
                 return state.unlockSystem.isUnlocked(nextLevelUnlockId);
               }
-              
+
               // For levels 4+, always allow purchase (no unlock requirements)
               return true;
             },
@@ -805,6 +817,114 @@ export const useGameStore = createSelectors(
             // Customization implementations
             setWallStyle: (style) => set({ wallStyle: style }),
             setFloorStyle: (style) => set({ floorStyle: style }),
+
+            moveTankToPosition: (tankId, newPosition, newRotation) => {
+              const state = get();
+              const tank = state.tanks.get(tankId);
+              if (!tank) return false;
+
+              const gridState = useGridStore.getState();
+
+              // Get rotated dimensions for the new position
+              const { width: rotatedWidth, depth: rotatedDepth } =
+                getRotatedDimensions(
+                  tank.gridWidth,
+                  tank.gridDepth,
+                  newRotation,
+                );
+
+              // Check if new position is valid
+              if (
+                !gridState.canPlaceAt(newPosition, rotatedWidth, rotatedDepth)
+              ) {
+                return false;
+              }
+
+              // Remove tank from old position
+              const oldRotatedDims = getRotatedDimensions(
+                tank.gridWidth,
+                tank.gridDepth,
+                tank.rotation,
+              );
+              gridState.removeObject(
+                tank.position,
+                oldRotatedDims.width,
+                oldRotatedDims.depth,
+              );
+
+              // Place tank at new position
+              gridState.placeObject(
+                newPosition,
+                rotatedWidth,
+                rotatedDepth,
+                "tank",
+                tankId,
+              );
+
+              // Update tank position and rotation
+              const tanks = new Map(state.tanks);
+              const updatedTank = {
+                ...tank,
+                position: newPosition,
+                rotation: newRotation,
+              };
+              tanks.set(tankId, updatedTank);
+
+              // Generate random positions for fish within the moved tank
+              const fishMap = new Map(state.fish);
+              tank.fishIds.forEach((fishId) => {
+                const fish = fishMap.get(fishId);
+                if (fish) {
+                  // Generate random position within the new tank bounds
+                  const baseX = newPosition.x * 2;
+                  const baseZ = newPosition.z * 2;
+
+                  const gridWidth = tank.gridWidth || 1;
+                  const gridDepth = tank.gridDepth || 1;
+
+                  const tankCenterX =
+                    baseX + (gridWidth > 1 ? gridWidth - 1 : 0);
+                  const tankCenterZ =
+                    baseZ + (gridDepth > 1 ? gridDepth - 1 : 0);
+
+                  const xRange = gridWidth * 1.4;
+                  const zRange = gridDepth * 1.4;
+
+                  fish.position = new THREE.Vector3(
+                    tankCenterX + (Math.random() - 0.5) * xRange,
+                    newPosition.y + 0.3 + Math.random() * 0.6,
+                    tankCenterZ + (Math.random() - 0.5) * zRange,
+                  );
+
+                  fishMap.set(fishId, fish);
+                }
+              });
+
+              set({ tanks, fish: fishMap });
+
+              // Sync FishSystem with updated fish positions
+              tank.fishIds.forEach((fishId) => {
+                const updatedFish = fishMap.get(fishId);
+                if (updatedFish) {
+                  try {
+                    // Remove fish from FishSystem
+                    removeFishFromSystem(fishId);
+                    // Re-add fish with new position
+                    addFishToSystem(updatedFish);
+                  } catch (error) {
+                    console.warn(
+                      "Failed to sync fish system during tank move:",
+                      error,
+                    );
+                  }
+                }
+              });
+
+              // Update tank references in FishSystem
+              updateFishSystemReferences();
+
+              return true;
+            },
 
             reset: () => {
               // Reset the systems

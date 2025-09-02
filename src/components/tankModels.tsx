@@ -59,7 +59,7 @@ const glassCornersMaterial = new THREE.MeshToonMaterial({
 });
 
 export function TankMedium(props: JSX.IntrinsicElements["group"]) {
-  const { nodes } = useGLTF("/Tanks.glb") as GLTFResult;
+  const { nodes } = useGLTF("/Models.glb") as GLTFResult;
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -94,7 +94,7 @@ export function TankMedium(props: JSX.IntrinsicElements["group"]) {
 }
 
 export function TankLarge(props: JSX.IntrinsicElements["group"]) {
-  const { nodes } = useGLTF("/Tanks.glb") as GLTFResult;
+  const { nodes } = useGLTF("/Models.glb") as GLTFResult;
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -126,7 +126,7 @@ export function TankLarge(props: JSX.IntrinsicElements["group"]) {
 }
 
 export function TankHuge(props: JSX.IntrinsicElements["group"]) {
-  const { nodes } = useGLTF("/Tanks.glb") as GLTFResult;
+  const { nodes } = useGLTF("/Models.glb") as GLTFResult;
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -157,4 +157,4 @@ export function TankHuge(props: JSX.IntrinsicElements["group"]) {
   );
 }
 
-useGLTF.preload("/Tanks.glb");
+useGLTF.preload("/Models.glb");

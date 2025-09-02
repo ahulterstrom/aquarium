@@ -1,6 +1,7 @@
 import { createSelectors } from "@/stores/utils";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import { useGameStore } from "./gameStore";
 
 type UIModal =
   | "none"
@@ -15,7 +16,8 @@ type PlacementMode =
   | "decoration"
   | "path"
   | "entrance"
-  | "expansion";
+  | "expansion"
+  | "moveTank";
 
 type SelectedEntityType = "tank" | "visitor" | "entrance" | null;
 
@@ -27,6 +29,9 @@ interface UIStore {
   selectedFishId: string | null;
   hoveredEntityId: string | null;
   selectedEntityType: SelectedEntityType;
+
+  // Tank movement
+  movingTankId: string | null;
 
   // Modals
   activeModal: UIModal;
@@ -70,6 +75,10 @@ interface UIStore {
   selectFish: (id: string | null) => void;
   clearSelection: () => void;
   setHoveredEntity: (id: string | null) => void;
+
+  // Tank movement actions
+  startMovingTank: (tankId: string) => void;
+  cancelMoveTank: () => void;
 
   openModal: (modal: UIModal, data?: any) => void;
   closeModal: () => void;
@@ -134,6 +143,8 @@ export const useUIStore = createSelectors(
           selectedFishId: null,
           hoveredEntityId: null,
           selectedEntityType: null,
+
+          movingTankId: null,
 
           showFishShop: false,
           showSellConfirmation: false,
@@ -351,6 +362,27 @@ export const useUIStore = createSelectors(
             })),
 
           clearNotifications: () => set({ notifications: [] }),
+
+          // Tank movement actions
+          startMovingTank: (tankId) => {
+            const tanks = useGameStore.getState().tanks;
+            const tank = tanks.get(tankId);
+            
+            set({
+              movingTankId: tankId,
+              placementMode: "moveTank",
+              placementPreview: tank ? { type: "tank", size: tank.size } : null,
+              placementRotation: tank?.rotation || 0,
+            });
+          },
+
+          cancelMoveTank: () =>
+            set({
+              movingTankId: null,
+              placementMode: "none",
+              placementPreview: null,
+              placementRotation: 0,
+            }),
 
           // Photo mode actions
           enterPhotoMode: () => set({ isPhotoMode: true }),

@@ -47,7 +47,11 @@ const WallSegment = ({
 
     // if we are in expansion mode or build mode we should not render walls
     const placementMode = useUIStore.getState().placementMode;
-    if (placementMode === "expansion" || placementMode === "tank") {
+    if (
+      placementMode === "expansion" ||
+      placementMode === "tank" ||
+      placementMode === "moveTank"
+    ) {
       shouldRender = false;
     }
 

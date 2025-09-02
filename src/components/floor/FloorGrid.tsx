@@ -109,7 +109,11 @@ export const FloorGrid = () => {
   }, [cells]);
 
   const handleTileClick = () => {
-    if (placementMode !== "tank" && placementMode !== "entrance") {
+    if (
+      placementMode !== "tank" &&
+      placementMode !== "entrance" &&
+      placementMode !== "moveTank"
+    ) {
       clearSelection();
     }
   };
