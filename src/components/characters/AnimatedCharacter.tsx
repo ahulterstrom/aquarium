@@ -5,6 +5,7 @@ import { CharacterModel } from "@/types/character.types";
 import { CharacterModelManager } from "@/systems/CharacterModelManager";
 import { useCharacterAnimation } from "@/hooks/useCharacterAnimation";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
+import { useUIStore } from "@/stores/uiStore";
 
 const VISITOR_Y = -0.1;
 
@@ -168,6 +169,22 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
         targetAngle,
         factor,
       );
+    }
+
+    if (groupRef.current) {
+      const placementMode = useUIStore.getState().placementMode;
+      const visible = placementMode !== "moveTank" && placementMode !== "tank";
+      groupRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => {
+              mat.visible = visible;
+            });
+          } else {
+            child.material.visible = visible;
+          }
+        }
+      });
     }
   });
 

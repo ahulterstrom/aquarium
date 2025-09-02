@@ -190,8 +190,10 @@ export class CharacterModelManager {
           // Apply skin color
           if (material.name && isSkinMaterial(material.name) && skinColor) {
             // Clone material to avoid affecting other instances
-            mesh.material = new THREE.MeshToonMaterial();
-            (mesh.material as THREE.MeshToonMaterial).color = skinColor;
+            const newMaterial = new THREE.MeshToonMaterial();
+            newMaterial.color = skinColor;
+
+            mesh.material = newMaterial;
             skinAppliedCount++;
           }
 
@@ -208,7 +210,7 @@ export class CharacterModelManager {
             hairAppliedCount++;
           }
 
-          // Special handling for face/eyes (keep existing logic for now)
+          // Special handling for face/eyes
           else if (
             material.name &&
             material.name.toLowerCase().includes("face")
