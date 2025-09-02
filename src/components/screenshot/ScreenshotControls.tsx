@@ -29,6 +29,7 @@ export const ScreenshotControls = () => {
   const exitPhotoMode = useUIStore.use.exitPhotoMode();
 
   // Create refs for all animations
+  const containerRef = useSpringRef();
   const focusRef = useSpringRef();
   const viewfinderRef = useSpringRef();
   const topLabelRef = useSpringRef();
@@ -39,6 +40,13 @@ export const ScreenshotControls = () => {
   const cornerBracketsRef = useSpringRef();
   const centerReticleRef = useSpringRef();
   const exposureScaleRef = useSpringRef();
+
+  const containerSpring = useSpring({
+    ref: containerRef,
+    opacity: isPhotoMode ? 1 : 0,
+    display: isPhotoMode ? "block" : "none",
+    transform: isPhotoMode ? "scale(1)" : "scale(0.95)",
+  });
 
   // Photo mode animations (only active when in photo mode)
   const focusSpring = useSpring({
@@ -108,9 +116,9 @@ export const ScreenshotControls = () => {
   // Chain main UI animations in sequence
   useChain(
     isPhotoMode
-      ? [focusRef, viewfinderRef, topLabelRef, bottomControlsRef]
-      : [bottomControlsRef, topLabelRef, viewfinderRef, focusRef],
-    isPhotoMode ? [0, 0.1, 0.4, 0.7] : [0, 0.1, 0.2, 0.3],
+      ? [containerRef, focusRef, viewfinderRef, topLabelRef, bottomControlsRef]
+      : [bottomControlsRef, topLabelRef, viewfinderRef, focusRef, containerRef],
+    isPhotoMode ? [0, 0, 0.1, 0.4, 0.7] : [0, 0.1, 0.2, 0.3, 0.5],
   );
 
   // Chain viewfinder element animations separately
@@ -172,7 +180,10 @@ export const ScreenshotControls = () => {
       </div>
 
       {/* Photo Mode UI */}
-      <div className="pointer-events-none fixed inset-0 z-50">
+      <animated.div
+        style={containerSpring}
+        className="pointer-events-none fixed inset-0 z-50"
+      >
         {/* Backdrop blur for focusing effect */}
         <animated.div
           style={focusSpring}
@@ -182,14 +193,14 @@ export const ScreenshotControls = () => {
         {/* Bottom Controls */}
         <animated.div
           style={bottomControlsSpring}
-          className="pointer-events-auto absolute bottom-28 left-1/2 -translate-x-1/2 transform"
+          className="absolute bottom-28 left-1/2 -translate-x-1/2 transform"
         >
-          <div className="glass flex items-center gap-2 p-2">
+          <div className="glass pointer-events-auto flex items-center gap-2 p-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div>
                   <Button
-                    variant="default"
+                    variant="onGlass"
                     onClick={() => handleScreenshot()}
                     className="size-10 bg-transparent text-foreground hover:bg-white/20 hover:shadow-lg"
                   >
@@ -206,7 +217,7 @@ export const ScreenshotControls = () => {
               <TooltipTrigger asChild>
                 <div>
                   <Button
-                    variant="default"
+                    variant="onGlass"
                     onClick={() => handleScreenshot({ toClipboard: true })}
                     className="size-10 bg-transparent text-foreground hover:bg-white/20 hover:shadow-lg"
                   >
@@ -223,7 +234,7 @@ export const ScreenshotControls = () => {
               <TooltipTrigger asChild>
                 <div>
                   <Button
-                    variant="default"
+                    variant="onGlass"
                     onClick={exitPhotoMode}
                     className="size-10 bg-transparent text-foreground hover:bg-white/20 hover:shadow-lg"
                   >
@@ -299,7 +310,7 @@ export const ScreenshotControls = () => {
             </animated.div>
           </animated.div>
         </div>
-      </div>
+      </animated.div>
     </>
   );
 };
