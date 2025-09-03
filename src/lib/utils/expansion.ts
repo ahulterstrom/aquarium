@@ -3,6 +3,8 @@
  * Based on square grid progression: 3×3 → 4×4 → 5×5 → 6×6...
  */
 
+import { EXPANSION_BASE_COST } from "@/lib/constants";
+
 /**
  * Calculate the current expansion level based on total tiles owned
  * Level 0 = 3×3 (9 tiles), Level 1 = 4×4 (16 tiles), Level 2 = 5×5 (25 tiles), etc.
@@ -17,7 +19,7 @@ export function getCurrentExpansionLevel(totalTiles: number): number {
 
 /**
  * Calculate how many tiles are needed for the next expansion level
- * Formula: 2k + 5 (where k is the next level)
+ * Formula: (nextLevel + 3)² - currentTiles
  */
 export function getNextExpansionPackSize(currentTiles: number): number {
   const currentLevel = getCurrentExpansionLevel(currentTiles);
@@ -50,12 +52,10 @@ export function getNextExpansionInfo(currentTiles: number) {
 
 /**
  * Calculate the cost for the next expansion
- * Progressive pricing: base cost × (level + 1)
+ * Progressive pricing: Base cost + (tilesNeeded × baseCost × nextLevel)
  */
-export function getNextExpansionCost(
-  currentTiles: number,
-  baseCost: number = 15,
-): number {
+export function getNextExpansionCost(currentTiles: number): number {
   const nextLevel = getCurrentExpansionLevel(currentTiles) + 1;
-  return baseCost * nextLevel;
+  const newTiles = getNextExpansionPackSize(currentTiles);
+  return Math.floor(8 + newTiles * EXPANSION_BASE_COST * nextLevel);
 }

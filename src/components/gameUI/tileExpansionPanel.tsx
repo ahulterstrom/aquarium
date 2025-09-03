@@ -64,7 +64,6 @@ export const TileExpansionPanel = () => {
   const expansionInfo = getNextExpansionInfo(totalPurchasedTiles);
   const nextPackCost = getNextExpansionCost(
     totalPurchasedTiles,
-    EXPANSION_BASE_COST,
   );
   const nextPackSize = getNextExpansionPackSize(totalPurchasedTiles);
 

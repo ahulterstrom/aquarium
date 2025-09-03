@@ -565,8 +565,7 @@ export const useGameStore = createSelectors(
               }
 
               const packCost = getNextExpansionCost(
-                totalPurchasedTiles,
-                EXPANSION_BASE_COST,
+                totalPurchasedTiles
               );
               const packSize = getNextExpansionPackSize(totalPurchasedTiles);
 
