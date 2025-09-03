@@ -96,6 +96,7 @@ export const Tanks = () => {
   const tanks = useGameStore.use.tanks();
 
   const selectedTankId = useUIStore.use.selectedTankId();
+  const movingTankId = useUIStore.use.movingTankId();
   const selectTank = useUIStore.use.selectTank();
 
   const handleTankClick = (tank: TankType) => {
@@ -104,14 +105,21 @@ export const Tanks = () => {
 
   return (
     <>
-      {Array.from(tanks.values()).map((tank) => (
-        <TankMesh
-          key={tank.id}
-          tank={tank}
-          isSelected={selectedTankId === tank.id}
-          onClick={handleTankClick}
-        />
-      ))}
+      {Array.from(tanks.values()).map((tank) => {
+        // Hide the tank that's currently being moved
+        if (tank.id === movingTankId) {
+          return null;
+        }
+        
+        return (
+          <TankMesh
+            key={tank.id}
+            tank={tank}
+            isSelected={selectedTankId === tank.id}
+            onClick={handleTankClick}
+          />
+        );
+      })}
     </>
   );
 };

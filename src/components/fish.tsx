@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { getFishSystem } from "@/components/systems/fishSystem";
 import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
+import { useUIStore } from "@/stores/uiStore";
 
 const FishMesh = ({ fishId }: { fishId: string }) => {
   const meshRef = useRef<THREE.Group>(null);
@@ -50,8 +51,14 @@ const FishMesh = ({ fishId }: { fishId: string }) => {
         return;
       }
 
-      // Show the mesh only if we have valid fish data
-      meshRef.current.visible = true;
+      // Show the mesh only if we have valid fish data AND fish is not in moving tank
+      const movingTankId = useUIStore.getState().movingTankId;
+      const shouldHide = movingTankId && fish.tankId === movingTankId;
+      meshRef.current.visible = !shouldHide;
+
+      if (shouldHide) {
+        return; // Skip all other updates for hidden fish
+      }
 
       // Update position
       meshRef.current.position.copy(fish.position);

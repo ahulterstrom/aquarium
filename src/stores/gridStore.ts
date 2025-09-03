@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { GridCell, GridPosition } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
+import { useUIStore } from "./uiStore";
 
 const getInitialGrid = () => {
   const cells = new Map<string, GridCell>();
@@ -102,13 +103,14 @@ export const useGridStore = createSelectors(
 
           canPlaceAt: (position, width, depth) => {
             const state = get();
+            const movingTankId = useUIStore.getState().movingTankId;
 
             for (let x = position.x; x < position.x + width; x++) {
               for (let z = position.z; z < position.z + depth; z++) {
                 const cell = state.getCell(x, position.y, z);
 
-                // Can place only if cell exists and is not occupied
-                if (!cell || cell.occupied) {
+                // Can place only if cell exists and (not occupied OR occupied by moving tank)
+                if (!cell || (cell.occupied && cell.tankId !== movingTankId)) {
                   return false;
                 }
               }
