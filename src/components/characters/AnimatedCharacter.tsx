@@ -34,6 +34,11 @@ function lerpAngle(from: number, to: number, factor: number): number {
   return from + diff * factor;
 }
 
+function getIsVisible() {
+  const placementMode = useUIStore.getState().placementMode;
+  return placementMode !== "moveTank" && placementMode !== "tank";
+}
+
 export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
   visitorId,
   characterModel,
@@ -174,9 +179,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     }
 
     if (groupRef.current) {
-      const placementMode = useUIStore.getState().placementMode;
-      const visible = placementMode !== "moveTank" && placementMode !== "tank";
-      groupRef.current.visible = visible;
+      groupRef.current.visible = getIsVisible();
     }
   });
 
@@ -197,14 +200,24 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     <group
       ref={groupRef}
       onClick={(e) => {
+        if (!getIsVisible()) {
+          return;
+        }
         e.stopPropagation();
         onClick(visitorId);
       }}
       onPointerEnter={(e) => {
+        if (!getIsVisible()) {
+          return;
+        }
         e.stopPropagation();
         document.body.style.cursor = "pointer";
       }}
-      onPointerLeave={() => {
+      onPointerLeave={(e) => {
+        if (!getIsVisible()) {
+          return;
+        }
+        e.stopPropagation();
         document.body.style.cursor = "default";
       }}
     />

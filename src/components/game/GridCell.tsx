@@ -21,7 +21,7 @@ export const GridCell = ({
   return (
     <mesh
       ref={meshRef}
-      position={[x * 2, 0.15, z * 2]}
+      position={[x * 2, 0.1, z * 2]}
       rotation={[-Math.PI / 2, 0, 0]}
       onClick={(e) => {
         e.stopPropagation();
