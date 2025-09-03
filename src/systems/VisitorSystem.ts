@@ -642,19 +642,25 @@ export class VisitorSystem {
     if (previousState === "viewing" && newState !== "viewing") {
       // Weighted random selection for coin value
       const random = Math.random();
-      let coinValue = 1;
-      if (random < 0.02) {
-        coinValue = 100;  // 2% chance - diamond
-      } else if (random < 0.10) {
-        coinValue = 25;   // 8% chance (0.02 + 0.08) - star
-      } else if (random < 0.30) {
-        coinValue = 5;    // 20% chance (0.10 + 0.20) - silver
+      let coinValue = 0;
+      let dropCoin = true;
+      if (random < 0.01) {
+        coinValue = 100; // 1% chance - diamond
+      } else if (random < 0.05) {
+        coinValue = 25; // 4% chance (0.01 + 0.04) - star
+      } else if (random < 0.2) {
+        coinValue = 5; // 15% chance (0.05 + 0.15) - silver
+      } else if (random < 0.5) {
+        coinValue = 1; // 30% chance (0.20 + 0.30) - copper
+      } else {
+        dropCoin = false; // 50% chance - no coin
       }
-      // 70% chance remains for penny (value 1)
-      
-      this.coinSystem.dropCoin(visitor.position, coinValue, visitor.id);
-      const randomCoinfall = `coinfall${Math.floor(Math.random() * 4) + 1}`;
-      this.soundController.play(randomCoinfall);
+
+      if (dropCoin) {
+        this.coinSystem.dropCoin(visitor.position, coinValue, visitor.id);
+        const randomCoinfall = `coinfall${Math.floor(Math.random() * 4) + 1}`;
+        this.soundController.play(randomCoinfall);
+      }
     }
 
     // Track satisfied visitors
