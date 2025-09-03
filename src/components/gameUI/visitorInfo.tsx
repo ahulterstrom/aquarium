@@ -185,11 +185,11 @@ export const VisitorInfo = () => {
     if (refs.current.tanksVisited) {
       if (visitor.tanksVisited.length > 0) {
         // Show tank IDs (shortened for display)
-        const visitedTanksList = visitor.tanksVisited.map(tankId => 
-          `Tank ${tankId.slice(-4)}`
+        const visitedTanksList = visitor.tanksVisited.map(
+          (tankId) => `Tank ${tankId.slice(-4)}`,
         );
-        
-        refs.current.tanksVisited.innerHTML = visitedTanksList.join(', ');
+
+        refs.current.tanksVisited.innerHTML = visitedTanksList.join(", ");
       } else {
         refs.current.tanksVisited.textContent = "None yet";
       }
@@ -254,16 +254,6 @@ export const VisitorInfo = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVisitorId]); // Re-run when selection changes
-
-  // Show placeholder if no visitor has ever been selected
-  if (!selectedVisitorId && !lastVisitorData.current) {
-    return (
-      <div className="p-4 text-center text-gray-500">
-        <User className="mx-auto mb-2 h-12 w-12 opacity-30" />
-        <p>Select a visitor to view their information</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 p-4">

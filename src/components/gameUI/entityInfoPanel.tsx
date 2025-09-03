@@ -280,7 +280,7 @@ export const EntityInfoPanel = () => {
           </div>
         )}
 
-        <VisitorInfo />
+        {lastSelectedEntityType === "visitor" && <VisitorInfo />}
       </SheetContent>
     </Sheet>
   );
