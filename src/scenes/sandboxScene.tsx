@@ -3,24 +3,22 @@ import { Entrances } from "@/components/entrances";
 import { FishRenderer } from "@/components/fish";
 import { FloorGrid } from "@/components/floor/FloorGrid";
 import { FloorTextureProvider } from "@/components/floor/FloorTextureProvider";
-import { ExpansionGrid } from "@/components/game/ExpansionGrid";
+import { ExpansionGridRenderer } from "@/components/game/ExpansionGrid";
 import { CanvasCapture } from "@/components/screenshot/CanvasCapture";
 import { Tanks } from "@/components/tanks";
 import { Visitors } from "@/components/visitors";
 import { WallSystem } from "@/components/walls/WallSystem";
 import { WallTextureProvider } from "@/components/walls/WallTextureProvider";
-import { ENTRANCE_COST, TANK_SPECS } from "@/lib/constants";
-import { getRotatedDimensions } from "@/lib/utils/placement";
+import { useSound } from "@/contexts/sound/useSound";
 import {
   Environment,
   MapControls,
   OrthographicCamera,
 } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { nanoid } from "nanoid";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import { PlacementGrid } from "../components/game/placementGrid";
+import { PlacementGridRenderer } from "../components/game/placementGrid";
 import { GameSystems } from "../components/systems/GameSystems";
 import {
   getCoinSystem,
@@ -34,11 +32,8 @@ import {
 import { coinInteractionManager } from "../lib/coinInteraction";
 import { useEconomyStore } from "../stores/economyStore";
 import { useGameStore } from "../stores/gameStore";
-import { useGridStore } from "../stores/gridStore";
 import { useStatisticsStore } from "../stores/statisticsStore";
 import { useUIStore } from "../stores/uiStore";
-import { Entrance, Tank as TankType } from "../types/game.types";
-import { useSound } from "@/contexts/sound/useSound";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
@@ -183,10 +178,7 @@ export const SandboxScene = () => {
         far={1000}
       />
 
-      <MapControls
-        makeDefault
-        enableZoom={process.env.NODE_ENV === "development"}
-      />
+      <MapControls makeDefault />
 
       {/* Lighting */}
       <ambientLight intensity={0.6} />
@@ -204,12 +196,10 @@ export const SandboxScene = () => {
       </WallTextureProvider>
 
       {/* Grid */}
-      {(placementMode === "tank" ||
-        placementMode === "entrance" ||
-        placementMode === "moveTank") && <PlacementGrid />}
+      <PlacementGridRenderer />
 
-      {/* Expansion Grid - render when in expansion placement mode */}
-      {placementMode === "expansion" && <ExpansionGrid />}
+      {/* Expansion Grid */}
+      <ExpansionGridRenderer />
 
       <Tanks />
       <Entrances />

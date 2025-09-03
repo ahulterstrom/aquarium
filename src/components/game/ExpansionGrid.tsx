@@ -4,7 +4,16 @@ import { useUIStore } from "@/stores/uiStore";
 import { Torus } from "@react-three/drei";
 import { useState } from "react";
 
-export const ExpansionGrid = () => {
+// Wrapper component that handles conditional rendering
+export const ExpansionGridRenderer = () => {
+  const placementMode = useUIStore.use.placementMode();
+  
+  if (placementMode !== "expansion") return null;
+  
+  return <ExpansionGrid />;
+};
+
+const ExpansionGrid = () => {
   const [hoveredTile, setHoveredTile] = useState<string | null>(null);
 
   const expansionSelectedTiles = useUIStore.use.expansionSelectedTiles();

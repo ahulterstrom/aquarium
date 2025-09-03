@@ -10,12 +10,66 @@ import {
   GridCell as GridCellType,
 } from "../../types/game.types";
 import { TANK_SPECS, ENTRANCE_COST } from "../../lib/constants";
-import { getRotatedDimensions } from "../../lib/utils/placement";
+import {
+  getRotatedDimensions,
+  getTankModelRotation,
+} from "../../lib/utils/placement";
 import * as THREE from "three";
-import { ThreeEvent } from "@react-three/fiber";
+import { ThreeEvent, useFrame } from "@react-three/fiber";
 import { nanoid } from "nanoid";
+import { useGLTF } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
 
-export const PlacementGrid = () => {
+const VALID_GRID_COLOR = 0x33aa33;
+const INVALID_GRID_COLOR = 0xaa3333;
+const VALID_TANK_COLOR = 0xffffff;
+const INVALID_TANK_COLOR = 0xaa3333;
+
+type GLTFResult = GLTF & {
+  nodes: {
+    Tank_Medium_1: THREE.Mesh;
+    Tank_Medium_2: THREE.Mesh;
+    Tank_Medium_3: THREE.Mesh;
+    Tank_Medium_4: THREE.Mesh;
+    Tank_Medium_5: THREE.Mesh;
+    Tank_Medium_6: THREE.Mesh;
+    Tank_Large_1: THREE.Mesh;
+    Tank_Large_2: THREE.Mesh;
+    Tank_Large_3: THREE.Mesh;
+    Tank_Large_4: THREE.Mesh;
+    Tank_Large_5: THREE.Mesh;
+    Tank_Large_6: THREE.Mesh;
+    Tank_Huge_1: THREE.Mesh;
+    Tank_Huge_2: THREE.Mesh;
+    Tank_Huge_3: THREE.Mesh;
+    Tank_Huge_4: THREE.Mesh;
+    Tank_Huge_5: THREE.Mesh;
+    Tank_Huge_6: THREE.Mesh;
+  };
+  materials: never;
+};
+
+const previewTankMaterial = new THREE.MeshBasicMaterial({
+  color: new THREE.Color(VALID_TANK_COLOR),
+  transparent: true,
+  opacity: 0.4,
+});
+
+// Wrapper component that handles conditional rendering
+export const PlacementGridRenderer = () => {
+  const placementMode = useUIStore.use.placementMode();
+  
+  const shouldShowGrid = 
+    placementMode === "tank" || 
+    placementMode === "entrance" || 
+    placementMode === "moveTank";
+    
+  if (!shouldShowGrid) return null;
+  
+  return <PlacementGrid />;
+};
+
+const PlacementGrid = () => {
   const cells = useGridStore.use.cells();
   const canPlaceAt = useGridStore.use.canPlaceAt();
   const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
@@ -34,6 +88,9 @@ export const PlacementGrid = () => {
   const placeObject = useGridStore.use.placeObject();
   const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
 
+  // Load GLTF at component level
+  const { nodes } = useGLTF("/Models.glb") as GLTFResult;
+
   // Refs for imperative updates
   const hoveredCellRef = useRef<GridPosition | null>(null);
   const cellRefsMap = useRef<Map<string, THREE.Mesh>>(new Map());
@@ -45,6 +102,20 @@ export const PlacementGrid = () => {
   }>({
     position: null,
     isValid: true,
+  });
+
+  // Preview mesh refs
+  const previewMeshRef = useRef<THREE.Group | null>(null);
+  const lastPreviewStateRef = useRef<{
+    position: GridPosition | null;
+    size: string | null;
+    rotation: number;
+    mode: string | null;
+  }>({
+    position: null,
+    size: null,
+    rotation: 0,
+    mode: null,
   });
 
   // Helper to get cell key
@@ -129,7 +200,9 @@ export const PlacementGrid = () => {
       const mesh = cellRefsMap.current.get(key);
       if (mesh) {
         const material = mesh.material as THREE.MeshStandardMaterial;
-        material.color.setHex(isValidPlacement ? 0x33aa33 : 0xaa3333);
+        material.color.setHex(
+          isValidPlacement ? VALID_GRID_COLOR : INVALID_GRID_COLOR,
+        );
       }
     });
 
@@ -142,6 +215,163 @@ export const PlacementGrid = () => {
     canPlaceAt,
     canPlaceEntranceAt,
   ]);
+
+  // Preview mesh management
+  const createPreviewMesh = useCallback(
+    (size: string, tankNodes: GLTFResult["nodes"]) => {
+      if (!groupRef.current) return null;
+
+      const group = new THREE.Group();
+
+      // Create meshes based on size
+      const nodePrefix = size.charAt(0).toUpperCase() + size.slice(1);
+      const meshes = [
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_1` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_2` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_3` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_4` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_5` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+        {
+          geometry:
+            tankNodes[`Tank_${nodePrefix}_6` as keyof GLTFResult["nodes"]]
+              ?.geometry,
+          material: previewTankMaterial,
+        },
+      ];
+
+      meshes.forEach(({ geometry, material }) => {
+        if (geometry) {
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.raycast = () => {}; // Disable raycasting for preview meshes
+          mesh.renderOrder = 1;
+          group.add(mesh);
+        }
+      });
+
+      groupRef.current.add(group);
+      return group;
+    },
+    [],
+  );
+
+  const updatePreviewMesh = useCallback(
+    (time: number) => {
+      const hoveredCell = hoveredCellRef.current;
+      const shouldShowPreview =
+        (placementMode === "tank" || placementMode === "moveTank") &&
+        placementPreview &&
+        hoveredCell;
+
+      // Check if preview state changed
+      const currentState = {
+        position: hoveredCell,
+        size: placementPreview?.size || null,
+        rotation: placementRotation,
+        mode: placementMode,
+      };
+
+      const lastState = lastPreviewStateRef.current;
+      const stateChanged =
+        !lastState.position ||
+        lastState.position.x !== currentState.position?.x ||
+        lastState.position.z !== currentState.position?.z ||
+        lastState.size !== currentState.size ||
+        lastState.rotation !== currentState.rotation ||
+        lastState.mode !== currentState.mode;
+
+      if (
+        !stateChanged &&
+        previewMeshRef.current?.visible === shouldShowPreview
+      ) {
+        return; // No changes needed
+      }
+
+      // Remove existing preview
+      if (previewMeshRef.current) {
+        previewMeshRef.current.parent?.remove(previewMeshRef.current);
+        previewMeshRef.current = null;
+      }
+
+      // Create new preview if needed
+      if (shouldShowPreview && hoveredCell && placementPreview) {
+        const size = placementPreview.size || "medium";
+        const previewMesh = createPreviewMesh(size, nodes);
+
+        if (previewMesh) {
+          // Calculate position
+          const baseX = hoveredCell.x * 2;
+          const baseZ = hoveredCell.z * 2;
+          const specs = TANK_SPECS[size as keyof typeof TANK_SPECS];
+          const { width: rotatedWidth, depth: rotatedDepth } =
+            getRotatedDimensions(
+              specs.gridWidth,
+              specs.gridDepth,
+              placementRotation,
+            );
+          const offsetX = rotatedWidth > 1 ? rotatedWidth - 1 : 0;
+          const offsetZ = rotatedDepth > 1 ? rotatedDepth - 1 : 0;
+
+          // Check placement validity and update material color
+          const isValid = canPlaceAt(hoveredCell, rotatedWidth, rotatedDepth);
+          previewTankMaterial.color.setHex(
+            isValid ? VALID_TANK_COLOR : INVALID_TANK_COLOR,
+          );
+
+          // Add floating animation
+          const bobAmount = Math.sin(time * 4) * 0.1; // Speed: 4, Amplitude: 0.1
+
+          previewMesh.position.set(
+            baseX + offsetX,
+            0.5 + bobAmount,
+            baseZ + offsetZ,
+          );
+          previewMesh.rotation.y = getTankModelRotation(placementRotation);
+          previewMeshRef.current = previewMesh;
+        }
+      }
+
+      // Update state tracking
+      lastPreviewStateRef.current = currentState;
+    },
+    [
+      placementMode,
+      placementPreview,
+      placementRotation,
+      createPreviewMesh,
+      nodes,
+      canPlaceAt,
+    ],
+  );
+
+  // Update preview mesh every frame
+  useFrame(({ clock }) => {
+    updatePreviewMesh(clock.elapsedTime);
+  });
 
   // Handle pointer move
   const handlePointerMove = useCallback(
