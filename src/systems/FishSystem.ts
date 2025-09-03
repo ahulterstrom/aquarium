@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Fish, FishBehaviorState, Tank } from "../types/game.types";
 import { nanoid } from "nanoid";
+import { getRotatedDimensions } from "../lib/utils/placement";
 
 export class FishSystem {
   private fish: Map<string, Fish>;
@@ -207,12 +208,19 @@ export class FishSystem {
       const gridWidth = tank.gridWidth || 1;
       const gridDepth = tank.gridDepth || 1;
       
-      // Calculate the center of the tank
-      const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
-      const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+      // Get rotated dimensions for proper positioning
+      const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
+        gridWidth,
+        gridDepth,
+        tank.rotation || 0
+      );
       
-      const xRange = gridWidth * 1.4;
-      const zRange = gridDepth * 1.4;
+      // Calculate the center of the tank
+      const tankCenterX = baseX + (rotatedWidth > 1 ? (rotatedWidth - 1) : 0);
+      const tankCenterZ = baseZ + (rotatedDepth > 1 ? (rotatedDepth - 1) : 0);
+      
+      const xRange = rotatedWidth * 1.4;
+      const zRange = rotatedDepth * 1.4;
       
       fish.targetPosition = new THREE.Vector3(
         tankCenterX + (Math.random() - 0.5) * xRange,
@@ -287,13 +295,20 @@ export class FishSystem {
     const gridWidth = tank.gridWidth || 1;
     const gridDepth = tank.gridDepth || 1;
     
-    // Calculate the center of the tank (same logic as tank visual positioning)
-    const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
-    const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+    // Get rotated dimensions for proper positioning
+    const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
+      gridWidth,
+      gridDepth,
+      tank.rotation || 0
+    );
     
-    // Scale random range based on tank grid dimensions
-    const xRange = gridWidth * 1.4; // 1.4 units per grid cell
-    const zRange = gridDepth * 1.4;
+    // Calculate the center of the tank (same logic as tank visual positioning)
+    const tankCenterX = baseX + (rotatedWidth > 1 ? (rotatedWidth - 1) : 0);
+    const tankCenterZ = baseZ + (rotatedDepth > 1 ? (rotatedDepth - 1) : 0);
+    
+    // Scale random range based on rotated tank dimensions
+    const xRange = rotatedWidth * 1.4; // 1.4 units per grid cell
+    const zRange = rotatedDepth * 1.4;
     
     return new THREE.Vector3(
       tankCenterX + (Math.random() - 0.5) * xRange,
@@ -311,13 +326,20 @@ export class FishSystem {
     const gridWidth = tank.gridWidth || 1;
     const gridDepth = tank.gridDepth || 1;
     
+    // Get rotated dimensions for proper boundary calculation
+    const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
+      gridWidth,
+      gridDepth,
+      tank.rotation || 0
+    );
+    
     // Calculate the center of the tank (same logic as visual positioning)
-    const tankCenterX = baseX + (gridWidth > 1 ? (gridWidth - 1) : 0);
-    const tankCenterZ = baseZ + (gridDepth > 1 ? (gridDepth - 1) : 0);
+    const tankCenterX = baseX + (rotatedWidth > 1 ? (rotatedWidth - 1) : 0);
+    const tankCenterZ = baseZ + (rotatedDepth > 1 ? (rotatedDepth - 1) : 0);
     
     // Create bounds centered around the tank center
-    const halfRangeX = (gridWidth * 1.4) / 2;
-    const halfRangeZ = (gridDepth * 1.4) / 2;
+    const halfRangeX = (rotatedWidth * 1.4) / 2;
+    const halfRangeZ = (rotatedDepth * 1.4) / 2;
     
     const tankBounds = {
       minX: tankCenterX - halfRangeX,

@@ -37,27 +37,26 @@ export const PlacementControls = () => {
             <span className="text-xs">Cancel</span>
           </Button>
 
-          {placementMode === "tank" ||
-            (placementMode === "moveTank" && (
-              <>
-                <Button
-                  onClick={rotatePlacementCCW}
-                  variant="onGlass"
-                  className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
-                >
-                  <RotateCcwSquare className="size-6" />
-                  <span className="text-xs">Left</span>
-                </Button>
-                <Button
-                  onClick={rotatePlacementCW}
-                  variant="onGlass"
-                  className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
-                >
-                  <RotateCwSquare className="size-6" />
-                  <span className="text-xs">Right</span>
-                </Button>
-              </>
-            ))}
+          {(placementMode === "tank" || placementMode === "moveTank") && (
+            <>
+              <Button
+                onClick={rotatePlacementCCW}
+                variant="onGlass"
+                className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
+              >
+                <RotateCcwSquare className="size-6" />
+                <span className="text-xs">Left</span>
+              </Button>
+              <Button
+                onClick={rotatePlacementCW}
+                variant="onGlass"
+                className="pointer-events-auto flex size-20 flex-col items-center justify-center gap-1"
+              >
+                <RotateCwSquare className="size-6" />
+                <span className="text-xs">Right</span>
+              </Button>
+            </>
+          )}
         </div>
       </animated.div>
     </div>
