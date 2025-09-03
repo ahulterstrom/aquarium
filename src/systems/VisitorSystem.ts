@@ -640,7 +640,19 @@ export class VisitorSystem {
 
     // Drop coin when leaving viewing state
     if (previousState === "viewing" && newState !== "viewing") {
-      this.coinSystem.dropCoin(visitor.position, 1, visitor.id);
+      // Weighted random selection for coin value
+      const random = Math.random();
+      let coinValue = 1;
+      if (random < 0.02) {
+        coinValue = 100;  // 2% chance - diamond
+      } else if (random < 0.10) {
+        coinValue = 25;   // 8% chance (0.02 + 0.08) - star
+      } else if (random < 0.30) {
+        coinValue = 5;    // 20% chance (0.10 + 0.20) - silver
+      }
+      // 70% chance remains for penny (value 1)
+      
+      this.coinSystem.dropCoin(visitor.position, coinValue, visitor.id);
       const randomCoinfall = `coinfall${Math.floor(Math.random() * 4) + 1}`;
       this.soundController.play(randomCoinfall);
     }

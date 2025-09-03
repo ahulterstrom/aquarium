@@ -1,4 +1,4 @@
-import { Loader } from "@react-three/drei";
+import { Loader, useGLTF } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
 import { Suspense, useRef } from "react";
@@ -61,3 +61,26 @@ function App() {
 }
 
 export default App;
+
+useGLTF.preload("/Models.glb");
+useGLTF.preload("/visitors/Cowboy_Hair.gltf");
+useGLTF.preload("/visitors/Casual_Female.gltf");
+useGLTF.preload("/visitors/Casual_Male.gltf");
+useGLTF.preload("/visitors/Suit_Female.gltf");
+useGLTF.preload("/visitors/Suit_Male.gltf");
+useGLTF.preload("/visitors/Doctor_Female_Young.gltf");
+useGLTF.preload("/visitors/Doctor_Male_Young.gltf");
+useGLTF.preload("/visitors/Chef_Female.gltf");
+useGLTF.preload("/visitors/Chef_Male.gltf");
+useGLTF.preload("/visitors/Ninja_Male.gltf");
+useGLTF.preload("/visitors/Ninja_Female.gltf");
+useGLTF.preload("/visitors/OldClassy_Female.gltf");
+useGLTF.preload("/visitors/OldClassy_Male.gltf");
+useGLTF.preload("/visitors/Worker_Female.gltf");
+useGLTF.preload("/visitors/Worker_Male.gltf");
+useGLTF.preload("/visitors/Casual2_Female.gltf");
+useGLTF.preload("/visitors/Casual2_Male.gltf");
+useGLTF.preload("/visitors/Casual3_Female.gltf");
+useGLTF.preload("/visitors/Casual3_Male.gltf");
+useGLTF.preload("/visitors/Kimono_Female.gltf");
+useGLTF.preload("/visitors/Kimono_Male.gltf");

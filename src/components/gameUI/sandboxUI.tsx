@@ -19,6 +19,7 @@ import { AnimatedObjectivesPanel } from "@/components/gameUI/animatedObjectivesP
 import { BottomPanel } from "@/components/gameUI/bottomPanel";
 import { BuildPanel } from "@/components/gameUI/buildPanel";
 import { CustomizationPanel } from "@/components/gameUI/customizationPanel";
+import { DebugPanel } from "@/components/gameUI/debugPanel";
 import { EntityInfoPanel } from "@/components/gameUI/entityInfoPanel";
 import { PlacementControls } from "@/components/gameUI/placementControls";
 import { SettingsModal } from "@/components/gameUI/settingsModal";
@@ -26,8 +27,6 @@ import { StatisticsModal } from "@/components/gameUI/statisticsModal";
 import { TileExpansionPanel } from "@/components/gameUI/tileExpansionPanel";
 import { TopPanel } from "@/components/gameUI/topPanel";
 import { ScreenshotControls } from "@/components/screenshot/ScreenshotControls";
-import { spawnVisitor } from "@/components/systems/visitorSystem";
-import { useSound } from "@/contexts/sound/useSound";
 import { useGame } from "@/stores/useGame";
 import * as THREE from "three";
 import { useGameStore } from "../../stores/gameStore";
@@ -87,7 +86,6 @@ export const SandboxUI = () => {
   const [contextMessage, setContextMessage] = useState("");
 
   const isDebugging = useGame.use.isDebugging();
-  const { soundController } = useSound();
   const tanks = useGameStore.use.tanks();
   const money = useGameStore.use.money();
   const spendMoney = useGameStore.use.spendMoney();
@@ -235,109 +233,7 @@ export const SandboxUI = () => {
 
         <BottomPanel />
 
-        {isDebugging && (
-          <div className="pointer-events-auto absolute top-0 left-0 w-30 space-y-2 bg-orange-400/50 p-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => spawnVisitor(undefined, soundController)}
-            >
-              1 Visitor
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                for (let i = 0; i < 10; i++) {
-                  spawnVisitor(undefined, soundController);
-                }
-              }}
-            >
-              10 Visitors
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                const cells = useGridStore.getState().cells;
-                console.log("Grid Cells:", Array.from(cells.entries()));
-              }}
-            >
-              Log Cells
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                const fish = useGameStore.getState().fish;
-                console.log("Fish:", Array.from(fish.entries()));
-              }}
-            >
-              Log Fish
-            </Button>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                toast({
-                  title: "This is a test test toast",
-                  description: "This is a test description for the toast.",
-                });
-              }}
-            >
-              Toast test
-            </Button> */}
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                const state = useGameStore.getState();
-                const objectiveSystem = state.objectiveSystem;
-                console.log("Active Objectives:", state.activeObjectives);
-                console.log(
-                  "All Objectives:",
-                  objectiveSystem.getAllObjectives(),
-                );
-                console.log("All objectives", state.allObjectives);
-                console.log(
-                  "Get active objectives:",
-                  objectiveSystem.getActiveObjectives(),
-                );
-              }}
-            >
-              Log objectives
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                const tanks = useGameStore.getState().tanks;
-                console.log("Tanks:", Array.from(tanks.entries()));
-              }}
-            >
-              Log POIs
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs whitespace-break-spaces"
-              onClick={() => {
-                const state = useGameStore.getState();
-                state.addMoney(100);
-              }}
-            >
-              Give $100
-            </Button>
-          </div>
-        )}
+        {isDebugging && <DebugPanel />}
 
         <AnimatedObjectivesPanel />
 
