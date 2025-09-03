@@ -7,6 +7,7 @@ import { useCharacterAnimation } from "@/hooks/useCharacterAnimation";
 import { MAX_FRAME_DELTA } from "@/lib/constants/misc";
 import { getVisitorSystem } from "@/components/systems/visitorSystem";
 import { useUIStore } from "@/stores/uiStore";
+import { getIsPlacing } from "@/lib/utils/placement";
 
 const VISITOR_Y = -0.1;
 
@@ -32,11 +33,6 @@ function lerpAngle(from: number, to: number, factor: number): number {
   if (diff < -Math.PI) diff += 2 * Math.PI;
 
   return from + diff * factor;
-}
-
-function getIsVisible() {
-  const placementMode = useUIStore.getState().placementMode;
-  return placementMode !== "moveTank" && placementMode !== "tank";
 }
 
 export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
@@ -179,7 +175,7 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     }
 
     if (groupRef.current) {
-      groupRef.current.visible = getIsVisible();
+      groupRef.current.visible = !getIsPlacing();
     }
   });
 
@@ -200,21 +196,21 @@ export const AnimatedCharacter: React.FC<AnimatedCharacterProps> = ({
     <group
       ref={groupRef}
       onClick={(e) => {
-        if (!getIsVisible()) {
+        if (getIsPlacing()) {
           return;
         }
         e.stopPropagation();
         onClick(visitorId);
       }}
       onPointerEnter={(e) => {
-        if (!getIsVisible()) {
+        if (getIsPlacing()) {
           return;
         }
         e.stopPropagation();
         document.body.style.cursor = "pointer";
       }}
       onPointerLeave={(e) => {
-        if (!getIsVisible()) {
+        if (getIsPlacing()) {
           return;
         }
         e.stopPropagation();

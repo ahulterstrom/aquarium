@@ -148,7 +148,7 @@ export const useGameStore = createSelectors(
   create<GameStore>()(
     devtools(
       persist(
-        (set, get) => {
+        (set, get, store) => {
           // Set up objective system callbacks
           objectiveSystem.setRewardCallback((amount, objective) => {
             get().addMoney(amount);
@@ -564,9 +564,7 @@ export const useGameStore = createSelectors(
                 return false; // Already purchased this level
               }
 
-              const packCost = getNextExpansionCost(
-                totalPurchasedTiles
-              );
+              const packCost = getNextExpansionCost(totalPurchasedTiles);
               const packSize = getNextExpansionPackSize(totalPurchasedTiles);
 
               if (state.money >= packCost) {
@@ -926,33 +924,34 @@ export const useGameStore = createSelectors(
             },
 
             reset: () => {
+              set(store.getInitialState());
               // Reset the systems
-              objectiveSystem.reset();
-              unlockSystem.reset();
+              // objectiveSystem.reset();
+              // unlockSystem.reset();
 
-              return set({
-                ...initialState,
-                tanks: new Map(),
-                fish: new Map(),
-                entrances: new Map(),
-                coins: new Map(),
-                objectiveSystem: objectiveSystem,
-                activeObjectives: objectiveSystem.getActiveObjectives(),
-                allObjectives: objectiveSystem.getAllObjectives(),
-                unlockSystem: unlockSystem,
-                unlockedItems: unlockSystem.getUnlockedItems(),
-                expansionTiles: 0,
-                purchasedExpansionLevels: new Set(),
-                wallStyle: "concrete",
-                floorStyle: "wood",
-                gameTime: 0,
-                accumulators: {
-                  tick: 0,
-                  water: 0,
-                  visitors: 0,
-                  daily: 0,
-                },
-              });
+              // return set({
+              //   ...initialState,
+              //   tanks: new Map(),
+              //   fish: new Map(),
+              //   entrances: new Map(),
+              //   coins: new Map(),
+              //   objectiveSystem: objectiveSystem,
+              //   activeObjectives: objectiveSystem.getActiveObjectives(),
+              //   allObjectives: objectiveSystem.getAllObjectives(),
+              //   unlockSystem: unlockSystem,
+              //   unlockedItems: unlockSystem.getUnlockedItems(),
+              //   expansionTiles: 0,
+              //   purchasedExpansionLevels: new Set(),
+              //   wallStyle: "concrete",
+              //   floorStyle: "wood",
+              //   gameTime: 0,
+              //   accumulators: {
+              //     tick: 0,
+              //     water: 0,
+              //     visitors: 0,
+              //     daily: 0,
+              //   },
+              // });
             },
           };
         },

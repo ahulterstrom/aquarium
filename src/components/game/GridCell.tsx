@@ -1,52 +1,37 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import * as THREE from "three";
 
 interface GridCellProps {
   x: number;
+  y: number;
   z: number;
-  onClick: (x: number, z: number) => void;
-  isHighlighted: boolean;
-  isValidPlacement?: boolean;
+  registerRef: (x: number, y: number, z: number, ref: THREE.Mesh | null) => void;
 }
 
-export const GridCell = ({
-  x,
-  z,
-  onClick,
-  isHighlighted,
-  isValidPlacement = true,
-}: GridCellProps) => {
+export const GridCell = ({ x, y, z, registerRef }: GridCellProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
+  
+  // Register the mesh ref with the parent Grid
+  useEffect(() => {
+    if (meshRef.current) {
+      registerRef(x, y, z, meshRef.current);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      registerRef(x, y, z, null);
+    };
+  }, [x, y, z, registerRef]);
 
   return (
     <mesh
       ref={meshRef}
       position={[x * 2, 0.1, z * 2]}
       rotation={[-Math.PI / 2, 0, 0]}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(x, z);
-      }}
-      onPointerEnter={() => {
-        if (meshRef.current) {
-          (
-            meshRef.current.material as THREE.MeshStandardMaterial
-          ).emissive.setHex(0x222222);
-        }
-      }}
-      onPointerLeave={() => {
-        if (meshRef.current) {
-          (
-            meshRef.current.material as THREE.MeshStandardMaterial
-          ).emissive.setHex(0x000000);
-        }
-      }}
     >
       <planeGeometry args={[1.8, 1.8]} />
       <meshStandardMaterial
-        color={
-          isHighlighted ? (isValidPlacement ? 0x33aa33 : 0xaa3333) : 0x666666
-        }
+        color={0x666666}
         transparent
         opacity={0.8}
       />

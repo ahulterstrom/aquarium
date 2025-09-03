@@ -5,7 +5,11 @@ import { useUIStore } from "../stores/uiStore";
 import { Tank as TankType } from "../types/game.types";
 import { TankMedium, TankLarge, TankHuge } from "./tankModels";
 import { Arrow } from "./arrow";
-import { getTankModelRotation, getRotatedDimensions } from "../lib/utils/placement";
+import {
+  getTankModelRotation,
+  getRotatedDimensions,
+  getIsPlacing,
+} from "../lib/utils/placement";
 
 const TankMesh = ({
   tank,
@@ -26,12 +30,12 @@ const TankMesh = ({
     // Handle legacy tanks that don't have grid dimensions
     const gridWidth = tank.gridWidth || 1;
     const gridDepth = tank.gridDepth || 1;
-    
+
     // Get rotated dimensions for proper positioning
     const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
       gridWidth,
       gridDepth,
-      tank.rotation || 0
+      tank.rotation || 0,
     );
 
     // Center the tank on all occupied grid cells using rotated dimensions
@@ -59,15 +63,24 @@ const TankMesh = ({
       position={getPosition()}
       rotation={[0, getTankModelRotation(tank.rotation || 0), 0]}
       onClick={(e) => {
+        if (getIsPlacing()) {
+          return;
+        }
         e.stopPropagation();
         console.log("Tank clicked:", tank.id);
         onClick(tank);
       }}
       onPointerEnter={(e) => {
+        if (getIsPlacing()) {
+          return;
+        }
         e.stopPropagation();
         document.body.style.cursor = "pointer";
       }}
       onPointerLeave={() => {
+        if (getIsPlacing()) {
+          return;
+        }
         document.body.style.cursor = "default";
       }}
     >

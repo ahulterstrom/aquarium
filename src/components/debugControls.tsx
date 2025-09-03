@@ -11,19 +11,7 @@ const DebugControlsUser = ({
   showPerf: boolean;
   setShowPerf: (showPerf: boolean) => void;
 }) => {
-  const score = useGame.use.score();
-  const increaseScore = useGame.use.increaseScore();
-
   const controls = useControls(() => ({
-    Score: folder(
-      {
-        Score: score,
-        "Increase Score": button(increaseScore),
-      },
-      {
-        collapsed: true,
-      },
-    ),
     Misc: folder(
       {
         "Show Performance": {
@@ -40,9 +28,9 @@ const DebugControlsUser = ({
   useFrame(() => {
     const [, set] = controls;
 
-    set({
-      Score: score,
-    });
+    // set({
+    //   Score: score,
+    // });
   });
 
   return null;
@@ -56,10 +44,10 @@ export const DebugControls = () => {
 
   useEffect(() => {
     const checkHash = () => setIsDebugging(window.location.hash === "#debug");
-    
+
     // Check the hash on mount
     checkHash();
-    
+
     // Listen for hash changes
     window.addEventListener("hashchange", checkHash);
     return () => window.removeEventListener("hashchange", checkHash);

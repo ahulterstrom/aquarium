@@ -1,3 +1,4 @@
+import { ResetProgressDialog } from "@/components/gameUI/resetProgressDialog";
 import { SoundMenu } from "@/components/gameUI/soundMenu";
 import {
   Dialog,
@@ -7,7 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useUIStore } from "@/stores/uiStore";
-import { useEffect, useRef } from "react";
 
 export const SettingsModal = () => {
   const showSettingsModal = useUIStore.use.showSettingsModal();
@@ -24,6 +24,7 @@ export const SettingsModal = () => {
             View and adjust the settings.
           </DialogDescription>
         </DialogHeader>
+        <ResetProgressDialog />
         <SoundMenu />
       </DialogContent>
     </Dialog>

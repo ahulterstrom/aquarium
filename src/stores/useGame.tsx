@@ -30,9 +30,7 @@ type GameState = {
   isDebugging: boolean;
   setIsDebugging: (isDebugging: boolean) => void;
 
-  score: number;
-  increaseScore: () => void;
-  setScore: (scoreState: number | SetStateFunction<number>) => void;
+  reset: () => void;
 };
 
 const createGameState: StateCreator<
@@ -40,7 +38,7 @@ const createGameState: StateCreator<
   [["zustand/devtools", never]],
   [],
   GameState
-> = (set, get) => ({
+> = (set, get, store) => ({
   isMuted: false,
   toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
   musicVolume: 1,
@@ -90,19 +88,7 @@ const createGameState: StateCreator<
       isDebugging,
     }),
 
-  score: 0,
-  increaseScore: () => set((state) => ({ score: state.score + 1 })),
-  setScore: (scoreState) =>
-    set(
-      (state) => ({
-        score:
-          typeof scoreState === "function"
-            ? scoreState(state.score)
-            : scoreState,
-      }),
-      undefined,
-      { type: "setScore", scoreState },
-    ),
+  reset: () => set(store.getInitialState()),
 });
 
 export const useGame = createSelectors(

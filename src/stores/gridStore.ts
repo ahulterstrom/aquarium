@@ -3,12 +3,35 @@ import { devtools, persist } from "zustand/middleware";
 import { GridCell, GridPosition } from "../types/game.types";
 import { createSelectors } from "@/stores/utils";
 
+const getInitialGrid = () => {
+  const cells = new Map<string, GridCell>();
+  const width = 3;
+  const height = 1;
+  const depth = 3;
+
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      for (let z = 0; z < depth; z++) {
+        const key = `${x},${y},${z}`;
+        cells.set(key, {
+          x,
+          y,
+          z,
+          occupied: false,
+          type: "empty",
+        });
+      }
+    }
+  }
+
+  return cells;
+};
+
 export interface GridStore {
   gridSize: { width: number; height: number; depth: number };
   cells: Map<string, GridCell>;
 
   // Grid operations
-  initializeGrid: (width: number, height: number, depth: number) => void;
   getCell: (x: number, y: number, z: number) => GridCell | undefined;
   setCell: (cell: GridCell) => void;
   createExpansionCells: (positions: { x: number; z: number }[]) => void;
@@ -43,33 +66,9 @@ export const useGridStore = createSelectors(
   create<GridStore>()(
     devtools(
       persist(
-        (set, get) => ({
+        (set, get, store) => ({
           gridSize: { width: 3, height: 1, depth: 3 },
-          cells: new Map(),
-
-          initializeGrid: (width, height, depth) => {
-            const cells = new Map<string, GridCell>();
-
-            for (let x = 0; x < width; x++) {
-              for (let y = 0; y < height; y++) {
-                for (let z = 0; z < depth; z++) {
-                  const key = `${x},${y},${z}`;
-                  cells.set(key, {
-                    x,
-                    y,
-                    z,
-                    occupied: false,
-                    type: "empty",
-                  });
-                }
-              }
-            }
-
-            set({
-              gridSize: { width, height, depth },
-              cells,
-            });
-          },
+          cells: getInitialGrid(),
 
           getCell: (x, y, z) => {
             return get().cells.get(`${x},${y},${z}`);
@@ -341,11 +340,7 @@ export const useGridStore = createSelectors(
             return null; // Not on an edge
           },
 
-          reset: () =>
-            set({
-              gridSize: { width: 3, height: 1, depth: 3 },
-              cells: new Map(),
-            }),
+          reset: () => set(store.getInitialState()),
         }),
         {
           name: "aquarium-grid-state",

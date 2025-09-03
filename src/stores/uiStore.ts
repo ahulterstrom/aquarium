@@ -121,6 +121,8 @@ interface UIStore {
   ) => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
+
+  reset: () => void;
 }
 
 interface Notification {
@@ -136,7 +138,7 @@ export const useUIStore = createSelectors(
   create<UIStore>()(
     devtools(
       persist(
-        (set, get) => ({
+        (set, get, store) => ({
           selectedTankId: null,
           selectedVisitorId: null,
           selectedEntranceId: null,
@@ -367,7 +369,7 @@ export const useUIStore = createSelectors(
           startMovingTank: (tankId) => {
             const tanks = useGameStore.getState().tanks;
             const tank = tanks.get(tankId);
-            
+
             set({
               movingTankId: tankId,
               placementMode: "moveTank",
@@ -389,6 +391,8 @@ export const useUIStore = createSelectors(
           exitPhotoMode: () => set({ isPhotoMode: false }),
           togglePhotoMode: () =>
             set((state) => ({ isPhotoMode: !state.isPhotoMode })),
+
+          reset: () => set(store.getInitialState()),
         }),
         {
           name: "aquarium-ui-state",

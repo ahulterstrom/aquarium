@@ -20,7 +20,7 @@ import { useThree } from "@react-three/fiber";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Grid } from "../components/game/Grid";
+import { PlacementGrid } from "../components/game/placementGrid";
 import { GameSystems } from "../components/systems/GameSystems";
 import {
   getCoinSystem,
@@ -42,39 +42,14 @@ import { useSound } from "@/contexts/sound/useSound";
 
 export const SandboxScene = () => {
   console.log("Rendering SandboxScene");
-  const [hoveredCell, setHoveredCell] = useState<{
-    x: number;
-    y: number;
-    z: number;
-  } | null>(null);
-
   const { camera, gl } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
 
-  const entrances = useGameStore.use.entrances();
-  const addTank = useGameStore.use.addTank();
-  const addEntrance = useGameStore.use.addEntrance();
-  const spendMoney = useGameStore.use.spendMoney();
   const floorStyle = useGameStore.use.floorStyle();
   const wallStyle = useGameStore.use.wallStyle();
-
-  const cells = useGridStore.use.cells();
-  const initializeGrid = useGridStore.use.initializeGrid();
-  const canPlaceAt = useGridStore.use.canPlaceAt();
-  const canPlaceEntranceAt = useGridStore.use.canPlaceEntranceAt();
-  const placeObject = useGridStore.use.placeObject();
-  const getEdgeForPosition = useGridStore.use.getEdgeForPosition();
+  const addMoney = useGameStore.use.addMoney();
 
   const placementMode = useUIStore.use.placementMode();
-  const placementPreview = useUIStore.use.placementPreview();
-  const placementRotation = useUIStore.use.placementRotation();
-  const clearSelection = useUIStore.use.clearSelection();
-  const setPlacementMode = useUIStore.use.setPlacementMode();
-  const movingTankId = useUIStore.use.movingTankId();
-  const cancelMoveTank = useUIStore.use.cancelMoveTank();
-  const addMoney = useGameStore.use.addMoney();
-  const moveTankToPosition = useGameStore.use.moveTankToPosition();
-  const tanks = useGameStore.use.tanks();
 
   const { soundController } = useSound();
 
@@ -172,11 +147,6 @@ export const SandboxScene = () => {
   }, [gl, handleGlobalPointerMove, handleGlobalClick]);
 
   useEffect(() => {
-    // Only initialize grid if it's empty (first load)
-    if (cells.size === 0) {
-      initializeGrid(3, 1, 3);
-    }
-
     initializeCoinSystem();
     initializeFishSystem();
 
@@ -195,88 +165,7 @@ export const SandboxScene = () => {
       });
       updateFishSystemReferences();
     }
-  }, [initializeGrid, cells.size, addMoney]);
-
-  const handleCellClick = (x: number, z: number) => {
-    if (placementMode === "tank" && placementPreview) {
-      const tankSize = placementPreview.size || "medium";
-      const specs = TANK_SPECS[tankSize];
-      const rotation = placementRotation;
-
-      // Get rotated dimensions for placement validation
-      const { width: rotatedWidth, depth: rotatedDepth } = getRotatedDimensions(
-        specs.gridWidth,
-        specs.gridDepth,
-        rotation,
-      );
-
-      if (canPlaceAt({ x, y: 0, z }, rotatedWidth, rotatedDepth)) {
-        if (spendMoney(specs.cost)) {
-          const tankId = `tank_${nanoid()}`;
-          const newTank: TankType = {
-            id: tankId,
-            position: { x, y: 0, z },
-            size: tankSize,
-            gridWidth: specs.gridWidth, // Store original dimensions
-            gridDepth: specs.gridDepth,
-            rotation: rotation, // Store rotation
-            waterQuality: 1,
-            temperature: 25,
-            capacity: specs.capacity,
-            fishIds: [],
-            decorations: [],
-            maintenanceLevel: 1,
-          };
-
-          addTank(newTank);
-          placeObject(
-            { x, y: 0, z },
-            rotatedWidth, // Use rotated dimensions for grid placement
-            rotatedDepth,
-            "tank",
-            tankId,
-          );
-          setPlacementMode("none");
-        }
-      }
-    } else if (placementMode === "moveTank" && movingTankId) {
-      // Handle tank movement
-      const tankToMove = tanks.get(movingTankId);
-      if (tankToMove) {
-        const success = moveTankToPosition(
-          movingTankId,
-          { x, y: 0, z },
-          placementRotation,
-        );
-        if (success) {
-          cancelMoveTank();
-        }
-      }
-    } else if (placementMode === "entrance") {
-      if (canPlaceEntranceAt({ x, y: 0, z })) {
-        if (spendMoney(ENTRANCE_COST)) {
-          const entranceId = `entrance_${nanoid()}`;
-          const edge = getEdgeForPosition({ x, y: 0, z });
-          const newEntrance: Entrance = {
-            id: entranceId,
-            position: { x, y: 0, z },
-            isMainEntrance: entrances.size === 0, // First entrance is main entrance
-            edge: edge || "north", // Fallback to north if edge detection fails
-          };
-
-          addEntrance(newEntrance);
-          placeObject({ x, y: 0, z }, 1, 1, "entrance", entranceId);
-          setPlacementMode("none");
-        }
-      } else {
-        // Invalid placement - entrance must be on perimeter
-        console.log("Entrance can only be placed on the edge of the map");
-      }
-    } else {
-      // Clear all selections when clicking on empty space
-      clearSelection();
-    }
-  };
+  }, [addMoney]);
 
   return (
     <>
@@ -294,13 +183,6 @@ export const SandboxScene = () => {
         far={1000}
       />
 
-      {/* <OrthoStars layers={3} count={1000} area={[20, 20]} /> */}
-      {/* <OrbitControls
-        target={[2, 0, 2]}
-        maxPolarAngle={Math.PI / 2.2}
-        minDistance={5}
-        maxDistance={15}
-      /> */}
       <MapControls
         makeDefault
         enableZoom={process.env.NODE_ENV === "development"}
@@ -321,34 +203,10 @@ export const SandboxScene = () => {
         <WallSystem />
       </WallTextureProvider>
 
-      {/* Grid - includes both original and expansion tiles */}
+      {/* Grid */}
       {(placementMode === "tank" ||
         placementMode === "entrance" ||
-        placementMode === "moveTank") && (
-        <group
-          onPointerMove={(e) => {
-            if (
-              placementMode === "tank" ||
-              placementMode === "entrance" ||
-              placementMode === "moveTank"
-            ) {
-              const point = e.point;
-              const gridX = Math.floor((point.x + 1) / 2);
-              const gridZ = Math.floor((point.z + 1) / 2);
-
-              // Check if position is valid grid cell
-              const cell = cells.get(`${gridX},0,${gridZ}`);
-
-              if (cell) {
-                setHoveredCell({ x: gridX, y: 0, z: gridZ });
-              }
-            }
-          }}
-          onPointerLeave={() => setHoveredCell(null)}
-        >
-          <Grid hoveredCell={hoveredCell} onCellClick={handleCellClick} />
-        </group>
-      )}
+        placementMode === "moveTank") && <PlacementGrid />}
 
       {/* Expansion Grid - render when in expansion placement mode */}
       {placementMode === "expansion" && <ExpansionGrid />}

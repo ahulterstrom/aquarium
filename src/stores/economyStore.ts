@@ -73,7 +73,7 @@ export const useEconomyStore = createSelectors(
   create<EconomyStore>()(
     devtools(
       persist(
-        (set, get) => ({
+        (set, get, store) => ({
           dailyRevenue: createEmptyRevenue(),
           dailyExpense: createEmptyExpense(),
           ticketPrice: 10,
@@ -296,22 +296,7 @@ export const useEconomyStore = createSelectors(
             ];
           },
 
-          reset: () =>
-            set({
-              dailyRevenue: createEmptyRevenue(),
-              dailyExpense: createEmptyExpense(),
-              ticketPrice: 10,
-              visitorMetrics: {
-                totalVisitorsToday: 0,
-                averageSpendingPerVisitor: 0,
-                revenuePerVisitor: 0,
-              },
-              tankMetrics: {
-                totalTanks: 0,
-                revenuePerTank: 0,
-                averageFishPerTank: 0,
-              },
-            }),
+          reset: () => set(store.getInitialState()),
         }),
         {
           name: "aquarium-economy-state",
